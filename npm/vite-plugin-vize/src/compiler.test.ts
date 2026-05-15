@@ -91,6 +91,210 @@ assert.doesNotMatch(
   "Batch SSR compilation should also drop the Vapor marker when falling back to VDOM",
 );
 
+const styleMetadataSource = `<template><div class="root">Styled</div></template>
+<style scoped module lang="scss">
+.root { color: red; }
+</style>
+<style module="tokens">
+.token { color: blue; }
+</style>`;
+
+const styleMetadataCompiled = compileFile(
+  "/src/Styled.vue",
+  new Map(),
+  { sourceMap: false, ssr: false, vapor: false },
+  styleMetadataSource,
+);
+
+assert.equal(
+  styleMetadataCompiled.hasScoped,
+  true,
+  "Single-file compilation should use native scoped style metadata",
+);
+assert.deepEqual(
+  styleMetadataCompiled.styles?.map(({ lang, scoped, module, index }) => ({
+    lang,
+    scoped,
+    module,
+    index,
+  })),
+  [
+    { lang: "scss", scoped: true, module: true, index: 0 },
+    { lang: null, scoped: false, module: "tokens", index: 1 },
+  ],
+  "Single-file compilation should normalize native style metadata for delegated CSS imports",
+);
+
+const styleBatchCache = new Map();
+const styleBatchResult = compileBatch(
+  [{ path: "/src/Styled.vue", source: styleMetadataSource }],
+  styleBatchCache,
+  { ssr: false, vapor: false },
+);
+
+assert.equal(styleBatchResult.failedCount, 0, "Batch style metadata compilation should succeed");
+assert.deepEqual(
+  styleBatchCache.get("/src/Styled.vue")?.styles?.map(({ lang, scoped, module, index }) => ({
+    lang,
+    scoped,
+    module,
+    index,
+  })),
+  [
+    { lang: "scss", scoped: true, module: true, index: 0 },
+    { lang: null, scoped: false, module: "tokens", index: 1 },
+  ],
+  "Batch compilation should cache style metadata emitted by native SFC parsing",
+);
+
+const definePageSource = `<script setup lang="ts">
+definePage({
+  name: "home",
+  meta: {
+    requiresAuth: true,
+  },
+});
+
+const msg = "hello";
+</script>
+
+<template>
+  <div>{{ msg }}</div>
+</template>`;
+
+const definePageCompiled = compileFile(
+  "/src/pages/Home.vue",
+  new Map(),
+  { sourceMap: false, ssr: false, vapor: false },
+  definePageSource,
+);
+
+assert.doesNotMatch(
+  definePageCompiled.code,
+  /definePage/,
+  "definePage should not stay in component runtime output",
+);
+assert.equal(
+  definePageCompiled.macroArtifacts?.[0]?.kind,
+  "vue-router.definePage",
+  "definePage should be exposed as a Vue Router macro artifact",
+);
+assert.match(
+  definePageCompiled.macroArtifacts?.[0]?.moduleCode ?? "",
+  /export default \{/,
+  "definePage artifacts should include loadable module code",
+);
+
+const definePageMetaSource = `<script setup lang="ts">
+definePageMeta({
+  name: "docs",
+  meta: {
+    scrollMargin: 180,
+  },
+});
+
+const msg = "hello";
+</script>
+
+<template>
+  <div>{{ msg }}</div>
+</template>`;
+
+const definePageMetaCompiled = compileFile(
+  "/src/pages/docs.vue",
+  new Map(),
+  { sourceMap: false, ssr: false, vapor: false },
+  definePageMetaSource,
+);
+
+assert.doesNotMatch(
+  definePageMetaCompiled.code,
+  /definePageMeta/,
+  "definePageMeta should not stay in component runtime output",
+);
+assert.equal(
+  definePageMetaCompiled.macroArtifacts?.[0]?.kind,
+  "nuxt.definePageMeta",
+  "definePageMeta should be exposed as a Nuxt page macro artifact",
+);
+assert.match(
+  definePageMetaCompiled.macroArtifacts?.[0]?.moduleCode ?? "",
+  /export default \{/,
+  "definePageMeta artifacts should include loadable module code",
+);
+
+const defineRouteRulesSource = `<script setup lang="ts">
+defineRouteRules({
+  prerender: true,
+  cache: {
+    maxAge: 60,
+  },
+});
+
+const msg = "hello";
+</script>
+
+<template>
+  <div>{{ msg }}</div>
+</template>`;
+
+const defineRouteRulesCompiled = compileFile(
+  "/src/pages/docs.vue",
+  new Map(),
+  { sourceMap: false, ssr: false, vapor: false },
+  defineRouteRulesSource,
+);
+
+assert.doesNotMatch(
+  defineRouteRulesCompiled.code,
+  /defineRouteRules/,
+  "defineRouteRules should not stay in component runtime output",
+);
+assert.equal(
+  defineRouteRulesCompiled.macroArtifacts?.[0]?.kind,
+  "nuxt.defineRouteRules",
+  "defineRouteRules should be exposed as a Nuxt route rules macro artifact",
+);
+assert.match(
+  defineRouteRulesCompiled.macroArtifacts?.[0]?.moduleCode ?? "",
+  /prerender/,
+  "defineRouteRules artifacts should include loadable route rules module code",
+);
+
+const defineLazyHydrationSource = `<script setup lang="ts">
+const LazyHydrationMyComponent = defineLazyHydrationComponent(
+  "visible",
+  () => import("./components/MyComponent.vue"),
+);
+</script>
+
+<template>
+  <LazyHydrationMyComponent :hydrate-on-visible="{ rootMargin: '100px' }" />
+</template>`;
+
+const defineLazyHydrationCompiled = compileFile(
+  "/src/pages/lazy.vue",
+  new Map(),
+  { sourceMap: false, ssr: false, vapor: false },
+  defineLazyHydrationSource,
+);
+
+assert.doesNotMatch(
+  defineLazyHydrationCompiled.code,
+  /defineLazyHydrationComponent/,
+  "defineLazyHydrationComponent should not stay in component runtime output",
+);
+assert.match(
+  defineLazyHydrationCompiled.code,
+  /__vizeCreateLazyVisibleComponent/,
+  "defineLazyHydrationComponent should expand to a lazy hydration factory",
+);
+assert.match(
+  defineLazyHydrationCompiled.code,
+  /useNuxtApp as __vizeUseNuxtApp/,
+  "defineLazyHydrationComponent should include Nuxt lazy hydration runtime support",
+);
+
 const antDesignSource = `<script setup lang="ts">
 import { Form, Input } from "ant-design-vue";
 </script>
@@ -405,8 +609,13 @@ const ssrScopedSlotCompiled = compileFile(
 
 assert.match(
   ssrScopedSlotCompiled.code,
-  /return \{\s*valibotResolver,\s*schema\s*\}/,
+  /const __returned__ = \{\s*valibotResolver,\s*schema\s*\}/,
   "SSR script setup should return imports that are only used inside template expressions",
+);
+assert.match(
+  ssrScopedSlotCompiled.code,
+  /Object\.defineProperty\(__returned__, "__isScriptSetup"/,
+  "SSR script setup should mark returned bindings as script setup bindings",
 );
 assert.match(
   ssrScopedSlotCompiled.code,
@@ -454,8 +663,13 @@ const ssrNormalScriptImportCompiled = compileFile(
 
 assert.match(
   ssrNormalScriptImportCompiled.code,
-  /return \{\s*emit,\s*PForm,\s*valibotResolver\s*\}/,
+  /const __returned__ = \{\s*emit,\s*PForm,\s*valibotResolver\s*\}/,
   "SSR script setup should return normal-script imports that are used by template expressions",
+);
+assert.match(
+  ssrNormalScriptImportCompiled.code,
+  /Object\.defineProperty\(__returned__, "__isScriptSetup"/,
+  "SSR normal-script template bindings should be returned as script setup bindings",
 );
 assert.match(
   ssrNormalScriptImportCompiled.code,

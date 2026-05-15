@@ -10,6 +10,9 @@ concurrency:
   group: check-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 env:
   CARGO_TERM_COLOR: always
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -17,8 +20,9 @@ env:
 jobs:
   nix-flake:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: cachix/install-nix-action@v31
       - name: Cache Nix store
         uses: nix-community/cache-nix-action@v7
@@ -30,8 +34,9 @@ jobs:
 
   fmt-rust:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
@@ -40,8 +45,11 @@ jobs:
 
   check-js:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_OPTIONS: "--disable-warning=DEP0040 --disable-warning=DEP0169"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: voidzero-dev/setup-vp@v1
         with:
           node-version-file: ".node-version"
@@ -70,24 +78,32 @@ jobs:
 
   clippy-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
+      - uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version-file: ".node-version"
+          run-install: false
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: "native"
           cache-workspace-crates: "true"
       - name: Clippy
         run: cargo clippy --workspace -- -D warnings
+      - name: Install Pkl CLI
+        run: npm install --global @pkl-community/pkl@0.27.2
       - name: Test
         run: cargo test --workspace
 
   coverage:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -103,13 +119,11 @@ jobs:
 
   playground-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
-      contents: write
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-          token: ${{ github.token }}
+      - uses: actions/checkout@v6
 
       # Rust is always needed for @vizejs/native (used by vite-plugin-vize)
       - name: Setup Rust
@@ -127,7 +141,7 @@ jobs:
 
       - name: Cache WASM build
         id: cache-wasm
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: playground/src/wasm
           key: ${{ runner.os }}-wasm-${{ hashFiles('crates/**/*.rs', 'Cargo.lock') }}
@@ -136,7 +150,7 @@ jobs:
         if: steps.cache-wasm.outputs.cache-hit != 'true'
         uses: taiki-e/install-action@v2
         with:
-          tool: wasm-bindgen-cli@0.2.118
+          tool: wasm-bindgen-cli@0.2.121
 
       - name: Build WASM
         if: steps.cache-wasm.outputs.cache-hit != 'true'
@@ -157,7 +171,7 @@ jobs:
 
       - name: Cache Playwright browsers
         id: cache-playwright
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -187,12 +201,8 @@ jobs:
         if: steps.vrt.outcome == 'failure'
         run: vp run --filter './playground' test:vrt:update
 
-      - name: Commit updated snapshots
-        if: steps.vrt.outcome == 'failure' && github.event_name == 'pull_request'
-        run: moon run --target native - -- ${{ github.head_ref }} < tools/moon/scripts/github/commit_vrt_snapshots.mbtx
-
-      - name: Fail if VRT failed and no auto-update
-        if: steps.vrt.outcome == 'failure' && github.event_name != 'pull_request'
+      - name: Fail if VRT failed
+        if: steps.vrt.outcome == 'failure'
         run: exit 1
 
       - name: Upload VRT diff artifacts
@@ -202,3 +212,42 @@ jobs:
           name: vrt-diff
           path: playground/e2e/vrt/test-results/
           retention-days: 7
+
+  test-report:
+    name: test-report
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: ${{ always() && github.event_name == 'pull_request' }}
+    needs:
+      - nix-flake
+      - fmt-rust
+      - check-js
+      - clippy-and-test
+      - coverage
+      - playground-test
+    permissions:
+      actions: read
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Collect test inventory
+        run: node bench/test-inventory.mjs --json test-inventory.json --markdown "$GITHUB_STEP_SUMMARY"
+      - name: Upload test inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-inventory
+          path: test-inventory.json
+          retention-days: 14
+      - name: Comment detailed test report
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          TEST_REPORT_COMMENT_KEY: ${{ github.event.pull_request.head.sha }}
+          TEST_REPORT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          TEST_REPORT_RUN_ID: ${{ github.run_id }}
+          TEST_REPORT_RUN_ATTEMPT: ${{ github.run_attempt }}
+          TEST_REPORT_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TEST_REPORT_WORKFLOW_NAME: ${{ github.workflow }}
+        run: node bench/comment-test-report.mjs --inventory test-inventory.json --summary "$GITHUB_STEP_SUMMARY"

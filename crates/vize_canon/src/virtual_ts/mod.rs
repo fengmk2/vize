@@ -19,9 +19,7 @@ pub use types::{TemplateGlobal, VirtualTsOptions, VirtualTsOutput, VizeMapping};
 
 #[cfg(test)]
 mod tests {
-    use super::helpers::{
-        generate_template_context, get_dom_event_type, VUE_SETUP_COMPILER_MACROS,
-    };
+    use super::helpers::{generate_template_context, get_dom_event_type, VUE_SETUP_HELPERS};
     use super::{
         generate_virtual_ts, generate_virtual_ts_with_offsets, TemplateGlobal, VirtualTsOptions,
     };
@@ -35,11 +33,8 @@ mod tests {
     }
 
     #[test]
-    fn test_vue_setup_compiler_macros_are_actual_functions() {
-        assert_virtual_ts_snapshot(
-            "virtual_ts_vue_setup_compiler_macros",
-            VUE_SETUP_COMPILER_MACROS,
-        );
+    fn test_vue_setup_helpers_are_actual_functions() {
+        assert_virtual_ts_snapshot("virtual_ts_vue_setup_helpers", VUE_SETUP_HELPERS);
     }
 
     #[test]
@@ -234,6 +229,46 @@ const items = ['a', 'b']
         let output = generate_virtual_ts(&summary, Some(script), Some(&root), 0);
 
         assert_virtual_ts_snapshot("virtual_ts_scoped_slot_expressions", output.code.as_str());
+    }
+
+    #[test]
+    fn test_reserved_prop_and_hyphenated_slot_names() {
+        use vize_croquis::{Analyzer, AnalyzerOptions};
+
+        let script = r#"import TrendChart from './TrendChart.vue'
+defineProps<{
+  class?: string
+}>()
+"#;
+        let template = r#"<TrendChart :class="class">
+  <template #area-gradient="{ id }">
+    {{ id }}
+  </template>
+</TrendChart>"#;
+
+        let allocator = vize_carton::Bump::new();
+        let (root, _) = vize_armature::parse(&allocator, template);
+
+        let mut analyzer = Analyzer::with_options(AnalyzerOptions::full());
+        analyzer.analyze_script_setup(script);
+        analyzer.analyze_template(&root);
+        let summary = analyzer.finish();
+
+        let output = generate_virtual_ts(&summary, Some(script), Some(&root), 0);
+
+        let expression_start = template.find("\"class\"").unwrap() + 1;
+        let expression_end = expression_start + "class".len();
+        let mapping = output
+            .mappings
+            .iter()
+            .find(|mapping| mapping.src_range == (expression_start..expression_end))
+            .expect("should map the rewritten class prop expression");
+        assert_eq!(&output.code[mapping.gen_range.clone()], "props[\"class\"]");
+
+        assert_virtual_ts_snapshot(
+            "virtual_ts_reserved_prop_and_hyphenated_slot_names",
+            output.code.as_str(),
+        );
     }
 
     #[test]

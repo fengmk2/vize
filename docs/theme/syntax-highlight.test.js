@@ -18,6 +18,19 @@ void test("normalizeLanguage resolves docs aliases", () => {
   assert.equal(syntax.displayLanguage("nix"), "Nix");
 });
 
+void test("detectLanguage resolves language-prefixed classes", () => {
+  const codeElement = {
+    className: "language-bash",
+    getAttribute: () => null,
+  };
+  const preElement = {
+    className: "",
+    getAttribute: () => null,
+  };
+
+  assert.equal(syntax.detectLanguage(codeElement, preElement), "bash");
+});
+
 void test("createHighlightedHtml highlights vue directives and strings", () => {
   const html = syntax.createHighlightedHtml('<div v-if="ready">{{ count }}</div>', "vue");
 
@@ -25,11 +38,25 @@ void test("createHighlightedHtml highlights vue directives and strings", () => {
   assert.match(html, /v-code__directive/);
   assert.match(html, /v-code__string/);
   assert.match(html, /v-code__delimiter/);
+  assert.match(html, /v-code__delimiter">&gt;/);
+});
+
+void test("createHighlightedHtml does not treat TypeScript generics in Vue scripts as tags", () => {
+  const html = syntax.createHighlightedHtml(
+    '<script setup lang="ts">\nconst key: InjectionKey<Ref<Theme>> = Symbol("theme");\n</script>',
+    "vue",
+  );
+
+  assert.match(html, /&lt;script/);
+  assert.match(html, /&lt;\/script/);
+  assert.match(html, /InjectionKey&lt;Ref&lt;Theme&gt;&gt;/);
+  assert.doesNotMatch(html, /v-code__tag[^>]*>&lt;Ref/);
+  assert.doesNotMatch(html, /v-code__tag[^>]*>&lt;Theme/);
 });
 
 void test("createHighlightedHtml highlights bash commands and flags", () => {
   const html = syntax.createHighlightedHtml(
-    "vp install -D @vizejs/vite-plugin\ncargo install vize\nvize check --profile src\n$ nix develop",
+    "vp install -D @vizejs/vite-plugin\ncargo install vize\nvize check --profile src\nvp dev\n$ nix develop",
     "bash",
   );
 
@@ -39,10 +66,19 @@ void test("createHighlightedHtml highlights bash commands and flags", () => {
   assert.match(html, />cargo</);
   assert.match(html, />install</);
   assert.match(html, />check</);
+  assert.match(html, /<span class="v-code__token v-code__keyword">dev<\/span>/);
   assert.match(html, />develop</);
   assert.match(html, />vize</);
   assert.match(html, />nix</);
   assert.match(html, /@vizejs\/vite-plugin/);
+});
+
+void test("createHighlightedHtml does not treat URL fragments as bash comments", () => {
+  const html = syntax.createHighlightedHtml("nix run github:ubugeeei/vize#vize -- --help", "bash");
+
+  assert.doesNotMatch(html, /v-code__comment/);
+  assert.match(html, /github:ubugeeei\//);
+  assert.match(html, /#<span class="v-code__token v-code__command">vize<\/span>/);
 });
 
 void test("createHighlightedHtml highlights json keys and values", () => {

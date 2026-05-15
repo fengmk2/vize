@@ -1,6 +1,10 @@
 {
   "name": "vize",
+<<<<<<< HEAD
   "version": "0.70.0",
+=======
+  "version": "0.90.0",
+>>>>>>> 4a1f8bd588428ec7a8e25028edfa1e75e255caab
   "description": "Vize - High-performance Vue.js toolchain in Rust",
   "keywords": [
     "cli",
@@ -63,6 +67,7 @@
     "vite-plus": "catalog:vite-stack"
   },
   "optionalDependencies": {
+    "@pkl-community/pkl": "catalog:repo-tooling",
     "@vizejs/native-darwin-arm64": "catalog:native-binaries",
     "@vizejs/native-darwin-x64": "catalog:native-binaries",
     "@vizejs/native-linux-arm64-gnu": "catalog:native-binaries",
@@ -73,6 +78,6 @@
     "@vizejs/native-win32-x64-msvc": "catalog:native-binaries"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   }
 }

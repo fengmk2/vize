@@ -11,14 +11,80 @@
 )]
 
 use glob::glob;
-use napi::bindgen_prelude::{Env, Error, Object, Result, Status};
+use napi::bindgen_prelude::{Error, Result, Status};
 use napi_derive::napi;
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
+use serde_json::{json, Value};
 use std::{
     fs,
     sync::atomic::{AtomicUsize, Ordering},
 };
 use vize_carton::cstr;
+
+#[napi(object)]
+pub struct StyleBlockNapi {
+    pub content: String,
+    pub lang: Option<String>,
+    pub scoped: bool,
+    pub module: bool,
+    pub module_name: Option<String>,
+    pub index: u32,
+}
+
+#[napi(object)]
+pub struct MacroArtifactNapi {
+    pub kind: String,
+    pub name: String,
+    pub source: String,
+    pub content: String,
+    pub module_code: Option<String>,
+    pub start: u32,
+    pub end: u32,
+}
+
+fn macro_artifacts_to_napi(
+    artifacts: Vec<vize_atelier_sfc::SfcMacroArtifact>,
+) -> Vec<MacroArtifactNapi> {
+    artifacts
+        .into_iter()
+        .map(|artifact| MacroArtifactNapi {
+            kind: artifact.kind.into(),
+            name: artifact.name.into(),
+            source: artifact.source.into(),
+            content: artifact.content.into(),
+            module_code: artifact.module_code.map(Into::into),
+            start: artifact.start as u32,
+            end: artifact.end as u32,
+        })
+        .collect()
+}
+
+fn style_blocks_to_napi(styles: &[vize_atelier_sfc::SfcStyleBlock]) -> Vec<StyleBlockNapi> {
+    styles
+        .iter()
+        .enumerate()
+        .map(|(index, style)| {
+            let module_attr = style.attrs.get("module");
+            let module_name = module_attr.and_then(|value| {
+                let value = value.as_ref();
+                if value.is_empty() {
+                    None
+                } else {
+                    Some(value.into())
+                }
+            });
+
+            StyleBlockNapi {
+                content: style.content.as_ref().into(),
+                lang: style.lang.as_deref().map(Into::into),
+                scoped: style.scoped,
+                module: module_attr.is_some(),
+                module_name,
+                index: index as u32,
+            }
+        })
+        .collect()
+}
 
 /// SFC parse options for NAPI
 #[napi(object)]
@@ -59,6 +125,12 @@ pub struct SfcCompileResultNapi {
     pub style_hash: Option<String>,
     /// Hash of script content (for HMR)
     pub script_hash: Option<String>,
+    /// Whether the file has scoped styles
+    pub has_scoped: bool,
+    /// Per-block style metadata
+    pub styles: Vec<StyleBlockNapi>,
+    /// Compile-time macro artifacts
+    pub macro_artifacts: Vec<MacroArtifactNapi>,
 }
 
 /// Batch compile options for NAPI
@@ -120,6 +192,10 @@ pub struct BatchFileResultNapi {
     pub style_hash: Option<String>,
     /// Hash of script content (for HMR)
     pub script_hash: Option<String>,
+    /// Per-block style metadata
+    pub styles: Vec<StyleBlockNapi>,
+    /// Compile-time macro artifacts
+    pub macro_artifacts: Vec<MacroArtifactNapi>,
 }
 
 /// Batch compile result with per-file results
@@ -137,7 +213,7 @@ pub struct BatchCompileResultWithFilesNapi {
 
 /// Parse SFC (.vue file) - returns lightweight result for speed
 #[napi(js_name = "parseSfc")]
-pub fn parse_sfc(env: Env, source: String, options: Option<SfcParseOptionsNapi>) -> Result<Object> {
+pub fn parse_sfc(source: String, options: Option<SfcParseOptionsNapi>) -> Result<Value> {
     use vize_atelier_sfc::{parse_sfc as sfc_parse, SfcParseOptions};
 
     let opts = options.unwrap_or_default();
@@ -151,67 +227,67 @@ pub fn parse_sfc(env: Env, source: String, options: Option<SfcParseOptionsNapi>)
 
     match sfc_parse(&source, parse_opts) {
         Ok(descriptor) => {
-            // Build JS object directly for speed (avoid JSON serialization)
-            let mut obj = env.create_object()?;
-
-            obj.set("filename", descriptor.filename.as_ref())?;
-            obj.set("source", descriptor.source.as_ref())?;
-
-            // Template
-            if let Some(ref template) = descriptor.template {
-                let mut tpl_obj = env.create_object()?;
-                tpl_obj.set("content", template.content.as_ref())?;
-                tpl_obj.set("lang", template.lang.as_deref())?;
-                obj.set("template", tpl_obj)?;
+            let template = if let Some(ref template) = descriptor.template {
+                json!({
+                    "content": template.content.as_ref(),
+                    "lang": template.lang.as_deref(),
+                })
             } else {
-                obj.set("template", env.get_null()?)?;
-            }
+                Value::Null
+            };
 
-            // Script
-            if let Some(ref script) = descriptor.script {
-                let mut scr_obj = env.create_object()?;
-                scr_obj.set("content", script.content.as_ref())?;
-                scr_obj.set("lang", script.lang.as_deref())?;
-                scr_obj.set("setup", script.setup)?;
-                obj.set("script", scr_obj)?;
+            let script = if let Some(ref script) = descriptor.script {
+                json!({
+                    "content": script.content.as_ref(),
+                    "lang": script.lang.as_deref(),
+                    "setup": script.setup,
+                })
             } else {
-                obj.set("script", env.get_null()?)?;
-            }
+                Value::Null
+            };
 
-            // Script Setup
-            if let Some(ref script_setup) = descriptor.script_setup {
-                let mut scr_obj = env.create_object()?;
-                scr_obj.set("content", script_setup.content.as_ref())?;
-                scr_obj.set("lang", script_setup.lang.as_deref())?;
-                scr_obj.set("setup", script_setup.setup)?;
-                obj.set("scriptSetup", scr_obj)?;
+            let script_setup = if let Some(ref script_setup) = descriptor.script_setup {
+                json!({
+                    "content": script_setup.content.as_ref(),
+                    "lang": script_setup.lang.as_deref(),
+                    "setup": script_setup.setup,
+                })
             } else {
-                obj.set("scriptSetup", env.get_null()?)?;
-            }
+                Value::Null
+            };
 
-            // Styles
-            let mut styles_arr = env.create_array(descriptor.styles.len() as u32)?;
-            for (i, style) in descriptor.styles.iter().enumerate() {
-                let mut style_obj = env.create_object()?;
-                style_obj.set("content", style.content.as_ref())?;
-                style_obj.set("lang", style.lang.as_deref())?;
-                style_obj.set("scoped", style.scoped)?;
-                style_obj.set("module", style.module.as_deref())?;
-                styles_arr.set(i as u32, style_obj)?;
-            }
-            obj.set("styles", styles_arr)?;
+            let styles = descriptor
+                .styles
+                .iter()
+                .map(|style| {
+                    json!({
+                        "content": style.content.as_ref(),
+                        "lang": style.lang.as_deref(),
+                        "scoped": style.scoped,
+                        "module": style.module.as_deref(),
+                    })
+                })
+                .collect::<Vec<_>>();
+            let custom_blocks = descriptor
+                .custom_blocks
+                .iter()
+                .map(|block| {
+                    json!({
+                        "type": block.block_type.as_ref(),
+                        "content": block.content.as_ref(),
+                    })
+                })
+                .collect::<Vec<_>>();
 
-            // Custom blocks
-            let mut customs_arr = env.create_array(descriptor.custom_blocks.len() as u32)?;
-            for (i, block) in descriptor.custom_blocks.iter().enumerate() {
-                let mut block_obj = env.create_object()?;
-                block_obj.set("type", block.block_type.as_ref())?;
-                block_obj.set("content", block.content.as_ref())?;
-                customs_arr.set(i as u32, block_obj)?;
-            }
-            obj.set("customBlocks", customs_arr)?;
-
-            Ok(obj)
+            Ok(json!({
+                "filename": descriptor.filename.as_ref(),
+                "source": descriptor.source.as_ref(),
+                "template": template,
+                "script": script,
+                "scriptSetup": script_setup,
+                "styles": styles,
+                "customBlocks": custom_blocks,
+            }))
         }
         Err(e) => Err(Error::new(Status::GenericFailure, e.message.to_string())),
     }
@@ -251,6 +327,9 @@ pub fn compile_sfc(
                 template_hash: None,
                 style_hash: None,
                 script_hash: None,
+                has_scoped: false,
+                styles: vec![],
+                macro_artifacts: vec![],
             });
         }
     };
@@ -258,6 +337,7 @@ pub fn compile_sfc(
     let template_hash: Option<String> = descriptor.template_hash().map(Into::into);
     let style_hash: Option<String> = descriptor.style_hash().map(Into::into);
     let script_hash: Option<String> = descriptor.script_hash().map(Into::into);
+    let styles = style_blocks_to_napi(&descriptor.styles);
 
     // Compile
     let has_scoped = descriptor.styles.iter().any(|s| s.scoped);
@@ -311,23 +391,29 @@ pub fn compile_sfc(
     };
 
     match sfc_compile(&descriptor, compile_opts) {
-        Ok(result) => Ok(SfcCompileResultNapi {
-            code: result.code.into(),
-            css: result.css.map(Into::into),
-            errors: result
-                .errors
-                .into_iter()
-                .map(|e| e.message.into())
-                .collect(),
-            warnings: result
-                .warnings
-                .into_iter()
-                .map(|e| e.message.into())
-                .collect(),
-            template_hash: template_hash.clone(),
-            style_hash: style_hash.clone(),
-            script_hash: script_hash.clone(),
-        }),
+        Ok(result) => {
+            let macro_artifacts = macro_artifacts_to_napi(result.macro_artifacts);
+            Ok(SfcCompileResultNapi {
+                code: result.code.into(),
+                css: result.css.map(Into::into),
+                errors: result
+                    .errors
+                    .into_iter()
+                    .map(|e| e.message.into())
+                    .collect(),
+                warnings: result
+                    .warnings
+                    .into_iter()
+                    .map(|e| e.message.into())
+                    .collect(),
+                template_hash: template_hash.clone(),
+                style_hash: style_hash.clone(),
+                script_hash: script_hash.clone(),
+                has_scoped,
+                styles,
+                macro_artifacts,
+            })
+        }
         Err(e) => Ok(SfcCompileResultNapi {
             code: String::new(),
             css: None,
@@ -336,6 +422,9 @@ pub fn compile_sfc(
             template_hash,
             style_hash,
             script_hash,
+            has_scoped,
+            styles,
+            macro_artifacts: vec![],
         }),
     }
 }
@@ -553,8 +642,6 @@ pub fn compile_sfc_batch_with_results(
             )
         };
 
-        let has_scoped = source.contains("<style") && source.contains("scoped");
-
         let filename_cs: vize_carton::CompactString = filename.clone().into();
 
         // Parse
@@ -573,12 +660,14 @@ pub fn compile_sfc_batch_with_results(
                     code: String::new(),
                     css: None,
                     scope_id: scope_id.clone().into(),
-                    has_scoped,
+                    has_scoped: false,
                     errors: vec![e.message.into()],
                     warnings: vec![],
                     template_hash: None,
                     style_hash: None,
                     script_hash: None,
+                    styles: vec![],
+                    macro_artifacts: vec![],
                 });
                 return;
             }
@@ -588,6 +677,7 @@ pub fn compile_sfc_batch_with_results(
         let template_hash: Option<String> = descriptor.template_hash().map(Into::into);
         let style_hash: Option<String> = descriptor.style_hash().map(Into::into);
         let script_hash: Option<String> = descriptor.script_hash().map(Into::into);
+        let styles = style_blocks_to_napi(&descriptor.styles);
 
         // Compile
         // Preserve TypeScript in output - let Vite/esbuild handle TS transformation
@@ -632,6 +722,7 @@ pub fn compile_sfc_batch_with_results(
 
         match sfc_compile(&descriptor, compile_opts) {
             Ok(result) => {
+                let macro_artifacts = macro_artifacts_to_napi(result.macro_artifacts);
                 success_count.fetch_add(1, Ordering::Relaxed);
                 let mut guard = results.lock().unwrap();
                 guard.push(BatchFileResultNapi {
@@ -653,6 +744,8 @@ pub fn compile_sfc_batch_with_results(
                     template_hash: template_hash.clone(),
                     style_hash: style_hash.clone(),
                     script_hash: script_hash.clone(),
+                    styles,
+                    macro_artifacts,
                 });
             }
             Err(e) => {
@@ -669,6 +762,8 @@ pub fn compile_sfc_batch_with_results(
                     template_hash,
                     style_hash,
                     script_hash,
+                    styles,
+                    macro_artifacts: vec![],
                 });
             }
         }

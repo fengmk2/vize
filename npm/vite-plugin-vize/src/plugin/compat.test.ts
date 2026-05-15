@@ -18,6 +18,7 @@ function createState(overrides: Partial<VizePluginState> = {}): VizePluginState 
     server: null,
     filter: () => true,
     scanPatterns: ["**/*.vue"],
+    precompileBatchSize: 128,
     ignorePatterns: [],
     mergedOptions: {},
     initialized: true,
@@ -68,6 +69,11 @@ const msg = 'hello'
     result.code,
     /document\.createElement/,
     "SSR post-transforms should stay free of document-based side effects",
+  );
+  assert.equal(
+    result.map,
+    null,
+    "SSR post-transforms should not allocate discarded OXC sourcemaps",
   );
 }
 

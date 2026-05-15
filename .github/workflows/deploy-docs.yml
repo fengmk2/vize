@@ -11,8 +11,6 @@ env:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages-${{ github.ref }}
@@ -78,7 +76,7 @@ jobs:
 
       - name: Cache WASM build
         id: cache-wasm
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             npm/vize-wasm
@@ -89,7 +87,7 @@ jobs:
         if: steps.cache-wasm.outputs.cache-hit != 'true'
         uses: taiki-e/install-action@v2
         with:
-          tool: wasm-bindgen-cli@0.2.118
+          tool: wasm-bindgen-cli@0.2.121
 
       - name: Build WASM
         if: steps.cache-wasm.outputs.cache-hit != 'true'
@@ -129,6 +127,10 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: [build-docs, build-playground]
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

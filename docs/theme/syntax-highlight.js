@@ -108,6 +108,7 @@ const vizeDocsSyntax = (() => {
     "check-server",
     "clippy",
     "create",
+    "dev",
     "develop",
     "exec",
     "fmt",
@@ -242,8 +243,14 @@ const vizeDocsSyntax = (() => {
       "v-code__string",
       store,
     );
-    result = replaceWithClass(result, /<\/?[\w:-]+/g, "v-code__tag", store);
+    result = replaceWithCallback(
+      result,
+      /(^|[^\w$])(<\/?[\w:-]+)/g,
+      (_, prefix, tag) => `${escapeHtml(prefix)}${wrapToken("v-code__tag", tag)}`,
+      store,
+    );
     result = replaceWithClass(result, /\{\{|\}\}/g, "v-code__delimiter", store);
+    result = replaceWithClass(result, /\/?>/g, "v-code__delimiter", store);
     result = replaceWithClass(
       result,
       /\b(v-[\w:-]+|@[\w.-]+|:[\w.-]+|#[\w.-]+)\b/g,
@@ -257,6 +264,38 @@ const vizeDocsSyntax = (() => {
       store,
     );
 
+    return result;
+  }
+
+  function highlightVue(source, store) {
+    const blockPattern = /<(script|template|style)\b[^>]*>[\s\S]*?<\/\1>/gi;
+    let result = "";
+    let lastIndex = 0;
+
+    for (const match of source.matchAll(blockPattern)) {
+      const block = match[0];
+      const blockName = match[1].toLowerCase();
+      const start = match.index ?? 0;
+      const openEnd = block.indexOf(">") + 1;
+      const closeStart = block.toLowerCase().lastIndexOf(`</${blockName}`);
+      const openTag = block.slice(0, openEnd);
+      const body = block.slice(openEnd, closeStart);
+      const closeTag = block.slice(closeStart);
+
+      result += highlightMarkup(source.slice(lastIndex, start), store);
+      result += highlightMarkup(openTag, store);
+      if (blockName === "script") {
+        result += highlightScriptLike(body, store, { highlightVariables: true });
+      } else if (blockName === "template") {
+        result += highlightMarkup(body, store);
+      } else {
+        result += highlightConfig(body, store);
+      }
+      result += highlightMarkup(closeTag, store);
+      lastIndex = start + block.length;
+    }
+
+    result += highlightMarkup(source.slice(lastIndex), store);
     return result;
   }
 
@@ -276,7 +315,7 @@ const vizeDocsSyntax = (() => {
 
     result = replaceWithCallback(
       result,
-      /(^|[^\\])(#.*$)/gm,
+      /(^|[\t ])(#.*$)/gm,
       (_, prefix, comment) => `${escapeHtml(prefix)}${wrapToken("v-code__comment", comment)}`,
       store,
     );
@@ -451,8 +490,7 @@ const vizeDocsSyntax = (() => {
     switch (normalizedLanguage) {
       case "art-vue":
       case "vue":
-        result = highlightMarkup(result, store);
-        result = highlightScriptLike(result, store, { highlightVariables: true });
+        result = highlightVue(result, store);
         break;
       case "javascript":
       case "typescript":
@@ -498,7 +536,7 @@ const vizeDocsSyntax = (() => {
       if (!candidate) {
         continue;
       }
-      const match = candidate.match(/(?:^|language-|lang-)([\w-]+)$/);
+      const match = candidate.match(/^(?:language-|lang-)?([\w-]+)$/);
       const normalized = normalizeLanguage(match?.[1] ?? candidate);
       if (normalized !== "text") {
         return normalized;

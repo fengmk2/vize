@@ -130,10 +130,9 @@ pub fn run(args: FmtArgs) {
                 }
 
                 if let (Some(profile), Some(profile_rows)) = (result.profile, profile_rows.as_ref())
+                    && let Ok(mut rows) = profile_rows.lock()
                 {
-                    if let Ok(mut rows) = profile_rows.lock() {
-                        rows.push(profile);
-                    }
+                    rows.push(profile);
                 }
             }
             Err(err) => {

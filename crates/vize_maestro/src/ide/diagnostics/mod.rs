@@ -320,7 +320,7 @@ pub(super) fn offset_to_line_col(source: &str, offset: usize) -> (u32, u32) {
             line += 1;
             col = 0;
         } else {
-            col += 1;
+            col += ch.len_utf16() as u32;
         }
         current_offset += ch.len_utf8();
     }
@@ -330,7 +330,7 @@ pub(super) fn offset_to_line_col(source: &str, offset: usize) -> (u32, u32) {
 
 #[cfg(test)]
 mod tests {
-    use super::{DiagnosticBuilder, DiagnosticService, Severity, sources};
+    use super::{DiagnosticBuilder, DiagnosticService, Severity, offset_to_line_col, sources};
     use crate::server::ServerState;
     use tower_lsp::lsp_types::{DiagnosticSeverity, NumberOrString, Url};
 
@@ -378,6 +378,14 @@ mod tests {
     }
 
     #[test]
+    fn offset_to_line_col_counts_utf16_code_units() {
+        let source = "const icon = \"😀\"; missing";
+        let offset = source.find("missing").unwrap();
+
+        assert_eq!(offset_to_line_col(source, offset), (0, 19));
+    }
+
+    #[test]
     fn collect_short_circuits_dependent_diagnostics_after_sfc_parse_error() {
         let state = state_with_lsp_diagnostics(true, true);
         let uri = Url::parse("file:///Broken.vue").unwrap();
@@ -420,6 +428,31 @@ mod tests {
                 .iter()
                 .any(|diagnostic| diagnostic.source.as_deref() == Some(sources::SFC_PARSER))
         );
+    }
+
+    #[test]
+    fn collect_surfaces_sfc_level_lint_diagnostics() {
+        let state = state_with_lsp_diagnostics(true, false);
+        let uri = Url::parse("file:///OutOfOrder.vue").unwrap();
+        state.documents.open(
+            uri.clone(),
+            "<template><div /></template>\n<script setup>const count = 1</script>".to_string(),
+            1,
+            "vue".to_string(),
+        );
+
+        let diagnostics = DiagnosticService::collect(&state, &uri);
+        let diagnostic = diagnostics
+            .iter()
+            .find(|diagnostic| {
+                diagnostic.source.as_deref() == Some(sources::LINTER)
+                    && diagnostic.code
+                        == Some(NumberOrString::String("vue/sfc-element-order".to_string()))
+            })
+            .expect("SFC-level lint diagnostic");
+
+        assert_eq!(diagnostic.range.start.line, 1);
+        assert!(diagnostic.message.contains("<script> should come before"));
     }
 
     #[test]

@@ -162,10 +162,9 @@ fn collect_supported_files(
                     && is_supported_check_file(path)
                     && (!skip_generated || !is_generated_path(path))
                     && matches_tsconfig_patterns(path, includes, excludes)
+                    && let Ok(mut collected) = collected.lock()
                 {
-                    if let Ok(mut collected) = collected.lock() {
-                        collected.push(normalize_input_path(path));
-                    }
+                    collected.push(normalize_input_path(path));
                 }
             }
             ignore::WalkState::Continue

@@ -174,10 +174,10 @@ impl<'a> TypeIntelligence<'a> {
     /// Get the cursor context at the given offset.
     #[inline]
     pub fn cursor_context(&self, offset: u32) -> CursorContext {
-        if let Some(map) = self.source_map {
-            if let Some(mapping) = map.find_by_source(offset) {
-                return mapping.kind.into();
-            }
+        if let Some(map) = self.source_map
+            && let Some(mapping) = map.find_by_source(offset)
+        {
+            return mapping.kind.into();
         }
 
         // Fallback: check if in script block

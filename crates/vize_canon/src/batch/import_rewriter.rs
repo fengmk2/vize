@@ -143,10 +143,10 @@ impl ImportRewriter {
                     }
                 }
                 Statement::ExportNamedDeclaration(decl) => {
-                    if let Some(source) = &decl.source {
-                        if let Some(rewrite) = rewrite_specifier(&source.value) {
-                            rewrites.push((source.span.start + 1, source.span.end - 1, rewrite));
-                        }
+                    if let Some(source) = &decl.source
+                        && let Some(rewrite) = rewrite_specifier(&source.value)
+                    {
+                        rewrites.push((source.span.start + 1, source.span.end - 1, rewrite));
                     }
                 }
                 Statement::ExportAllDeclaration(decl) => {

@@ -130,10 +130,10 @@ impl CompositeSourceMap {
         virtual_offset: u32,
     ) -> Option<(u32, u32, Option<SfcBlockType>)> {
         let after_import = self.import_map.get_original_offset(virtual_offset);
-        if let Some(ref sfc_map) = self.sfc_map {
-            if let Some((offset, column, block)) = sfc_map.get_original_position(after_import) {
-                return Some((offset, column, Some(block)));
-            }
+        if let Some(ref sfc_map) = self.sfc_map
+            && let Some((offset, column, block)) = sfc_map.get_original_position(after_import)
+        {
+            return Some((offset, column, Some(block)));
         }
         Some((after_import, 0, None))
     }

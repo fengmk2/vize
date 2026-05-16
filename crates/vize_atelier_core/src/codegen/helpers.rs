@@ -52,11 +52,11 @@ pub fn decode_html_entities(s: &str) -> String {
                     num_str.parse::<u32>().ok()
                 };
 
-                if let Some(cp) = codepoint {
-                    if let Some(decoded_char) = char::from_u32(cp) {
-                        result.push(decoded_char);
-                        continue;
-                    }
+                if let Some(cp) = codepoint
+                    && let Some(decoded_char) = char::from_u32(cp)
+                {
+                    result.push(decoded_char);
+                    continue;
                 }
             }
 

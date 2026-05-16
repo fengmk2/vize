@@ -98,10 +98,10 @@ fn parse_slot_pattern(pattern_str: &str) -> SmallVec<[CompactString; 4]> {
 
     let mut props = SmallVec::new();
 
-    if let Some(oxc_ast::ast::Statement::VariableDeclaration(var_decl)) = ret.program.body.first() {
-        if let Some(declarator) = var_decl.declarations.first() {
-            extract_slot_binding_names(&declarator.id, &mut props);
-        }
+    if let Some(oxc_ast::ast::Statement::VariableDeclaration(var_decl)) = ret.program.body.first()
+        && let Some(declarator) = var_decl.declarations.first()
+    {
+        extract_slot_binding_names(&declarator.id, &mut props);
     }
 
     props

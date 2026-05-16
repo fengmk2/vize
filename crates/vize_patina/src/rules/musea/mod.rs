@@ -220,21 +220,21 @@ impl MuseaLinter {
             }
 
             // Check unique-variant-names
-            if let Some(name) = name_value {
-                if self.check_unique_variant_names {
-                    if seen_names.contains(name) {
-                        result.add_diagnostic(
-                            LintDiagnostic::error(
-                                "musea/unique-variant-names",
-                                "Duplicate variant name",
-                                abs_pos as u32,
-                                (abs_pos + tag_end) as u32,
-                            )
-                            .with_help("Use a unique name for each variant"),
-                        );
-                    } else {
-                        seen_names.insert(name);
-                    }
+            if let Some(name) = name_value
+                && self.check_unique_variant_names
+            {
+                if seen_names.contains(name) {
+                    result.add_diagnostic(
+                        LintDiagnostic::error(
+                            "musea/unique-variant-names",
+                            "Duplicate variant name",
+                            abs_pos as u32,
+                            (abs_pos + tag_end) as u32,
+                        )
+                        .with_help("Use a unique name for each variant"),
+                    );
+                } else {
+                    seen_names.insert(name);
                 }
             }
 

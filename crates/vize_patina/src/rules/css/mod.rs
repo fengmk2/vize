@@ -276,17 +276,17 @@ impl DisabledRules {
     /// Check if a rule is disabled at a given line
     pub fn is_disabled(&self, rule_name: &str, line: usize) -> bool {
         // Check line-specific disables
-        if let Some((_, set)) = self.line_disabled.iter().find(|(l, _)| *l == line) {
-            if set.contains(rule_name) {
-                return true;
-            }
+        if let Some((_, set)) = self.line_disabled.iter().find(|(l, _)| *l == line)
+            && set.contains(rule_name)
+        {
+            return true;
         }
 
         // Check next-line disables
-        if let Some((_, set)) = self.next_line_disabled.iter().find(|(l, _)| *l == line) {
-            if set.contains(rule_name) {
-                return true;
-            }
+        if let Some((_, set)) = self.next_line_disabled.iter().find(|(l, _)| *l == line)
+            && set.contains(rule_name)
+        {
+            return true;
         }
 
         // Check block disables (need to track state across all lines up to this one)

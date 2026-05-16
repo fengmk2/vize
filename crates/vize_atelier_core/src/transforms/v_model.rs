@@ -39,15 +39,14 @@ pub fn get_vmodel_helper(el: &ElementNode<'_>) -> RuntimeHelper {
         "input" => {
             // Check input type
             for prop in el.props.iter() {
-                if let PropNode::Attribute(attr) = prop {
-                    if attr.name == "type" {
-                        if let Some(value) = &attr.value {
-                            match value.content.as_str() {
-                                "checkbox" => return RuntimeHelper::VModelCheckbox,
-                                "radio" => return RuntimeHelper::VModelRadio,
-                                _ => {}
-                            }
-                        }
+                if let PropNode::Attribute(attr) = prop
+                    && attr.name == "type"
+                    && let Some(value) = &attr.value
+                {
+                    match value.content.as_str() {
+                        "checkbox" => return RuntimeHelper::VModelCheckbox,
+                        "radio" => return RuntimeHelper::VModelRadio,
+                        _ => {}
                     }
                 }
             }
@@ -188,15 +187,14 @@ pub fn get_model_event_prop(el: &ElementNode<'_>) -> (&'static str, &'static str
             "input" => {
                 // Check input type
                 for prop in el.props.iter() {
-                    if let PropNode::Attribute(attr) = prop {
-                        if attr.name == "type" {
-                            if let Some(value) = &attr.value {
-                                match value.content.as_str() {
-                                    "checkbox" => return ("change", "checked"),
-                                    "radio" => return ("change", "checked"),
-                                    _ => {}
-                                }
-                            }
+                    if let PropNode::Attribute(attr) = prop
+                        && attr.name == "type"
+                        && let Some(value) = &attr.value
+                    {
+                        match value.content.as_str() {
+                            "checkbox" => return ("change", "checked"),
+                            "radio" => return ("change", "checked"),
+                            _ => {}
                         }
                     }
                 }

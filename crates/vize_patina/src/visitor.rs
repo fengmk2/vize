@@ -135,10 +135,10 @@ impl<'a, 'ctx, 'rules> LintVisitor<'a, 'ctx, 'rules> {
                 self.ctx.pop_ignore_region(line);
             }
             DirectiveKind::Level => {
-                if let Some(d) = parse_vize_directive(&comment.content, line, loc.start.offset) {
-                    if let Some(severity) = parse_level_severity(&d.payload) {
-                        self.ctx.set_severity_override_next_line(line, severity);
-                    }
+                if let Some(d) = parse_vize_directive(&comment.content, line, loc.start.offset)
+                    && let Some(severity) = parse_level_severity(&d.payload)
+                {
+                    self.ctx.set_severity_override_next_line(line, severity);
                 }
             }
             DirectiveKind::Deprecated => {
@@ -265,12 +265,11 @@ impl<'a, 'ctx, 'rules> LintVisitor<'a, 'ctx, 'rules> {
     #[inline]
     fn extract_v_for_vars(&self, el: &ElementNode<'a>) -> Vec<CompactString> {
         for prop in el.props.iter() {
-            if let PropNode::Directive(dir) = prop {
-                if dir.name.as_str() == "for" {
-                    if let Some(exp) = &dir.exp {
-                        return parse_v_for_variables(exp);
-                    }
-                }
+            if let PropNode::Directive(dir) = prop
+                && dir.name.as_str() == "for"
+                && let Some(exp) = &dir.exp
+            {
+                return parse_v_for_variables(exp);
             }
         }
         Vec::new()

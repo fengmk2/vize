@@ -228,14 +228,14 @@ pub(super) fn lint_with_descriptor<'a>(
                         should_warn_for_emits |= should_warn_for_emit_validator(probe.as_ref());
                     }
                     QueryKind::Promise => {
-                        if let Some(probe) = probe.as_ref() {
-                            if has_promise_like_return(probe)
+                        if let Some(probe) = probe.as_ref()
+                            && (has_promise_like_return(probe)
                                 || corsa::utils::is_promise_like_type_texts(
                                     &probe.type_texts,
                                     &probe.property_names,
-                                )
-                            {
-                                push_warning(
+                                ))
+                        {
+                            push_warning(
                                 &mut result,
                                 LintDiagnostic::warn(
                                     RULE_NO_FLOATING_PROMISES,
@@ -247,7 +247,6 @@ pub(super) fn lint_with_descriptor<'a>(
                                     "Add `await`, return the Promise, or prefix it with `void` when the fire-and-forget behavior is intentional.",
                                 ),
                             );
-                            }
                         }
                     }
                 }

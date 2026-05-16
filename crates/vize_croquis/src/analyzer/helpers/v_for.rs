@@ -126,10 +126,10 @@ fn parse_v_for_pattern(
 
     let mut vars = SmallVec::new();
 
-    if let Some(oxc_ast::ast::Statement::VariableDeclaration(var_decl)) = ret.program.body.first() {
-        if let Some(declarator) = var_decl.declarations.first() {
-            extract_binding_names(&declarator.id, &mut vars);
-        }
+    if let Some(oxc_ast::ast::Statement::VariableDeclaration(var_decl)) = ret.program.body.first()
+        && let Some(declarator) = var_decl.declarations.first()
+    {
+        extract_binding_names(&declarator.id, &mut vars);
     }
 
     (vars, source)

@@ -1,6 +1,8 @@
 use super::{
     TemplateContext, TemplatePromiseQuery, TemplateQuery, TemplateQueryKind,
-    absolute_expression_range, calls::collect_template_call_ranges, generated_offset_for_text,
+    absolute_expression_range,
+    calls::{FloatingPromiseProbeTarget, collect_template_call_ranges},
+    generated_offset_for_text,
 };
 use vize_carton::profile;
 use vize_croquis::virtual_ts::VirtualTsOutput;
@@ -299,20 +301,23 @@ fn collect_expression_query_sets(
         )
     );
 
-    if let (Some(queries), Some(generated_offset)) = (
-        sinks.template_queries.as_deref_mut(),
-        expression_generated_offset,
-    ) {
-        queries.push(TemplateQuery {
-            kind: TemplateQueryKind::Expression,
-            context,
-            generated_offset,
-            source_start,
-            source_end,
-            owner_start: source_start,
-            owner_end: source_end,
-        });
-
+    if let Some(queries) = sinks.template_queries.as_deref_mut() {
+        if call_ranges.expression_consumes_source
+            && let Some(generated_offset) = expression_generated_offset
+        {
+            let generated_offset =
+                expression_binding_generated_offset(&virtual_ts.content, generated_offset)
+                    .unwrap_or(generated_offset);
+            queries.push(TemplateQuery {
+                kind: TemplateQueryKind::Expression,
+                context,
+                generated_offset,
+                source_start,
+                source_end,
+                owner_start: source_start,
+                owner_end: source_end,
+            });
+        }
         for callee in call_ranges.callees {
             let callee_start = source_start + callee.start;
             let callee_end = source_start + callee.end;
@@ -352,6 +357,17 @@ fn collect_expression_query_sets(
             else {
                 continue;
             };
+            let generated_offset = match candidate.probe_target {
+                FloatingPromiseProbeTarget::SourceText => generated_offset,
+                FloatingPromiseProbeTarget::ExpressionBinding => {
+                    let Some(binding_offset) =
+                        expression_binding_generated_offset(&virtual_ts.content, generated_offset)
+                    else {
+                        continue;
+                    };
+                    binding_offset
+                }
+            };
             queries.push(TemplatePromiseQuery {
                 context,
                 generated_offset,
@@ -359,5 +375,39 @@ fn collect_expression_query_sets(
                 source_end: candidate_end,
             });
         }
+    }
+}
+
+fn expression_binding_generated_offset(generated: &str, expression_offset: u32) -> Option<u32> {
+    let offset = usize::min(expression_offset as usize, generated.len());
+    let before_offset = generated.get(..offset)?;
+    let after_offset = generated.get(offset..)?;
+    let line_start = before_offset.rfind('\n').map_or(0, |index| index + 1);
+    let line_end = after_offset
+        .find('\n')
+        .map_or(generated.len(), |index| offset + index);
+    let line = generated.get(line_start..line_end)?;
+    let const_start = line.find("const __expr_")?;
+    let name_start = const_start + "const ".len();
+    let name_end = line.get(name_start..)?.find(" = ")? + name_start;
+    (name_end > name_start).then_some((line_start + name_end - 1) as u32)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::expression_binding_generated_offset;
+
+    #[test]
+    fn finds_expression_binding_offset_on_generated_line() {
+        let generated = "  const __expr_42 = actions[method];\n";
+        let expression_offset = generated.find("method").unwrap() as u32;
+
+        let binding_offset = expression_binding_generated_offset(generated, expression_offset)
+            .expect("binding offset");
+
+        assert_eq!(
+            &generated[binding_offset as usize..binding_offset as usize + 1],
+            "2"
+        );
     }
 }

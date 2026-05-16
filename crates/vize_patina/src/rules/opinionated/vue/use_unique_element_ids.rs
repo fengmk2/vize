@@ -203,10 +203,10 @@ impl Rule for UseUniqueElementIds {
                     }
                 }
                 // Check for static ID reference attributes (for, aria-labelledby, etc.)
-                else if Self::is_id_reference_attr(name) {
-                    if let Some(value) = &attr.value {
-                        self.report_static_id(ctx, &attr.loc, value.content.as_str(), true);
-                    }
+                else if Self::is_id_reference_attr(name)
+                    && let Some(value) = &attr.value
+                {
+                    self.report_static_id(ctx, &attr.loc, value.content.as_str(), true);
                 }
             }
         }

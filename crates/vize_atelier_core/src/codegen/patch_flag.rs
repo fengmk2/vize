@@ -98,21 +98,20 @@ fn calculate_element_patch_info_inner(
 
     for prop in el.props.iter() {
         // Check for ref attribute (static)
-        if let PropNode::Attribute(attr) = prop {
-            if attr.name == "ref" {
-                has_ref = true;
-            }
+        if let PropNode::Attribute(attr) = prop
+            && attr.name == "ref"
+        {
+            has_ref = true;
         }
         if let PropNode::Directive(dir) = prop {
             match dir.name.as_str() {
                 "bind" => {
                     // Skip `:is` binding for dynamic components
-                    if skip_is {
-                        if let Some(ExpressionNode::Simple(arg)) = &dir.arg {
-                            if arg.content == "is" {
-                                continue;
-                            }
-                        }
+                    if skip_is
+                        && let Some(ExpressionNode::Simple(arg)) = &dir.arg
+                        && arg.content == "is"
+                    {
+                        continue;
                     }
 
                     // Check for modifiers

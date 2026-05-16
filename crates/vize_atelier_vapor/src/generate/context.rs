@@ -217,10 +217,10 @@ impl<'a> GenerateContext<'a> {
                 }
             }
 
-            if let Some(ref key_alias) = scope.key_alias {
-                if name == key_alias.as_str() {
-                    return Some(cstr!("_for_key{}.value", scope.depth));
-                }
+            if let Some(ref key_alias) = scope.key_alias
+                && name == key_alias.as_str()
+            {
+                return Some(cstr!("_for_key{}.value", scope.depth));
             }
         }
 
@@ -335,10 +335,10 @@ impl<'a> GenerateContext<'a> {
 
     pub(crate) fn mark_component_resolved(&mut self, component: &str) {
         let component = component.to_compact_string();
-        if self.resolved_components.insert(component.clone()) {
-            if let Some(scope) = self.resolved_component_scopes.last_mut() {
-                scope.push(component);
-            }
+        if self.resolved_components.insert(component.clone())
+            && let Some(scope) = self.resolved_component_scopes.last_mut()
+        {
+            scope.push(component);
         }
     }
 

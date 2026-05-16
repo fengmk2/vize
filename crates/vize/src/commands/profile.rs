@@ -164,10 +164,10 @@ fn render_file_table(mut out: &mut String, report: &ProfileReport<'_>) {
         appends!(out, "  ");
         append!(out, "{}", file.path.display());
 
-        if let Some(note) = file.note.as_ref() {
-            if !note.is_empty() {
-                appends!(out, DIM, "  ", note.as_str(), RESET);
-            }
+        if let Some(note) = file.note.as_ref()
+            && !note.is_empty()
+        {
+            appends!(out, DIM, "  ", note.as_str(), RESET);
         }
         out.push('\n');
     }

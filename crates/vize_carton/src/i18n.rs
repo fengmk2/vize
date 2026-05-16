@@ -214,10 +214,10 @@ impl Translator {
         }
 
         // Fall back to English
-        if locale != Locale::En {
-            if let Some(msg) = self.messages[0].get(key) {
-                return Cow::Borrowed(*msg);
-            }
+        if locale != Locale::En
+            && let Some(msg) = self.messages[0].get(key)
+        {
+            return Cow::Borrowed(*msg);
         }
 
         // Return key as fallback (for debugging)
@@ -395,10 +395,10 @@ fn unescape_json_string(s: &str) -> String {
                 Some('u') => {
                     // Unicode escape: \uXXXX
                     let hex: String = chars.by_ref().take(4).collect();
-                    if let Ok(cp) = u32::from_str_radix(&hex, 16) {
-                        if let Some(c) = char::from_u32(cp) {
-                            result.push(c);
-                        }
+                    if let Ok(cp) = u32::from_str_radix(&hex, 16)
+                        && let Some(c) = char::from_u32(cp)
+                    {
+                        result.push(c);
                     }
                 }
                 Some(other) => {

@@ -62,10 +62,10 @@ impl NoUnusedComponents {
         }
 
         // Check custom ignore pattern
-        if let Some(ref pattern) = self.ignore_pattern {
-            if name.starts_with(pattern.as_str()) {
-                return true;
-            }
+        if let Some(ref pattern) = self.ignore_pattern
+            && name.starts_with(pattern.as_str())
+        {
+            return true;
         }
 
         false

@@ -250,10 +250,10 @@ impl CorsaBridge {
 
     /// Clear diagnostics cache.
     pub fn clear_cache(&self) {
-        if let Ok(mut guard) = self.client.lock() {
-            if let Some(client) = guard.as_mut() {
-                client.clear_diagnostics_cache();
-            }
+        if let Ok(mut guard) = self.client.lock()
+            && let Some(client) = guard.as_mut()
+        {
+            client.clear_diagnostics_cache();
         }
         self.cache_stats.set_entries(0);
         self.cache_stats.reset();

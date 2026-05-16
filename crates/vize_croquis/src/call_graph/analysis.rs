@@ -190,16 +190,16 @@ impl CallGraph {
         out.push_str("## Function Call Graph\n\n");
 
         // Setup function
-        if let Some(setup_id) = self.setup_function {
-            if let Some(func) = self.get_function(setup_id) {
-                append!(
-                    out,
-                    "**Setup Function**: `{}` (offset: {}..{})\n\n",
-                    func.name.as_deref().unwrap_or("<anonymous>"),
-                    func.start,
-                    func.end
-                );
-            }
+        if let Some(setup_id) = self.setup_function
+            && let Some(func) = self.get_function(setup_id)
+        {
+            append!(
+                out,
+                "**Setup Function**: `{}` (offset: {}..{})\n\n",
+                func.name.as_deref().unwrap_or("<anonymous>"),
+                func.start,
+                func.end
+            );
         }
 
         // Functions in setup context

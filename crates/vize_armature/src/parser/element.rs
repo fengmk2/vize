@@ -38,13 +38,12 @@ impl<'a> Parser<'a> {
         if let Some(merge_start) = merge_start_off {
             let end_pos = self.get_pos(end);
             let source_span = self.get_source(merge_start, end).into();
-            if let Some(entry) = self.stack.last_mut() {
-                if let Some(TemplateChildNode::Text(text_node)) = entry.element.children.last_mut()
-                {
-                    text_node.content.push_str(content);
-                    text_node.loc.end = end_pos;
-                    text_node.loc.source = source_span;
-                }
+            if let Some(entry) = self.stack.last_mut()
+                && let Some(TemplateChildNode::Text(text_node)) = entry.element.children.last_mut()
+            {
+                text_node.content.push_str(content);
+                text_node.loc.end = end_pos;
+                text_node.loc.source = source_span;
             }
         } else {
             let loc = self.create_loc(start, end);
@@ -292,10 +291,10 @@ impl<'a> Parser<'a> {
         }
 
         // Custom element check
-        if let Some(is_custom) = self.options.is_custom_element {
-            if is_custom(tag) {
-                return false;
-            }
+        if let Some(is_custom) = self.options.is_custom_element
+            && is_custom(tag)
+        {
+            return false;
         }
 
         if self.options.custom_renderer {

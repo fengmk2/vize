@@ -87,16 +87,16 @@ pub(crate) fn run(args: BuildArgs) {
                         .fetch_add(output.code.len(), Ordering::Relaxed);
 
                     // Check for slow files
-                    if profile.is_slow(slow_threshold) {
-                        if let Ok(mut slow) = slow_files.lock() {
-                            slow.push(profile.clone());
-                        }
+                    if profile.is_slow(slow_threshold)
+                        && let Ok(mut slow) = slow_files.lock()
+                    {
+                        slow.push(profile.clone());
                     }
 
-                    if args.profile {
-                        if let Ok(mut p) = profiles.lock() {
-                            p.push(profile);
-                        }
+                    if args.profile
+                        && let Ok(mut p) = profiles.lock()
+                    {
+                        p.push(profile);
                     }
 
                     Some((path.clone(), output))
@@ -437,16 +437,17 @@ fn parse_pattern(pattern: &str) -> (String, String) {
         return (pattern.to_compact_string(), cstr!("{}/**/*.vue", pattern));
     }
 
-    if path.is_file() && pattern.ends_with(".vue") {
-        if let Some(parent) = path.parent() {
-            let parent_str = parent.to_string_lossy();
-            let parent_str = if parent_str.is_empty() {
-                "."
-            } else {
-                &parent_str
-            };
-            return (parent_str.to_compact_string(), pattern.to_compact_string());
-        }
+    if path.is_file()
+        && pattern.ends_with(".vue")
+        && let Some(parent) = path.parent()
+    {
+        let parent_str = parent.to_string_lossy();
+        let parent_str = if parent_str.is_empty() {
+            "."
+        } else {
+            &parent_str
+        };
+        return (parent_str.to_compact_string(), pattern.to_compact_string());
     }
 
     (".".into(), pattern.to_compact_string())
@@ -461,13 +462,12 @@ fn pattern_matches(path: &std::path::Path, pattern: &str) -> bool {
         return path_str.ends_with(".vue");
     }
 
-    if pattern.contains("**/*.vue") {
-        if let Some(prefix_end) = pattern.find("**") {
-            let prefix = &pattern[..prefix_end];
-            let prefix_normalized = prefix.trim_end_matches('/');
-            return path_str.contains(&format!("{}/", prefix_normalized))
-                && path_str.ends_with(".vue");
-        }
+    if pattern.contains("**/*.vue")
+        && let Some(prefix_end) = pattern.find("**")
+    {
+        let prefix = &pattern[..prefix_end];
+        let prefix_normalized = prefix.trim_end_matches('/');
+        return path_str.contains(&format!("{}/", prefix_normalized)) && path_str.ends_with(".vue");
     }
 
     if pattern.ends_with(".vue") {

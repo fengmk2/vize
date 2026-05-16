@@ -97,32 +97,32 @@ pub fn generate_model_props(
     let mut props = Vec::new();
 
     // Get expression
-    if let Some(ref exp) = dir.exp {
-        if let vize_atelier_core::ExpressionNode::Simple(simple) = exp {
-            let model_value = simple.content.clone();
+    if let Some(ref exp) = dir.exp
+        && let vize_atelier_core::ExpressionNode::Simple(simple) = exp
+    {
+        let model_value = simple.content.clone();
 
-            // Add value binding
-            props.push((String::from("value"), model_value.clone()));
+        // Add value binding
+        props.push((String::from("value"), model_value.clone()));
 
-            // Build event handler expression
-            let mut handler = cstr!("$event => (({model_value}) = $event.target.value)");
+        // Build event handler expression
+        let mut handler = cstr!("$event => (({model_value}) = $event.target.value)");
 
-            // Apply modifiers
-            if modifiers.trim {
-                handler = cstr!("$event => (({model_value}) = $event.target.value.trim())");
-            }
-            if modifiers.number {
-                handler = cstr!("$event => (({model_value}) = Number($event.target.value))");
-            }
-
-            // Add event handler
-            let event_name = if modifiers.lazy {
-                "onChange"
-            } else {
-                "onInput"
-            };
-            props.push((String::from(event_name), handler));
+        // Apply modifiers
+        if modifiers.trim {
+            handler = cstr!("$event => (({model_value}) = $event.target.value.trim())");
         }
+        if modifiers.number {
+            handler = cstr!("$event => (({model_value}) = Number($event.target.value))");
+        }
+
+        // Add event handler
+        let event_name = if modifiers.lazy {
+            "onChange"
+        } else {
+            "onInput"
+        };
+        props.push((String::from(event_name), handler));
     }
 
     props

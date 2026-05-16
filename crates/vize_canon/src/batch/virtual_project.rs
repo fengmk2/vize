@@ -265,10 +265,10 @@ impl VirtualProject {
             (|| -> CorsaResult<()> {
                 let mut created_dirs = FxHashSet::default();
                 for file in self.virtual_files.values() {
-                    if let Some(parent) = file.virtual_path.parent() {
-                        if created_dirs.insert(parent.to_path_buf()) {
-                            std::fs::create_dir_all(parent)?;
-                        }
+                    if let Some(parent) = file.virtual_path.parent()
+                        && created_dirs.insert(parent.to_path_buf())
+                    {
+                        std::fs::create_dir_all(parent)?;
                     }
                     std::fs::write(&file.virtual_path, &file.content)?;
                 }

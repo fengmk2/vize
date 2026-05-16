@@ -15,20 +15,20 @@ pub fn is_v_text(dir: &DirectiveNode<'_>) -> bool {
 
 /// Generate v-text expression
 pub fn generate_text_content(dir: &DirectiveNode<'_>) -> String {
-    if let Some(ref exp) = dir.exp {
-        if let vize_atelier_core::ExpressionNode::Simple(simple) = exp {
-            return cstr!("_toDisplayString({})", simple.content);
-        }
+    if let Some(ref exp) = dir.exp
+        && let vize_atelier_core::ExpressionNode::Simple(simple) = exp
+    {
+        return cstr!("_toDisplayString({})", simple.content);
     }
     String::from("''")
 }
 
 /// Generate children replacement for v-text
 pub fn generate_text_children(dir: &DirectiveNode<'_>) -> Option<String> {
-    if let Some(ref exp) = dir.exp {
-        if let vize_atelier_core::ExpressionNode::Simple(simple) = exp {
-            return Some(cstr!("_toDisplayString({})", simple.content));
-        }
+    if let Some(ref exp) = dir.exp
+        && let vize_atelier_core::ExpressionNode::Simple(simple) = exp
+    {
+        return Some(cstr!("_toDisplayString({})", simple.content));
     }
     None
 }

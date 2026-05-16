@@ -124,18 +124,16 @@ impl<'a> Visit<'a> for ModuleSpecifierCollector {
     }
 
     fn visit_call_expression(&mut self, expression: &CallExpression<'a>) {
-        if let Expression::Identifier(identifier) = &expression.callee {
-            if identifier.name.as_str() == "require" {
-                if let Some(oxc_ast::ast::Argument::StringLiteral(literal)) =
-                    expression.arguments.first()
-                {
-                    self.push(
-                        literal.span.start + 1,
-                        literal.span.end - 1,
-                        literal.value.as_str(),
-                    );
-                }
-            }
+        if let Expression::Identifier(identifier) = &expression.callee
+            && identifier.name.as_str() == "require"
+            && let Some(oxc_ast::ast::Argument::StringLiteral(literal)) =
+                expression.arguments.first()
+        {
+            self.push(
+                literal.span.start + 1,
+                literal.span.end - 1,
+                literal.value.as_str(),
+            );
         }
 
         walk::walk_call_expression(self, expression);
@@ -190,10 +188,9 @@ pub(super) fn collect_import_rename_edits(
                 }
 
                 if let Some((uri, edits)) = process_importer_path(state, path, kind, rename_targets)
+                    && let Ok(mut changes) = changes.lock()
                 {
-                    if let Ok(mut changes) = changes.lock() {
-                        changes.insert(uri, edits);
-                    }
+                    changes.insert(uri, edits);
                 }
 
                 WalkState::Continue
@@ -220,10 +217,9 @@ pub(super) fn collect_import_rename_edits(
             &document.value().text(),
             kind,
             &rename_targets,
-        ) {
-            if let Ok(mut changes) = changes.lock() {
-                changes.insert(uri, edits);
-            }
+        ) && let Ok(mut changes) = changes.lock()
+        {
+            changes.insert(uri, edits);
         }
     }
 
@@ -659,10 +655,10 @@ fn importer_kind(path: &Path, only_vue_importers: bool) -> Option<ImporterKind> 
 }
 
 fn read_workspace_source(state: &ServerState, path: &Path) -> Option<std::string::String> {
-    if let Ok(uri) = Url::from_file_path(path) {
-        if let Some(document) = state.documents.get(&uri) {
-            return Some(document.text());
-        }
+    if let Ok(uri) = Url::from_file_path(path)
+        && let Some(document) = state.documents.get(&uri)
+    {
+        return Some(document.text());
     }
 
     fs::read_to_string(path).ok()

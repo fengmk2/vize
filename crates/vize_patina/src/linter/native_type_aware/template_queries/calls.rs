@@ -21,12 +21,21 @@ pub(super) struct FloatingPromiseRange {
     pub end: u32,
     pub probe_start: u32,
     pub probe_end: u32,
+    pub probe_target: FloatingPromiseProbeTarget,
+}
+
+#[derive(Clone, Copy, Eq, Ord, PartialEq, PartialOrd)]
+pub(super) enum FloatingPromiseProbeTarget {
+    SourceText,
+    ExpressionBinding,
 }
 
 #[derive(Default)]
 pub(super) struct TemplateCallRanges {
     pub callees: Vec<RelativeRange>,
     pub floating_promises: Vec<FloatingPromiseRange>,
+    pub probe_expression_binding: bool,
+    pub expression_consumes_source: bool,
 }
 
 const TEMPLATE_HANDLER_PREFIX: &str = "function __vize_template_handler(){\n";
@@ -48,32 +57,48 @@ pub(super) fn collect_template_call_ranges(
         "patina.type_aware.template_queries.parse_expression",
         OxcParser::new(&allocator, source, source_type).parse_expression()
     ) {
-        if include_callees {
-            let mut collector = CallCalleeCollector::default();
-            profile!(
-                "patina.type_aware.template_calls.visit_expression",
-                collector.visit_expression(&expression)
+        ranges.probe_expression_binding = expression_prefers_binding_probe(&expression);
+        let expression_consumes_source = expression.span().end as usize == source.trim_end().len();
+        ranges.expression_consumes_source = expression_consumes_source;
+        if allow_statement_fallback && !expression_consumes_source {
+            let statement_ranges = collect_statement_template_call_ranges(
+                &allocator,
+                source_type,
+                source,
+                include_callees,
+                include_floating_promises,
             );
-            ranges.callees = collector.into_relative_ranges(0, source.len() as u32);
+            if include_callees {
+                ranges.callees = if statement_ranges.callees.is_empty() {
+                    collect_expression_call_callee_ranges(&expression, source.len() as u32)
+                } else {
+                    statement_ranges.callees
+                };
+            }
+            if include_floating_promises {
+                ranges.floating_promises = statement_ranges.floating_promises;
+            }
+
+            return ranges;
+        }
+
+        if include_callees {
+            ranges.callees =
+                collect_expression_call_callee_ranges(&expression, source.len() as u32);
         }
         if include_floating_promises {
-            if allow_statement_fallback {
-                if let Some(range) = bare_handler_reference_range_for_expression(&expression) {
-                    ranges.floating_promises.push(range);
-                }
+            if allow_statement_fallback
+                && let Some(range) = bare_handler_reference_range_for_expression(&expression)
+            {
+                ranges.floating_promises.push(range);
             }
-            if expression.span().end as usize == source.trim_end().len() {
-                profile!(
-                    "patina.type_aware.template_floating.visit_expression",
-                    collect_floating_promise_ranges_for_expression(
-                        &expression,
-                        &mut ranges.floating_promises
-                    )
-                );
-            } else if allow_statement_fallback {
-                ranges.floating_promises =
-                    collect_statement_floating_promise_ranges(&allocator, source_type, source);
-            }
+            profile!(
+                "patina.type_aware.template_floating.visit_expression",
+                collect_floating_promise_ranges_for_expression(
+                    &expression,
+                    &mut ranges.floating_promises
+                )
+            );
         }
         return ranges;
     }
@@ -82,15 +107,37 @@ pub(super) fn collect_template_call_ranges(
         return ranges;
     }
 
-    if include_callees {
-        ranges.callees = collect_statement_call_callee_ranges(&allocator, source_type, source);
-    }
-    if include_floating_promises {
-        ranges.floating_promises =
-            collect_statement_floating_promise_ranges(&allocator, source_type, source);
-    }
+    collect_statement_template_call_ranges(
+        &allocator,
+        source_type,
+        source,
+        include_callees,
+        include_floating_promises,
+    )
+}
 
-    ranges
+fn expression_prefers_binding_probe(expression: &Expression<'_>) -> bool {
+    match expression {
+        Expression::ComputedMemberExpression(_) => true,
+        Expression::ChainExpression(chain) => match &chain.expression {
+            ChainElement::ComputedMemberExpression(_) => true,
+            ChainElement::TSNonNullExpression(non_null) => {
+                expression_prefers_binding_probe(&non_null.expression)
+            }
+            _ => false,
+        },
+        Expression::ParenthesizedExpression(paren) => {
+            expression_prefers_binding_probe(&paren.expression)
+        }
+        Expression::TSAsExpression(ts_as) => expression_prefers_binding_probe(&ts_as.expression),
+        Expression::TSSatisfiesExpression(ts_satisfies) => {
+            expression_prefers_binding_probe(&ts_satisfies.expression)
+        }
+        Expression::TSNonNullExpression(ts_non_null) => {
+            expression_prefers_binding_probe(&ts_non_null.expression)
+        }
+        _ => false,
+    }
 }
 
 fn bare_handler_reference_range_for_expression(
@@ -100,6 +147,13 @@ fn bare_handler_reference_range_for_expression(
         Expression::Identifier(_) => Some(floating_promise_range_from_span(expression.span())),
         Expression::StaticMemberExpression(member) => is_member_handler_reference(&member.object)
             .then(|| floating_promise_range_from_span(expression.span())),
+        Expression::ComputedMemberExpression(member) => is_member_handler_reference(&member.object)
+            .then(|| {
+                floating_promise_range_from_span_with_target(
+                    expression.span(),
+                    FloatingPromiseProbeTarget::ExpressionBinding,
+                )
+            }),
         Expression::ChainExpression(chain) => {
             chain_member_handler_reference_range(chain, expression.span())
         }
@@ -126,6 +180,14 @@ fn chain_member_handler_reference_range(
     match &chain.expression {
         ChainElement::StaticMemberExpression(member) => is_member_handler_reference(&member.object)
             .then(|| floating_promise_range_from_span(span)),
+        ChainElement::ComputedMemberExpression(member) => {
+            is_member_handler_reference(&member.object).then(|| {
+                floating_promise_range_from_span_with_target(
+                    span,
+                    FloatingPromiseProbeTarget::ExpressionBinding,
+                )
+            })
+        }
         ChainElement::TSNonNullExpression(non_null) => {
             bare_handler_reference_range_for_expression(&non_null.expression)
         }
@@ -137,8 +199,12 @@ fn is_member_handler_reference(expression: &Expression<'_>) -> bool {
     match expression {
         Expression::Identifier(_) | Expression::ThisExpression(_) => true,
         Expression::StaticMemberExpression(member) => is_member_handler_reference(&member.object),
+        Expression::ComputedMemberExpression(member) => is_member_handler_reference(&member.object),
         Expression::ChainExpression(chain) => match &chain.expression {
             ChainElement::StaticMemberExpression(member) => {
+                is_member_handler_reference(&member.object)
+            }
+            ChainElement::ComputedMemberExpression(member) => {
                 is_member_handler_reference(&member.object)
             }
             ChainElement::TSNonNullExpression(non_null) => {
@@ -151,19 +217,41 @@ fn is_member_handler_reference(expression: &Expression<'_>) -> bool {
 }
 
 fn floating_promise_range_from_span(span: Span) -> FloatingPromiseRange {
+    floating_promise_range_from_span_with_target(span, FloatingPromiseProbeTarget::SourceText)
+}
+
+fn floating_promise_range_from_span_with_target(
+    span: Span,
+    probe_target: FloatingPromiseProbeTarget,
+) -> FloatingPromiseRange {
     FloatingPromiseRange {
         start: span.start,
         end: span.end,
         probe_start: span.start,
         probe_end: span.end,
+        probe_target,
     }
 }
 
-fn collect_statement_call_callee_ranges(
+fn collect_expression_call_callee_ranges(
+    expression: &Expression<'_>,
+    source_len: u32,
+) -> Vec<RelativeRange> {
+    let mut collector = CallCalleeCollector::default();
+    profile!(
+        "patina.type_aware.template_calls.visit_expression",
+        collector.visit_expression(expression)
+    );
+    collector.into_relative_ranges(0, source_len)
+}
+
+fn collect_statement_template_call_ranges(
     allocator: &OxcAllocator,
     source_type: SourceType,
     source: &str,
-) -> Vec<RelativeRange> {
+    include_callees: bool,
+    include_floating_promises: bool,
+) -> TemplateCallRanges {
     let mut wrapped = String::with_capacity(TEMPLATE_HANDLER_PREFIX.len() + source.len() + 4);
     wrapped.push_str(TEMPLATE_HANDLER_PREFIX);
     wrapped.push_str(source);
@@ -174,41 +262,30 @@ fn collect_statement_call_callee_ranges(
         OxcParser::new(allocator, wrapped.as_str(), source_type).parse()
     );
     if parsed.panicked || !parsed.errors.is_empty() {
-        return Vec::new();
+        return TemplateCallRanges::default();
     }
 
-    let mut collector = CallCalleeCollector::default();
-    profile!(
-        "patina.type_aware.template_calls.visit_program",
-        collector.visit_program(&parsed.program)
-    );
-    collector.into_relative_ranges(TEMPLATE_HANDLER_PREFIX.len() as u32, source.len() as u32)
-}
-
-fn collect_statement_floating_promise_ranges(
-    allocator: &OxcAllocator,
-    source_type: SourceType,
-    source: &str,
-) -> Vec<FloatingPromiseRange> {
-    let mut wrapped = String::with_capacity(TEMPLATE_HANDLER_PREFIX.len() + source.len() + 4);
-    wrapped.push_str(TEMPLATE_HANDLER_PREFIX);
-    wrapped.push_str(source);
-    wrapped.push_str("\n}");
-
-    let parsed = profile!(
-        "patina.type_aware.template_floating.parse_statement",
-        OxcParser::new(allocator, wrapped.as_str(), source_type).parse()
-    );
-    if parsed.panicked || !parsed.errors.is_empty() {
-        return Vec::new();
+    let mut ranges = TemplateCallRanges::default();
+    if include_callees {
+        let mut collector = CallCalleeCollector::default();
+        profile!(
+            "patina.type_aware.template_calls.visit_program",
+            collector.visit_program(&parsed.program)
+        );
+        ranges.callees = collector
+            .into_relative_ranges(TEMPLATE_HANDLER_PREFIX.len() as u32, source.len() as u32);
+    }
+    if include_floating_promises {
+        let mut collector = FloatingPromiseCollector::default();
+        profile!(
+            "patina.type_aware.template_floating.visit_program",
+            collector.visit_program(&parsed.program)
+        );
+        ranges.floating_promises = collector
+            .into_relative_ranges(TEMPLATE_HANDLER_PREFIX.len() as u32, source.len() as u32);
     }
 
-    let mut collector = FloatingPromiseCollector::default();
-    profile!(
-        "patina.type_aware.template_floating.visit_program",
-        collector.visit_program(&parsed.program)
-    );
-    collector.into_relative_ranges(TEMPLATE_HANDLER_PREFIX.len() as u32, source.len() as u32)
+    ranges
 }
 
 #[derive(Default)]
@@ -257,13 +334,20 @@ impl FloatingPromiseCollector {
     ) -> Vec<FloatingPromiseRange> {
         let mut ranges = Vec::with_capacity(self.ranges.len());
         let limit = base_offset + source_len;
-        self.ranges
-            .sort_unstable_by_key(|range| (range.start, range.end, range.probe_start));
+        self.ranges.sort_unstable_by_key(|range| {
+            (
+                range.start,
+                range.end,
+                range.probe_start,
+                range.probe_target,
+            )
+        });
         self.ranges.dedup_by(|left, right| {
             left.start == right.start
                 && left.end == right.end
                 && left.probe_start == right.probe_start
                 && left.probe_end == right.probe_end
+                && left.probe_target == right.probe_target
         });
         for range in self.ranges {
             if range.end <= range.start
@@ -280,6 +364,7 @@ impl FloatingPromiseCollector {
                 end: range.end - base_offset,
                 probe_start: range.probe_start - base_offset,
                 probe_end: range.probe_end - base_offset,
+                probe_target: range.probe_target,
             });
         }
         ranges
@@ -305,6 +390,7 @@ fn floating_promise_range_for_expression(
                 end: span.end,
                 probe_start: probe.start,
                 probe_end: probe.end,
+                probe_target: FloatingPromiseProbeTarget::SourceText,
             })
         }
         Expression::NewExpression(_) => {
@@ -314,6 +400,7 @@ fn floating_promise_range_for_expression(
                 end: span.end,
                 probe_start: span.start,
                 probe_end: span.end,
+                probe_target: FloatingPromiseProbeTarget::SourceText,
             })
         }
         Expression::ChainExpression(chain) => match &chain.expression {
@@ -325,6 +412,7 @@ fn floating_promise_range_for_expression(
                     end: span.end,
                     probe_start: probe.start,
                     probe_end: probe.end,
+                    probe_target: FloatingPromiseProbeTarget::SourceText,
                 })
             }
             ChainElement::TSNonNullExpression(non_null) => {
@@ -492,6 +580,18 @@ mod tests {
     }
 
     #[test]
+    fn collects_statement_fallback_callees_after_expression_prefix() {
+        let source = "safe(); anyHandler()";
+        let ranges = collect_template_call_ranges(source, true, true, false);
+
+        assert_eq!(
+            range_slices(source, &ranges.callees),
+            vec!["safe", "anyHandler"]
+        );
+        assert!(ranges.floating_promises.is_empty());
+    }
+
+    #[test]
     fn collects_statement_fallback_floating_promises() {
         let source = "save(); track()";
         let ranges = collect_template_call_ranges(source, true, false, true);
@@ -546,6 +646,41 @@ mod tests {
             promise_slices(source, &ranges.floating_promises),
             vec!["actions?.save"]
         );
+    }
+
+    #[test]
+    fn collects_computed_member_event_handler_references_as_floating_candidates() {
+        let source = "actions[method]";
+        let ranges = collect_template_call_ranges(source, true, false, true);
+
+        assert_eq!(
+            promise_slices(source, &ranges.floating_promises),
+            vec!["actions[method]"]
+        );
+    }
+
+    #[test]
+    fn collects_optional_computed_member_event_handler_references_as_floating_candidates() {
+        let source = "actions?.[method]";
+        let ranges = collect_template_call_ranges(source, true, false, true);
+
+        assert_eq!(
+            promise_slices(source, &ranges.floating_promises),
+            vec!["actions?.[method]"]
+        );
+    }
+
+    #[test]
+    fn computed_member_expressions_prefer_binding_probes() {
+        let computed = collect_template_call_ranges("payload[key]", false, true, false);
+        let optional = collect_template_call_ranges("payload?.[key]", false, true, false);
+        let call = collect_template_call_ranges("payload[key]()", false, true, false);
+        let static_member = collect_template_call_ranges("payload.key", false, true, false);
+
+        assert!(computed.probe_expression_binding);
+        assert!(optional.probe_expression_binding);
+        assert!(!call.probe_expression_binding);
+        assert!(!static_member.probe_expression_binding);
     }
 
     #[test]

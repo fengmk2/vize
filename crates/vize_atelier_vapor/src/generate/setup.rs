@@ -7,10 +7,10 @@ use vize_carton::{String, cstr};
 /// Collect delegate events from block
 pub(crate) fn collect_delegate_events(ctx: &mut GenerateContext, block: &BlockIRNode<'_>) {
     for op in block.operation.iter() {
-        if let OperationNode::SetEvent(set_event) = op {
-            if set_event.delegate {
-                ctx.add_delegate_event(&set_event.key.content);
-            }
+        if let OperationNode::SetEvent(set_event) = op
+            && set_event.delegate
+        {
+            ctx.add_delegate_event(&set_event.key.content);
         }
     }
 }

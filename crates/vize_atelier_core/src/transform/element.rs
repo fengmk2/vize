@@ -161,13 +161,12 @@ fn process_directive_expressions<'a>(
                         dir.exp = Some(processed);
                     }
                     // Process dynamic argument
-                    if let Some(arg) = &dir.arg {
-                        if let ExpressionNode::Simple(simple_arg) = arg {
-                            if !simple_arg.is_static {
-                                let processed = process_expression(ctx, arg, false);
-                                dir.arg = Some(processed);
-                            }
-                        }
+                    if let Some(arg) = &dir.arg
+                        && let ExpressionNode::Simple(simple_arg) = arg
+                        && !simple_arg.is_static
+                    {
+                        let processed = process_expression(ctx, arg, false);
+                        dir.arg = Some(processed);
                     }
                 }
             }

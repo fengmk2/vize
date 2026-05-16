@@ -409,10 +409,10 @@ impl ScopeChain {
     /// Build parents list including Vue global for template scopes
     pub(crate) fn build_template_parents(&self) -> ParentScopes {
         let mut parents: ParentScopes = smallvec![self.current];
-        if let Some(vue_id) = self.find_scope_by_kind(ScopeKind::VueGlobal) {
-            if !parents.contains(&vue_id) {
-                parents.push(vue_id);
-            }
+        if let Some(vue_id) = self.find_scope_by_kind(ScopeKind::VueGlobal)
+            && !parents.contains(&vue_id)
+        {
+            parents.push(vue_id);
         }
         parents
     }

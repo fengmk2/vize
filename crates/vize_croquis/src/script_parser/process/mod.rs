@@ -141,22 +141,22 @@ pub fn process_statement(result: &mut ScriptParseResult, stmt: &Statement<'_>, s
                         }
                     };
 
-                    if source_name == "vue" {
-                        if let oxc_ast::ast::ImportDeclarationSpecifier::ImportSpecifier(s) = spec {
-                            let imported = s.imported.name().as_str();
-                            if is_vue_runtime_api(imported) && imported != name {
-                                result
-                                    .reactivity_aliases
-                                    .insert(CompactString::new(name), CompactString::new(imported));
-                                match imported {
-                                    "inject" => {
-                                        result.inject_aliases.insert(CompactString::new(name));
-                                    }
-                                    "provide" => {
-                                        result.provide_aliases.insert(CompactString::new(name));
-                                    }
-                                    _ => {}
+                    if source_name == "vue"
+                        && let oxc_ast::ast::ImportDeclarationSpecifier::ImportSpecifier(s) = spec
+                    {
+                        let imported = s.imported.name().as_str();
+                        if is_vue_runtime_api(imported) && imported != name {
+                            result
+                                .reactivity_aliases
+                                .insert(CompactString::new(name), CompactString::new(imported));
+                            match imported {
+                                "inject" => {
+                                    result.inject_aliases.insert(CompactString::new(name));
                                 }
+                                "provide" => {
+                                    result.provide_aliases.insert(CompactString::new(name));
+                                }
+                                _ => {}
                             }
                         }
                     }

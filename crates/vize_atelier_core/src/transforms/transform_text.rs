@@ -39,11 +39,11 @@ pub fn transform_text_children(
         }
 
         // If only one node and it's simple text, skip
-        if j == i + 1 {
-            if let TemplateChildNode::Text(_) = &children[i] {
-                i += 1;
-                continue;
-            }
+        if j == i + 1
+            && let TemplateChildNode::Text(_) = &children[i]
+        {
+            i += 1;
+            continue;
         }
 
         // For interpolations, add helper

@@ -244,15 +244,14 @@ pub fn normalize_code(code: &str) -> String {
         // Normalize import lines from 'vue' or "vue"
         let is_vue_import = (line.starts_with("import {") || line.starts_with("import {"))
             && (line.contains("} from \"vue\"") || line.contains("} from 'vue'"));
-        if is_vue_import {
-            if let Some(start) = line.find('{') {
-                if let Some(end) = line.find('}') {
-                    let helpers_str = &line[start + 1..end];
-                    let mut helpers: Vec<&str> = helpers_str.split(',').map(|s| s.trim()).collect();
-                    helpers.sort();
-                    *line = format!("import {{ {} }} from \"vue\"", helpers.join(", ")).into();
-                }
-            }
+        if is_vue_import
+            && let Some(start) = line.find('{')
+            && let Some(end) = line.find('}')
+        {
+            let helpers_str = &line[start + 1..end];
+            let mut helpers: Vec<&str> = helpers_str.split(',').map(|s| s.trim()).collect();
+            helpers.sort();
+            *line = format!("import {{ {} }} from \"vue\"", helpers.join(", ")).into();
         }
     }
 

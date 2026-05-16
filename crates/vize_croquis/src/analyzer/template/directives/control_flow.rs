@@ -53,24 +53,25 @@ impl Analyzer {
         let mut previous_conditions = SmallVec::<[CompactString; 4]>::new();
 
         for branch in if_node.branches.iter() {
-            if self.options.detect_undefined && self.script_analyzed {
-                if let Some(ref cond) = branch.condition {
-                    profile!(
-                        "croquis.template.v_if.condition_refs",
-                        self.check_expression_refs(cond, scope_vars, branch.loc.start.offset)
-                    );
-                }
+            if self.options.detect_undefined
+                && self.script_analyzed
+                && let Some(ref cond) = branch.condition
+            {
+                profile!(
+                    "croquis.template.v_if.condition_refs",
+                    self.check_expression_refs(cond, scope_vars, branch.loc.start.offset)
+                );
             }
 
-            if self.options.detect_undefined && self.script_analyzed {
-                if let Some(PropNode::Directive(dir)) = &branch.user_key {
-                    if let Some(ref exp) = dir.exp {
-                        profile!(
-                            "croquis.template.v_if.key_refs",
-                            self.check_expression_refs(exp, scope_vars, dir.loc.start.offset)
-                        );
-                    }
-                }
+            if self.options.detect_undefined
+                && self.script_analyzed
+                && let Some(PropNode::Directive(dir)) = &branch.user_key
+                && let Some(ref exp) = dir.exp
+            {
+                profile!(
+                    "croquis.template.v_if.key_refs",
+                    self.check_expression_refs(exp, scope_vars, dir.loc.start.offset)
+                );
             }
 
             let current_condition = branch.condition.as_ref().map(|cond| match cond {

@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+
 import type { PackagePath } from "./task-types.ts";
 import { shellCommand } from "./task-shell.ts";
 
@@ -61,15 +63,33 @@ export const runInPackages = (
 export const runTask = (taskName: string) => `vp run --workspace-root ${taskName}`;
 export const runTasks = (...taskNames: string[]) => taskNames.map(runTask).join(" && ");
 
-const moonCommand = process.env.MOON_BIN ?? "env -u MOON_HOME moon";
+const workspaceMoonHome = ".cache/moonbit";
+const workspaceMoonBin = `${workspaceMoonHome}/bin/moon`;
+
+export const moonCommandForEnvironment = (
+  env: NodeJS.ProcessEnv = process.env,
+  pathExists: (path: string) => boolean = existsSync,
+) => {
+  if (env.MOON_BIN != null && env.MOON_BIN !== "") {
+    return env.MOON_BIN;
+  }
+
+  if (pathExists(workspaceMoonBin)) {
+    return `env MOON_HOME=${workspaceMoonHome} ${workspaceMoonBin}`;
+  }
+
+  return "moon";
+};
+
+const moonCommand = moonCommandForEnvironment();
 
 /**
  * Executes a repository MoonBit script through native script mode.
  *
  * The root task catalog treats MoonBit scripts as first-class automation. This
- * helper keeps the invocation uniform, clears inherited `MOON_HOME` by default,
- * and forwards script arguments after `--` so each script owns its own CLI
- * parsing.
+ * helper keeps the invocation uniform, prefers the workspace-local MoonBit
+ * toolchain installed by the Nix shell, and forwards script arguments after
+ * `--` so each script owns its own CLI parsing.
  */
 export const moonScript = (name: string, ...args: string[]) =>
   [

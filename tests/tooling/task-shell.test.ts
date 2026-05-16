@@ -41,24 +41,36 @@ test("task shell commands apply locale before sh starts", () => {
 
 test("task shell commands can forward Vite+ task arguments", () => {
   assert.equal(
-    shellCommandForwardingArguments("moon run -q --target native - -- \"$@\" < tools/moon/scripts/release.mbtx", []),
-    'sh -c \'moon run -q --target native - -- "$@" < tools/moon/scripts/release.mbtx\' --',
+    shellCommandForwardingArguments(
+      'moon run -q --target native - -- "$@" < tools/moon/scripts/release.mbtx',
+      [],
+    ),
+    "sh -c 'moon run -q --target native - -- \"$@\" < tools/moon/scripts/release.mbtx' --",
   );
 });
 
 test("Rust task environments preserve forwarded arguments", () => {
-  const command = withRustTaskEnvironment("moon run -q --target native - -- \"$@\" < tools/moon/scripts/release.mbtx", {
-    forwardArguments: true,
-  });
+  const command = withRustTaskEnvironment(
+    'moon run -q --target native - -- "$@" < tools/moon/scripts/release.mbtx',
+    {
+      forwardArguments: true,
+    },
+  );
 
-  assert.match(command, /sh -c .*moon run -q --target native - -- "\$@" < tools\/moon\/scripts\/release\.mbtx/);
+  assert.match(
+    command,
+    /sh -c .*moon run -q --target native - -- "\$@" < tools\/moon\/scripts\/release\.mbtx/,
+  );
   assert.match(command, / --$/);
 });
 
 test("release task forwards extra vp run arguments into the MoonBit script", () => {
   const command = (releaseTasks.release as { command: string }).command;
 
-  assert.match(command, /moon run -q --target native - -- "\$@" < tools\/moon\/scripts\/release\.mbtx/);
+  assert.match(
+    command,
+    /moon run -q --target native - -- "\$@" < tools\/moon\/scripts\/release\.mbtx/,
+  );
   assert.match(command, / --$/);
 });
 

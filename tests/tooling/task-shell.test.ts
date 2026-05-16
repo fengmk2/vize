@@ -8,6 +8,7 @@ import {
   shellCommandForwardingArguments,
   withRustTaskEnvironment,
 } from "../../tools/vite-plus/task-shell.ts";
+import { moonCommandForEnvironment } from "../../tools/vite-plus/task-commands.ts";
 import { releaseTasks } from "../../tools/vite-plus/tasks/release.ts";
 
 test("macOS task shells fall back from C.UTF-8 to an installed UTF-8 locale", () => {
@@ -64,6 +65,20 @@ test("Rust task environments preserve forwarded arguments", () => {
   assert.match(command, / --$/);
 });
 
+test("MoonBit task commands prefer the workspace toolchain cache", () => {
+  assert.equal(
+    moonCommandForEnvironment({}, (candidate) => candidate === ".cache/moonbit/bin/moon"),
+    "env MOON_HOME=.cache/moonbit .cache/moonbit/bin/moon",
+  );
+});
+
+test("MoonBit task commands preserve the GitHub runner shim", () => {
+  assert.equal(
+    moonCommandForEnvironment({ MOON_BIN: "/runner-temp/moonbit-shims/moon" }, () => true),
+    "/runner-temp/moonbit-shims/moon",
+  );
+});
+
 test("release task forwards extra vp run arguments into the MoonBit script", () => {
   const command = (releaseTasks.release as { command: string }).command;
 
@@ -71,6 +86,7 @@ test("release task forwards extra vp run arguments into the MoonBit script", () 
     command,
     /moon run -q --target native - -- "\$@" < tools\/moon\/scripts\/release\.mbtx/,
   );
+  assert.doesNotMatch(command, /env -u MOON_HOME/);
   assert.match(command, / --$/);
 });
 

@@ -62,6 +62,7 @@
                 url = "https://cli.moonbitlang.com/cores/core-latest.tar.gz";
                 hash = "sha256-xoulYgG9jZnbRCtt9ZnCwhewUo7ex9bebocbblicUC4=";
               };
+              nativeBuildInputs = lib.optionals pkgs.stdenv.isLinux [ pkgs.patchelf ];
               dontUnpack = true;
               dontConfigure = true;
               dontBuild = true;
@@ -70,6 +71,22 @@
                 tar -xzf $src -C $out
                 chmod -R a+rX,u+w $out
                 find $out/bin -type f -exec chmod a+x {} +
+                ${lib.optionalString pkgs.stdenv.isLinux ''
+                  for binary in $out/bin/*; do
+                    if patchelf --print-interpreter "$binary" >/dev/null 2>&1; then
+                      patchelf \
+                        --set-interpreter "${pkgs.stdenv.cc.bintools.dynamicLinker}" \
+                        --set-rpath "${
+                          lib.makeLibraryPath [
+                            pkgs.glibc
+                            pkgs.stdenv.cc.cc.lib
+                            pkgs.zlib
+                          ]
+                        }" \
+                        "$binary"
+                    fi
+                  done
+                ''}
                 mkdir -p $out/lib
                 tar -xzf $coreSrc -C $out/lib
                 PATH=$out/bin:$PATH $out/bin/moon -C $out/lib/core bundle --warn-list -a --all
@@ -268,7 +285,9 @@
 
             echo "Vize dev shell ready."
             echo "Nix provides Node, pnpm, Rust, wasm-pack, wasm-bindgen, binaryen, and MoonBit."
-            ${lib.optionalString (moonbit == null) ''echo "MoonBit native toolchain is not available for ${system}; install it separately if needed."''}
+            ${lib.optionalString (moonbit == null)
+              ''echo "MoonBit native toolchain is not available for ${system}; install it separately if needed."''
+            }
             echo "Run: vp install --frozen-lockfile"
             echo "Then: vp check / vp fmt / vp dev / vp build"
           '';

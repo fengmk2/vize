@@ -163,8 +163,9 @@ fn append_pending_member(
     current_type.push(' ');
     current_type.push_str(trimmed.trim_end_matches(';'));
 
-    if is_type_complete(current_type.as_str()) {
-        let name = current_name.take().unwrap();
+    if is_type_complete(current_type.as_str())
+        && let Some(name) = current_name.take()
+    {
         members.push((name, normalize_type(current_type.as_str())));
         current_type.clear();
     }
@@ -186,8 +187,9 @@ fn append_pending_global(
     current_type.push(' ');
     current_type.push_str(trimmed.trim_end_matches(';'));
 
-    if is_type_complete(current_type.as_str()) {
-        let name = current_name.take().unwrap();
+    if is_type_complete(current_type.as_str())
+        && let Some(name) = current_name.take()
+    {
         values.push((
             name,
             normalize_rewritten_type(current_type.as_str(), source_dir),

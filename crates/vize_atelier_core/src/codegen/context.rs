@@ -10,10 +10,10 @@ use vize_carton::ToCompactString;
 use vize_carton::camelize;
 use vize_carton::capitalize;
 
-/// Code generation context using byte buffer for performance
+/// Code generation context using a UTF-8 string buffer for performance.
 pub struct CodegenContext {
-    /// Generated code buffer (bytes)
-    pub(super) code: Vec<u8>,
+    /// Generated code buffer
+    pub(super) code: String,
     /// Current indentation level
     pub(super) indent_level: u32,
     /// Whether we're in SSR mode
@@ -62,7 +62,7 @@ impl CodegenContext {
     /// Create a new codegen context
     pub fn new(options: CodegenOptions) -> Self {
         Self {
-            code: Vec::with_capacity(4096),
+            code: String::with_capacity(4096),
             indent_level: 0,
             ssr: options.ssr,
             helper_alias: default_helper_alias,
@@ -120,16 +120,10 @@ impl CodegenContext {
         index
     }
 
-    /// Push bytes to buffer
-    #[inline]
-    pub fn push_bytes(&mut self, bytes: &[u8]) {
-        self.code.extend_from_slice(bytes);
-    }
-
     /// Push string to buffer
     #[inline]
     pub fn push(&mut self, code: &str) {
-        self.code.extend_from_slice(code.as_bytes());
+        self.code.push_str(code);
     }
 
     /// Push code with newline
@@ -142,9 +136,9 @@ impl CodegenContext {
     /// Add newline with proper indentation
     #[inline]
     pub fn newline(&mut self) {
-        self.code.push(b'\n');
+        self.code.push('\n');
         for _ in 0..self.indent_level {
-            self.code.extend_from_slice(b"  ");
+            self.code.push_str("  ");
         }
     }
 
@@ -166,7 +160,7 @@ impl CodegenContext {
     #[inline]
     pub fn push_pure(&mut self) {
         if self.pure {
-            self.code.extend_from_slice(b"/*#__PURE__*/ ");
+            self.code.push_str("/*#__PURE__*/ ");
         }
     }
 
@@ -225,7 +219,7 @@ impl CodegenContext {
     #[inline]
     #[allow(dead_code)]
     pub fn push_str(&mut self, code: &str) {
-        self.code.extend_from_slice(code.as_bytes());
+        self.code.push_str(code);
     }
 
     /// Push formatted line (format_args! + newline with indentation)
@@ -233,27 +227,25 @@ impl CodegenContext {
     #[allow(dead_code)]
     pub fn push_line_fmt(&mut self, args: std::fmt::Arguments<'_>) {
         use std::fmt::Write as _;
-        self.write_fmt(args).unwrap();
+        let _ = self.write_fmt(args);
         self.newline();
     }
 
     /// Get the generated code as a String
     pub fn into_code(self) -> String {
-        // SAFETY: We only push valid UTF-8 strings
-        unsafe { String::from_utf8_unchecked(self.code) }
+        self.code
     }
 
     /// Get the generated code as a reference (for temporary use)
     pub fn code_as_str(&self) -> &str {
-        // SAFETY: We only push valid UTF-8 strings
-        unsafe { std::str::from_utf8_unchecked(&self.code) }
+        &self.code
     }
 }
 
 impl std::fmt::Write for CodegenContext {
     #[inline]
     fn write_str(&mut self, s: &str) -> std::fmt::Result {
-        self.code.extend_from_slice(s.as_bytes());
+        self.code.push_str(s);
         Ok(())
     }
 }

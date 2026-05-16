@@ -82,9 +82,10 @@ fn test_zero_copy_content() {
     match &template.content {
         Cow::Borrowed(s) => {
             // The string should be a slice of the original source
-            let ptr = s.as_ptr();
-            let source_ptr = source.as_ptr();
-            assert!(ptr >= source_ptr && ptr < unsafe { source_ptr.add(source.len()) });
+            let start = source.as_ptr() as usize;
+            let end = start + source.len();
+            let ptr = s.as_ptr() as usize;
+            assert!((start..end).contains(&ptr));
         }
         Cow::Owned(_) => panic!("Expected Cow::Borrowed, got Cow::Owned"),
     }

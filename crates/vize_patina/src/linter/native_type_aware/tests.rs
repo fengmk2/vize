@@ -305,6 +305,32 @@ const actions = {
 }
 
 #[test]
+fn no_floating_promises_reports_optional_member_template_event_handlers() {
+    if !corsa_available() {
+        return;
+    }
+
+    let linter = Linter::with_preset(LintPreset::Opinionated);
+    let source = r#"<script setup lang="ts">
+type Actions = {
+  save(): Promise<void>
+}
+const actions: Actions | undefined = {
+  async save(): Promise<void> {}
+}
+</script>
+
+<template>
+  <button @click="actions?.save">Save</button>
+</template>"#;
+    let result = lint_sfc_with_corsa(&linter, source, "Component.vue");
+    assert!(result.diagnostics.iter().any(|diag| {
+        diag.rule_name == RULE_NO_FLOATING_PROMISES
+            && diag.message.contains("Template event handler")
+    }));
+}
+
+#[test]
 fn no_floating_promises_reports_template_interpolations() {
     if !corsa_available() {
         return;

@@ -39,12 +39,21 @@ pub fn position_to_offset(rope: &Rope, position: Position) -> Option<usize> {
     let mut char_in_line = 0usize;
 
     for ch in rope.line(line).chars() {
-        if utf16_units >= character || ch == '\n' {
+        if utf16_units == character || ch == '\n' {
             break;
         }
 
-        utf16_units += ch.len_utf16();
+        let next_utf16_units = utf16_units + ch.len_utf16();
+        if character < next_utf16_units {
+            return None;
+        }
+
+        utf16_units = next_utf16_units;
         char_in_line += 1;
+    }
+
+    if utf16_units != character {
+        return None;
     }
 
     let char_idx = line_start_char + char_in_line;
@@ -271,6 +280,22 @@ mod tests {
                 }
             ),
             Some("a😀b".len())
+        );
+    }
+
+    #[test]
+    fn test_position_to_offset_rejects_utf16_surrogate_pair_interior() {
+        let rope = Rope::from_str("a😀b");
+
+        assert_eq!(
+            position_to_offset(
+                &rope,
+                Position {
+                    line: 0,
+                    character: 2,
+                }
+            ),
+            None
         );
     }
 

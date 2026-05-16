@@ -8,18 +8,28 @@ import { withRustTaskEnvironment } from "./task-shell.ts";
 export const task = (
   command: string,
   options: {
+    forwardArguments?: boolean;
     input?: TaskInput;
   } = {},
 ): TaskConfig => ({
-  command: withRustTaskEnvironment(command),
-  ...options,
+  command: withRustTaskEnvironment(command, {
+    forwardArguments: options.forwardArguments,
+  }),
+  ...(options.input == null ? {} : { input: options.input }),
 });
 
 /**
  * Creates an uncached task for commands whose effects are too broad or too
  * stateful to be represented by a stable input list.
  */
-export const noCacheTask = (command: string): TaskConfig => ({
+export const noCacheTask = (
+  command: string,
+  options: {
+    forwardArguments?: boolean;
+  } = {},
+): TaskConfig => ({
   cache: false as const,
-  command: withRustTaskEnvironment(command),
+  command: withRustTaskEnvironment(command, {
+    forwardArguments: options.forwardArguments,
+  }),
 });

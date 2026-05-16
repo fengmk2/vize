@@ -47,6 +47,11 @@ export const shellCommand = (
 ) =>
   `${environmentAssignments.length === 0 ? "" : `env ${environmentAssignments.join(" ")} `}sh -c ${shellQuote(command)}`;
 
+export const shellCommandForwardingArguments = (
+  command: string,
+  environmentAssignments: readonly string[] = taskShellLocaleAssignments,
+) => `${shellCommand(command, environmentAssignments)} --`;
+
 const darwinLibiconvLibraryPath = process.env.VIZE_DARWIN_LIBICONV_LIB;
 const rustTaskEnvironment =
   darwinLibiconvLibraryPath == null
@@ -65,7 +70,18 @@ const rustTaskEnvironment =
  * variable is present, both Cargo and any nested Rust build script see the same
  * library search path.
  */
-export const withRustTaskEnvironment = (command: string) =>
-  rustTaskEnvironment.length === 0
-    ? command
-    : shellCommand(`${rustTaskEnvironment.join("; ")}; ${command}`);
+export const withRustTaskEnvironment = (
+  command: string,
+  options: {
+    forwardArguments?: boolean;
+  } = {},
+) => {
+  const commandWithEnvironment =
+    rustTaskEnvironment.length === 0 ? command : `${rustTaskEnvironment.join("; ")}; ${command}`;
+
+  return options.forwardArguments
+    ? shellCommandForwardingArguments(commandWithEnvironment)
+    : rustTaskEnvironment.length === 0
+      ? command
+      : shellCommand(commandWithEnvironment);
+};

@@ -259,6 +259,52 @@ async function save(): Promise<void> {}
 }
 
 #[test]
+fn no_floating_promises_reports_member_template_event_handlers() {
+    if !corsa_available() {
+        return;
+    }
+
+    let linter = Linter::with_preset(LintPreset::Opinionated);
+    let source = r#"<script setup lang="ts">
+const actions = {
+  async save(): Promise<void> {}
+}
+</script>
+
+<template>
+  <button @click="actions.save">Save</button>
+</template>"#;
+    let result = lint_sfc_with_corsa(&linter, source, "Component.vue");
+    assert!(result.diagnostics.iter().any(|diag| {
+        diag.rule_name == RULE_NO_FLOATING_PROMISES
+            && diag.message.contains("Template event handler")
+    }));
+}
+
+#[test]
+fn no_floating_promises_ignores_sync_member_template_event_handlers() {
+    if !corsa_available() {
+        return;
+    }
+
+    let linter = Linter::with_preset(LintPreset::Opinionated);
+    let source = r#"<script setup lang="ts">
+const actions = {
+  save(): void {}
+}
+</script>
+
+<template>
+  <button @click="actions.save">Save</button>
+</template>"#;
+    let result = lint_sfc_with_corsa(&linter, source, "Component.vue");
+    assert!(!result
+        .diagnostics
+        .iter()
+        .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES));
+}
+
+#[test]
 fn no_floating_promises_reports_template_interpolations() {
     if !corsa_available() {
         return;

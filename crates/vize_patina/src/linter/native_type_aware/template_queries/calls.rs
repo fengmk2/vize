@@ -97,14 +97,10 @@ fn bare_handler_reference_range_for_expression(
     expression: &Expression<'_>,
 ) -> Option<FloatingPromiseRange> {
     match expression {
-        Expression::Identifier(_) => {
-            let span = expression.span();
-            Some(FloatingPromiseRange {
-                start: span.start,
-                end: span.end,
-                probe_start: span.start,
-                probe_end: span.end,
-            })
+        Expression::Identifier(_) => Some(floating_promise_range_from_span(expression.span())),
+        Expression::StaticMemberExpression(member) => {
+            is_static_member_handler_reference(&member.object)
+                .then(|| floating_promise_range_from_span(expression.span()))
         }
         Expression::ParenthesizedExpression(paren) => {
             bare_handler_reference_range_for_expression(&paren.expression)
@@ -119,6 +115,25 @@ fn bare_handler_reference_range_for_expression(
             bare_handler_reference_range_for_expression(&ts_non_null.expression)
         }
         _ => None,
+    }
+}
+
+fn is_static_member_handler_reference(expression: &Expression<'_>) -> bool {
+    match expression {
+        Expression::Identifier(_) | Expression::ThisExpression(_) => true,
+        Expression::StaticMemberExpression(member) => {
+            is_static_member_handler_reference(&member.object)
+        }
+        _ => false,
+    }
+}
+
+fn floating_promise_range_from_span(span: Span) -> FloatingPromiseRange {
+    FloatingPromiseRange {
+        start: span.start,
+        end: span.end,
+        probe_start: span.start,
+        probe_end: span.end,
     }
 }
 
@@ -486,6 +501,17 @@ mod tests {
         assert_eq!(
             promise_slices(source, &ranges.floating_promises),
             vec!["save"]
+        );
+    }
+
+    #[test]
+    fn collects_member_event_handler_references_as_floating_candidates() {
+        let source = "actions.save";
+        let ranges = collect_template_call_ranges(source, true, false, true);
+
+        assert_eq!(
+            promise_slices(source, &ranges.floating_promises),
+            vec!["actions.save"]
         );
     }
 

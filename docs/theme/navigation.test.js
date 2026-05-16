@@ -209,10 +209,7 @@ void test("applyNavigationOrder keeps the Blog group compact", () => {
       "/blog/notes/2026-05-16-performance-tuning-notes-for-a-vue-toolchain",
       "2026-05-16-performance-tuning-notes-for-a-vue-toolchain",
     ],
-    [
-      "/blog/releases/2026-03-26-docs-blog-support",
-      "2026-03-26-docs-blog-support",
-    ],
+    ["/blog/releases/2026-03-26-docs-blog-support", "2026-03-26-docs-blog-support"],
   ]);
 
   applyNavigation(document);

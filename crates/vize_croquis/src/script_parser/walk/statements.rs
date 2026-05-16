@@ -6,9 +6,9 @@
 use oxc_ast::ast::Statement;
 
 use super::{
-    add_binding_pattern_to_scope, extract_function_params, extract_param_names, walk_expression,
     BindingType, BlockKind, BlockScopeData, ClosureScopeData, CompactString, GetSpan, ScopeBinding,
-    ScriptParseResult,
+    ScriptParseResult, add_binding_pattern_to_scope, extract_function_params, extract_param_names,
+    walk_expression,
 };
 
 /// Walk a statement to find nested scopes

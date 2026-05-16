@@ -3,7 +3,7 @@
 //! Handles v-model on form elements: input, textarea, select.
 
 use vize_atelier_core::{DirectiveNode, ElementNode, RuntimeHelper};
-use vize_carton::{cstr, String};
+use vize_carton::{String, cstr};
 
 /// v-model modifier flags
 #[derive(Debug, Default, Clone)]
@@ -130,7 +130,7 @@ pub fn generate_model_props(
 
 #[cfg(test)]
 mod tests {
-    use super::{generate_model_props, get_model_event, get_model_prop, VModelModifiers};
+    use super::{VModelModifiers, generate_model_props, get_model_event, get_model_prop};
 
     #[test]
     fn test_modifiers() {

@@ -4,17 +4,17 @@
 //! info (which must be entered before other directives), second pass
 //! processes v-bind, v-if, v-show, v-model, v-on in the correct scope.
 
+use crate::ScopeBinding;
 use crate::analysis::ComponentUsage;
 use crate::scope::{VForScopeData, VSlotScopeData};
-use crate::ScopeBinding;
-use vize_carton::{profile, smallvec, CompactString, SmallVec};
-use vize_relief::ast::{ElementNode, ExpressionNode, PropNode};
+use vize_carton::{CompactString, SmallVec, profile, smallvec};
 use vize_relief::BindingType;
+use vize_relief::ast::{ElementNode, ExpressionNode, PropNode};
 
+use crate::analyzer::Analyzer;
 use crate::analyzer::helpers::{
     extract_slot_props, is_builtin_directive, is_component_tag, parse_v_for_expression,
 };
-use crate::analyzer::Analyzer;
 
 impl Analyzer {
     /// Visit element node.

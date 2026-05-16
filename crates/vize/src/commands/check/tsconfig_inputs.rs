@@ -598,9 +598,11 @@ mod tests {
         assert!(files.iter().any(|path| path.ends_with("src/App.vue")));
         assert!(files.iter().any(|path| path.ends_with("src/main.ts")));
         assert!(!files.iter().any(|path| path.ends_with("vite.config.ts")));
-        assert!(!files
-            .iter()
-            .any(|path| path.ends_with("src/generated/skip.ts")));
+        assert!(
+            !files
+                .iter()
+                .any(|path| path.ends_with("src/generated/skip.ts"))
+        );
 
         let _ = fs::remove_dir_all(&case_dir);
     }

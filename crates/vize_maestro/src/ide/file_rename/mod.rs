@@ -276,9 +276,11 @@ mod tests {
 
         assert_eq!(edits.len(), 2);
         assert!(edits.iter().any(|edit| edit.text_document.uri == base_uri));
-        assert!(edits
-            .iter()
-            .any(|edit| edit.text_document.uri == overlay_uri));
+        assert!(
+            edits
+                .iter()
+                .any(|edit| edit.text_document.uri == overlay_uri)
+        );
     }
 
     #[test]
@@ -316,9 +318,11 @@ mod tests {
 
         assert_eq!(edits.len(), 2);
         assert!(edits.iter().any(|edit| edit.text_document.uri == base_uri));
-        assert!(edits
-            .iter()
-            .any(|edit| edit.text_document.uri == overlay_uri));
+        assert!(
+            edits
+                .iter()
+                .any(|edit| edit.text_document.uri == overlay_uri)
+        );
     }
 
     #[test]

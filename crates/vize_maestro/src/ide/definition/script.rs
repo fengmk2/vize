@@ -6,8 +6,9 @@
 use tower_lsp::lsp_types::{GotoDefinitionResponse, Location, Position, Range};
 
 use super::{
+    IdeContext,
     bindings::{BindingKind, BindingLocation},
-    helpers, IdeContext,
+    helpers,
 };
 use crate::virtual_code::BlockType;
 use vize_carton::cstr;

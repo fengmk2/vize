@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use vize_carton::{profile, String};
+use vize_carton::{String, profile};
 
 use crate::script::ScriptCompileContext;
 

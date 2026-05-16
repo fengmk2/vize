@@ -12,7 +12,7 @@ use oxc_ast::ast::{
 };
 use oxc_span::GetSpan;
 
-use crate::macros::{MacroKind, PropsDestructuredBindings, DEFINE_PROPS, WITH_DEFAULTS};
+use crate::macros::{DEFINE_PROPS, MacroKind, PropsDestructuredBindings, WITH_DEFAULTS};
 use crate::provide::InjectPattern;
 use crate::reactivity::ReactiveKind;
 use vize_carton::CompactString;

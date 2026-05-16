@@ -2,7 +2,7 @@
 //!
 //! Transforms element nodes and their props.
 
-use vize_carton::{capitalize, is_native_tag, String};
+use vize_carton::{String, capitalize, is_native_tag};
 
 use crate::ast::*;
 use crate::transform::TransformContext;
@@ -257,11 +257,7 @@ fn calculate_patch_flag(el: &ElementNode<'_>) -> Option<i32> {
         }
     }
 
-    if flag > 0 {
-        Some(flag)
-    } else {
-        None
-    }
+    if flag > 0 { Some(flag) } else { None }
 }
 
 /// VNode call for codegen (transform-specific)
@@ -289,7 +285,7 @@ pub enum ChildrenType {
 
 #[cfg(test)]
 mod tests {
-    use super::{resolve_element_type, ElementType};
+    use super::{ElementType, resolve_element_type};
     use crate::ast::TemplateChildNode;
     use crate::parser::parse;
     use crate::transform::TransformContext;

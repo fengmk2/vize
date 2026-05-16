@@ -1,9 +1,9 @@
 //! Error types for batch type checking.
 
 use std::path::{Path, PathBuf};
+use vize_carton::String;
 use vize_carton::append;
 use vize_carton::cstr;
-use vize_carton::String;
 
 /// Error type for Corsa-backed batch operations.
 #[derive(Debug, thiserror::Error)]

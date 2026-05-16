@@ -16,7 +16,7 @@ use tower_lsp::lsp_types::GotoDefinitionResponse;
 #[cfg(feature = "native")]
 use vize_canon::CorsaBridge;
 
-use super::{helpers, script, template, IdeContext};
+use super::{IdeContext, helpers, script, template};
 #[cfg(feature = "native")]
 use crate::ide::corsa_support;
 use crate::ide::is_component_tag;

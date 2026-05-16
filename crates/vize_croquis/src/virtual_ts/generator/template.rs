@@ -9,7 +9,7 @@ use super::{
     InterpolationNode, MappingData, PropNode, RootNode, SourceMapping, SourceRange,
     TemplateChildNode, VirtualTsGenerator, VirtualTsOutput,
 };
-use vize_carton::{append, profile, String, ToCompactString};
+use vize_carton::{String, ToCompactString, append, profile};
 
 impl VirtualTsGenerator {
     /// Generate virtual TypeScript from template AST (legacy API).

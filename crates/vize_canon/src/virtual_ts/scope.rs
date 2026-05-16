@@ -4,14 +4,14 @@
 //! including v-for, v-slot, and event handler scopes. Uses recursive
 //! tree-based generation so nested scopes are properly contained.
 
-use vize_carton::profile;
 use vize_carton::FxHashMap;
 use vize_carton::FxHashSet;
 use vize_carton::String;
+use vize_carton::profile;
 
 use vize_croquis::{
-    analysis::ComponentUsage, naming::to_pascal_case, Croquis, EventHandlerScopeData, Scope,
-    ScopeData, ScopeId, ScopeKind,
+    Croquis, EventHandlerScopeData, Scope, ScopeData, ScopeId, ScopeKind, analysis::ComponentUsage,
+    naming::to_pascal_case,
 };
 
 use super::{

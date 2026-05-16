@@ -1,6 +1,6 @@
 //! Element transformation functions.
 
-use vize_carton::{capitalize, is_builtin_directive, is_native_tag, Box, String, Vec};
+use vize_carton::{Box, String, Vec, capitalize, is_builtin_directive, is_native_tag};
 
 use crate::ast::*;
 use crate::transforms::transform_expression::process_inline_handler;

@@ -96,7 +96,7 @@ pub fn generate_memo_check(deps: &str, cache_index: usize) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{get_memo_deps, has_v_memo, TemplateChildNode};
+    use super::{TemplateChildNode, get_memo_deps, has_v_memo};
     use crate::parser::parse;
     use bumpalo::Bump;
 

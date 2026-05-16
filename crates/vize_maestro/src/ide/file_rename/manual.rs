@@ -11,7 +11,7 @@ use std::{
 use ignore::{WalkBuilder, WalkState};
 use oxc_allocator::Allocator;
 use oxc_ast::ast::{CallExpression, Expression, ImportExpression, Statement, TSImportType};
-use oxc_ast_visit::{walk, Visit};
+use oxc_ast_visit::{Visit, walk};
 use oxc_parser::Parser;
 use oxc_span::SourceType;
 use tower_lsp::lsp_types::{FileRename, Range, TextEdit, Url, WorkspaceEdit};
@@ -612,11 +612,7 @@ fn apply_all_path_renames(path: &Path, renames: &[RenameTarget]) -> Option<PathB
         }
     }
 
-    if changed {
-        Some(updated)
-    } else {
-        None
-    }
+    if changed { Some(updated) } else { None }
 }
 
 fn apply_path_rename(path: &Path, rename: &RenameTarget) -> Option<PathBuf> {

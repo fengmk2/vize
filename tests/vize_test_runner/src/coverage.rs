@@ -8,7 +8,7 @@
 
 use std::path::PathBuf;
 use vize_carton::String;
-use vize_test_runner::{run_fixture_tests, CompilerMode};
+use vize_test_runner::{CompilerMode, run_fixture_tests};
 
 fn main() {
     let args: Vec<String> = std::env::args().map(String::from).collect();

@@ -7,7 +7,7 @@
 
 use oxc_allocator::Allocator;
 use oxc_ast::ast as oxc_ast_types;
-use oxc_ast_visit::{walk::walk_arrow_function_expression, Visit};
+use oxc_ast_visit::{Visit, walk::walk_arrow_function_expression};
 use oxc_parser::Parser;
 use oxc_span::SourceType;
 use vize_atelier_core::ast::{
@@ -15,8 +15,8 @@ use vize_atelier_core::ast::{
     TemplateChildNode,
 };
 use vize_carton::{
-    camelize, capitalize, is_builtin_directive, is_native_tag, is_simple_identifier, FxHashSet,
-    String, ToCompactString,
+    FxHashSet, String, ToCompactString, camelize, capitalize, is_builtin_directive, is_native_tag,
+    is_simple_identifier,
 };
 use vize_croquis::builtins::{is_builtin_component, is_global_allowed};
 
@@ -418,7 +418,7 @@ fn extract_identifiers_from_compound(
 
 #[cfg(test)]
 mod tests {
-    use super::{is_used_in_template, resolve_template_used_identifiers, TemplateUsedIdentifiers};
+    use super::{TemplateUsedIdentifiers, is_used_in_template, resolve_template_used_identifiers};
     use vize_atelier_core::parser::parse;
     use vize_carton::Bump;
 

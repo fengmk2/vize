@@ -7,7 +7,7 @@ use crate::cross_file::diagnostics::{
 };
 use crate::cross_file::graph::DependencyGraph;
 use crate::cross_file::registry::{FileId, ModuleRegistry};
-use vize_carton::{cstr, CompactString, FxHashSet, String};
+use vize_carton::{CompactString, FxHashSet, String, cstr};
 
 /// Information about a component resolution issue.
 #[derive(Debug, Clone)]

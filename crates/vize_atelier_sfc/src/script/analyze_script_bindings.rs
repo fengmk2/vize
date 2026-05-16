@@ -203,7 +203,7 @@ fn resolve_object_key(
 
 #[cfg(test)]
 mod tests {
-    use super::{analyze_script_bindings, BindingType};
+    use super::{BindingType, analyze_script_bindings};
 
     #[test]
     fn test_analyze_props_array() {

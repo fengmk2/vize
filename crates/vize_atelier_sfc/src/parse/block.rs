@@ -1,6 +1,6 @@
 use memchr::{memchr, memchr_iter, memmem};
 use std::borrow::Cow;
-use vize_carton::{cstr, FxHashMap, String};
+use vize_carton::{FxHashMap, String, cstr};
 
 // Tag name bytes for fast comparison
 const TAG_TEMPLATE: &[u8] = b"template";

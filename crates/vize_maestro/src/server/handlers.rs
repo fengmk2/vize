@@ -5,6 +5,7 @@
 #![allow(clippy::disallowed_types, clippy::disallowed_methods)]
 
 use tower_lsp::{
+    LanguageServer,
     jsonrpc::Result,
     lsp_types::{
         CodeActionParams, CodeActionResponse, CodeLens, CodeLensParams, CompletionItem,
@@ -19,10 +20,9 @@ use tower_lsp::{
         SemanticTokensResult, ServerInfo, SymbolInformation, SymbolKind,
         TextDocumentPositionParams, TextEdit, WorkspaceEdit, WorkspaceSymbolParams,
     },
-    LanguageServer,
 };
 
-use super::{server_capabilities, MaestroServer};
+use super::{MaestroServer, server_capabilities};
 use crate::ide::{
     CodeActionService, CodeLensService, CompletionService, DefinitionService, DocumentLinkService,
     FileRenameService, HoverService, IdeContext, InlayHintService, ReferencesService,

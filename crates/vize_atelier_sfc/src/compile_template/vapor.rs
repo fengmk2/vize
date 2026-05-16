@@ -1,7 +1,7 @@
 //! Vapor mode template compilation.
 
-use super::string_tracking::{count_braces_with_state, StringTrackState};
-use vize_atelier_vapor::{compile_vapor, VaporCompilerOptions};
+use super::string_tracking::{StringTrackState, count_braces_with_state};
+use vize_atelier_vapor::{VaporCompilerOptions, compile_vapor};
 use vize_carton::{Bump, String, ToCompactString};
 
 use crate::types::{BindingMetadata, SfcError, SfcTemplateBlock};

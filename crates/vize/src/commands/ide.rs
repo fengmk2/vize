@@ -295,8 +295,12 @@ fn zed_install() {
             println!();
             println!("  Start with lint-only mode:");
             println!("  {{");
-            println!("    \"languages\": {{ \"Vue\": {{ \"language_servers\": [\"vize\", \"...\"] }} }},");
-            println!("    \"lsp\": {{ \"vize\": {{ \"initialization_options\": {{ \"lint\": true }} }} }}");
+            println!(
+                "    \"languages\": {{ \"Vue\": {{ \"language_servers\": [\"vize\", \"...\"] }} }},"
+            );
+            println!(
+                "    \"lsp\": {{ \"vize\": {{ \"initialization_options\": {{ \"lint\": true }} }} }}"
+            );
             println!("  }}");
         }
         None => {

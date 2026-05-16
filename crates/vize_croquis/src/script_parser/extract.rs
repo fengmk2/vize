@@ -13,7 +13,7 @@ use crate::provide::ProvideKey;
 use crate::race::RaceConditionRiskKind;
 use crate::reactivity::ReactiveKind;
 use crate::setup_context::SetupContextViolationKind;
-use vize_carton::{cstr, CompactString, FxHashMap, FxHashSet, String};
+use vize_carton::{CompactString, FxHashMap, FxHashSet, String, cstr};
 use vize_relief::BindingType;
 
 use super::{ReactiveGetterContext, ReactiveValueOrigin, ScriptParseResult};

@@ -359,8 +359,8 @@ mod tests {
     use vize_carton::{CompactString, FxHashSet, ToCompactString};
 
     use super::{
-        extract_event_name_from_function_type, extract_events_from_type_literal, gen_runtime_emits,
-        ScriptCompileContext,
+        ScriptCompileContext, extract_event_name_from_function_type,
+        extract_events_from_type_literal, gen_runtime_emits,
     };
 
     fn snapshot_emits(emits: &FxHashSet<CompactString>) -> Vec<&str> {

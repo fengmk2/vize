@@ -18,7 +18,7 @@ use crate::cross_file::diagnostics::{
 use crate::cross_file::graph::DependencyGraph;
 use crate::cross_file::registry::{FileId, ModuleRegistry};
 use crate::reactivity::ReactiveKind;
-use vize_carton::{cstr, CompactString, FxHashSet};
+use vize_carton::{CompactString, FxHashSet, cstr};
 
 /// Kind of reactivity issue.
 #[derive(Debug, Clone, PartialEq, Eq)]

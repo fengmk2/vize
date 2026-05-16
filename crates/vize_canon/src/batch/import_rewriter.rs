@@ -5,13 +5,13 @@
 
 use oxc_allocator::Allocator;
 use oxc_ast::ast::{Expression, Statement};
-use oxc_ast_visit::walk;
 use oxc_ast_visit::Visit;
+use oxc_ast_visit::walk;
 use oxc_parser::Parser;
 use oxc_span::SourceType;
-use vize_carton::cstr;
 use vize_carton::String;
 use vize_carton::ToCompactString;
+use vize_carton::cstr;
 
 /// Offset adjustment for source map.
 #[derive(Debug, Clone)]

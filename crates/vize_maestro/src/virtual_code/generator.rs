@@ -4,8 +4,8 @@
 #![allow(clippy::disallowed_methods)]
 
 use vize_atelier_sfc::SfcDescriptor;
-use vize_carton::cstr;
 use vize_carton::Bump;
+use vize_carton::cstr;
 
 use super::{
     ScriptCodeGenerator, StyleCodeGenerator, TemplateCodeGenerator, VirtualDocument,
@@ -408,8 +408,8 @@ pub fn find_art_block_at_offset(source: &str, offset: usize) -> Option<BlockType
 #[cfg(test)]
 mod tests {
     use super::{
-        find_art_block_at_offset, find_block_at_offset, ArtCursorPosition,
-        BatchVirtualCodeGenerator, BlockType, VirtualCodeGenerator, VirtualLanguage,
+        ArtCursorPosition, BatchVirtualCodeGenerator, BlockType, VirtualCodeGenerator,
+        VirtualLanguage, find_art_block_at_offset, find_block_at_offset,
     };
 
     #[test]
@@ -428,8 +428,8 @@ const message = ref('hello')
 
         let descriptor = vize_atelier_sfc::parse_sfc(source, Default::default()).unwrap();
 
-        let mut gen = VirtualCodeGenerator::new();
-        let docs = gen.generate(&descriptor, "test.vue");
+        let mut generator = VirtualCodeGenerator::new();
+        let docs = generator.generate(&descriptor, "test.vue");
 
         assert!(docs.template.is_some());
         assert!(docs.script_setup.is_some());

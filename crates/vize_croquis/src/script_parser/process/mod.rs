@@ -19,21 +19,21 @@ use oxc_ast::ast::{
 };
 use oxc_span::GetSpan;
 
+use crate::ScopeBinding;
 use crate::analysis::{
     ComponentRegistration, ImportStatementInfo, InvalidExport, InvalidExportKind, ReExportInfo,
     TypeExport, TypeExportKind,
 };
 use crate::scope::{BlockKind, BlockScopeData, ClosureScopeData, ExternalModuleScopeData};
-use crate::ScopeBinding;
 use vize_carton::CompactString;
 use vize_relief::BindingType;
 
+use super::ScriptParseResult;
 use super::extract::{
     detect_setup_context_violation, process_call_expression, process_invalid_export,
     process_type_export,
 };
 use super::walk::{extract_function_params, walk_expression, walk_statement};
-use super::ScriptParseResult;
 
 /// Process a single statement
 pub fn process_statement(result: &mut ScriptParseResult, stmt: &Statement<'_>, source: &str) {

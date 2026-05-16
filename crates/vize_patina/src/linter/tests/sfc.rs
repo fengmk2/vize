@@ -11,10 +11,12 @@ await nextTick()
 </script>
 "#;
     let result = linter.lint_sfc(sfc, "test.vue");
-    assert!(result
-        .diagnostics
-        .iter()
-        .any(|diagnostic| diagnostic.rule_name == "script/no-next-tick"));
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.rule_name == "script/no-next-tick")
+    );
 }
 
 #[test]
@@ -27,10 +29,12 @@ const instance = getCurrentInstance()
 </script>
 "#;
     let result = linter.lint_sfc(sfc, "test.vue");
-    assert!(result
-        .diagnostics
-        .iter()
-        .any(|diagnostic| diagnostic.rule_name == "script/no-get-current-instance"));
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.rule_name == "script/no-get-current-instance")
+    );
 }
 
 #[test]

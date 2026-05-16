@@ -8,7 +8,7 @@ use crate::{error::FormatError, options::FormatOptions, script};
 use vize_carton::{String, ToCompactString};
 
 use super::{
-    attributes::{render_attribute, sort_attributes, ParsedAttribute},
+    attributes::{ParsedAttribute, render_attribute, sort_attributes},
     directives::normalize_attribute,
     helpers::{
         find_bytes, is_tag_name_char, is_void_element_str, is_whitespace, parse_closing_tag,

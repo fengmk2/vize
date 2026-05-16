@@ -13,7 +13,7 @@ use crate::cross_file::registry::{FileId, ModuleEntry, ModuleRegistry};
 use crate::provide::ProvideKey;
 use crate::reactivity::{ReactiveKind, ReactivityLossKind};
 use std::path::{Component, Path, PathBuf};
-use vize_carton::{cstr, CompactString, FxHashMap, FxHashSet, SmallVec, String};
+use vize_carton::{CompactString, FxHashMap, FxHashSet, SmallVec, String, cstr};
 
 #[derive(Debug, Clone)]
 struct PropLoss {

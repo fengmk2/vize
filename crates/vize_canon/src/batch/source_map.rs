@@ -1,7 +1,7 @@
 //! Source map for mapping materialized project files back to original sources.
 
-use super::import_rewriter::ImportSourceMap;
 use super::SfcBlockType;
+use super::import_rewriter::ImportSourceMap;
 use crate::virtual_ts::VizeMapping;
 
 /// Original SFC block span in source coordinates.
@@ -200,8 +200,8 @@ pub fn line_col_to_offset(content: &str, line: u32, col: u32) -> Option<u32> {
 #[cfg(test)]
 mod tests {
     use super::{
-        line_col_to_offset, offset_to_line_col, CompositeSourceMap, ImportSourceMap, SfcBlockRange,
-        SfcBlockType, SfcSourceMap,
+        CompositeSourceMap, ImportSourceMap, SfcBlockRange, SfcBlockType, SfcSourceMap,
+        line_col_to_offset, offset_to_line_col,
     };
     use crate::virtual_ts::VizeMapping;
     use std::ops::Range;

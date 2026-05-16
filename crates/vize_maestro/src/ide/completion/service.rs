@@ -16,9 +16,9 @@ use tower_lsp::lsp_types::{
 use vize_canon::{CorsaBridge, LspCompletionItem, LspDocumentation};
 
 use super::{is_inside_html_comment, script, style, template};
+use crate::ide::IdeContext;
 #[cfg(feature = "native")]
 use crate::ide::corsa_support;
-use crate::ide::IdeContext;
 use crate::virtual_code::{ArtCursorPosition, BlockType};
 
 impl super::CompletionService {

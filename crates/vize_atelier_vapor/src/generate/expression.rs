@@ -1,11 +1,11 @@
 use oxc_allocator::Allocator as OxcAllocator;
 use oxc_ast::ast as oxc_ast_types;
 use oxc_ast_visit::{
+    Visit,
     walk::{
         walk_arrow_function_expression, walk_function, walk_object_property,
         walk_variable_declarator,
     },
-    Visit,
 };
 use oxc_parser::Parser;
 use oxc_span::SourceType;

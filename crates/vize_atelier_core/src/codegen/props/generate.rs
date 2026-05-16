@@ -302,7 +302,7 @@ fn generate_props_object_inner(
                     if dir.name == "bind"
                         && matches!(&dir.arg, Some(ExpressionNode::Simple(exp)) if exp.content == "is") =>
                 {
-                    continue
+                    continue;
                 }
                 _ => {}
             }

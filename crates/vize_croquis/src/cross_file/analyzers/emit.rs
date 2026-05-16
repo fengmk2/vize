@@ -10,7 +10,7 @@ use crate::cross_file::diagnostics::{
 };
 use crate::cross_file::graph::{DependencyEdge, DependencyGraph};
 use crate::cross_file::registry::{FileId, ModuleRegistry};
-use vize_carton::{cstr, CompactString, FxHashMap, FxHashSet, ToCompactString};
+use vize_carton::{CompactString, FxHashMap, FxHashSet, ToCompactString, cstr};
 
 /// Information about emit flow between components.
 #[derive(Debug, Clone)]

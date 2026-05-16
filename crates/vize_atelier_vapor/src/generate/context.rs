@@ -2,7 +2,7 @@
 
 use super::expression;
 use vize_atelier_core::options::BindingMetadata;
-use vize_carton::{camelize, capitalize, cstr, FxHashMap, FxHashSet, String, ToCompactString};
+use vize_carton::{FxHashMap, FxHashSet, String, ToCompactString, camelize, capitalize, cstr};
 use vize_croquis::builtins::is_global_allowed;
 
 /// For-loop scope entry

@@ -2,7 +2,7 @@
 
 use super::context::GenerateContext;
 use crate::ir::{BlockIRNode, OperationNode};
-use vize_carton::{cstr, String};
+use vize_carton::{String, cstr};
 
 /// Collect delegate events from block
 pub(crate) fn collect_delegate_events(ctx: &mut GenerateContext, block: &BlockIRNode<'_>) {

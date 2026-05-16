@@ -3,12 +3,12 @@
 //! Processes v-if/v-else-if/v-else and v-for nodes at the template AST level
 //! (as opposed to directive-level processing in `visit_element`).
 
+use crate::ScopeBinding;
 use crate::analyzer::Analyzer;
 use crate::scope::VForScopeData;
-use crate::ScopeBinding;
-use vize_carton::{profile, CompactString, SmallVec, String};
-use vize_relief::ast::{ExpressionNode, ForNode, IfNode, PropNode};
+use vize_carton::{CompactString, SmallVec, String, profile};
 use vize_relief::BindingType;
+use vize_relief::ast::{ExpressionNode, ForNode, IfNode, PropNode};
 
 fn build_if_branch_guard(
     previous_conditions: &[CompactString],

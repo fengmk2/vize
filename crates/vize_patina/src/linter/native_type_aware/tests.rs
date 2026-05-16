@@ -1,7 +1,7 @@
 use super::{
-    has_active_type_aware_rules, lint_sfc_with_corsa, RULE_NO_FLOATING_PROMISES,
-    RULE_NO_REACTIVITY_LOSS, RULE_NO_UNSAFE_TEMPLATE_BINDING, RULE_REQUIRE_TYPED_EMITS,
-    RULE_REQUIRE_TYPED_PROPS,
+    RULE_NO_FLOATING_PROMISES, RULE_NO_REACTIVITY_LOSS, RULE_NO_UNSAFE_TEMPLATE_BINDING,
+    RULE_REQUIRE_TYPED_EMITS, RULE_REQUIRE_TYPED_PROPS, has_active_type_aware_rules,
+    lint_sfc_with_corsa,
 };
 use crate::{LintPreset, Linter};
 
@@ -35,10 +35,12 @@ fn require_typed_props_uses_corsa() {
 defineProps(['msg', 'count'])
 </script>"#;
     let result = lint_sfc_with_corsa(&linter, source, "Component.vue");
-    assert!(result
-        .diagnostics
-        .iter()
-        .any(|diag| diag.rule_name == RULE_REQUIRE_TYPED_PROPS));
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .any(|diag| diag.rule_name == RULE_REQUIRE_TYPED_PROPS)
+    );
 }
 
 #[test]
@@ -52,10 +54,12 @@ fn require_typed_emits_uses_corsa() {
 defineEmits(['save'])
 </script>"#;
     let result = lint_sfc_with_corsa(&linter, source, "Component.vue");
-    assert!(result
-        .diagnostics
-        .iter()
-        .any(|diag| diag.rule_name == RULE_REQUIRE_TYPED_EMITS));
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .any(|diag| diag.rule_name == RULE_REQUIRE_TYPED_EMITS)
+    );
 }
 
 #[test]
@@ -73,10 +77,12 @@ async function loadData(): Promise<number> {
 loadData()
 </script>"#;
     let result = lint_sfc_with_corsa(&linter, source, "Component.vue");
-    assert!(result
-        .diagnostics
-        .iter()
-        .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES));
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES)
+    );
 }
 
 #[test]
@@ -97,10 +103,12 @@ if (enabled) {
 }
 </script>"#;
     let result = lint_sfc_with_corsa(&linter, source, "Component.vue");
-    assert!(result
-        .diagnostics
-        .iter()
-        .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES));
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES)
+    );
 }
 
 #[test]
@@ -119,10 +127,12 @@ function cleanup() {}
 loadData().finally(cleanup)
 </script>"#;
     let result = lint_sfc_with_corsa(&linter, source, "Component.vue");
-    assert!(result
-        .diagnostics
-        .iter()
-        .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES));
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES)
+    );
 }
 
 #[test]
@@ -144,10 +154,12 @@ function report(error: unknown) {
 loadData().catch(report).finally(cleanup)
 </script>"#;
     let result = lint_sfc_with_corsa(&linter, source, "Component.vue");
-    assert!(!result
-        .diagnostics
-        .iter()
-        .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES));
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES)
+    );
 }
 
 #[test]
@@ -278,10 +290,12 @@ function cleanup() {}
   <button @click="save().finally(cleanup)">Save</button>
 </template>"#;
     let result = lint_sfc_with_corsa(&linter, source, "Component.vue");
-    assert!(result
-        .diagnostics
-        .iter()
-        .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES));
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES)
+    );
 }
 
 #[test]
@@ -303,10 +317,12 @@ function report(error: unknown) {
   <button @click="enabled && save().catch(report)">Save</button>
 </template>"#;
     let result = lint_sfc_with_corsa(&linter, source, "Component.vue");
-    assert!(!result
-        .diagnostics
-        .iter()
-        .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES));
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES)
+    );
 }
 
 #[test]
@@ -326,10 +342,12 @@ const anyHandler: any = () => {}
   <button @click="anyHandler()">Save</button>
 </template>"#;
     let result = lint_sfc_with_corsa(&linter, source, "TypeAwareFixture.vue");
-    assert!(result
-        .diagnostics
-        .iter()
-        .any(|diag| diag.rule_name == RULE_NO_UNSAFE_TEMPLATE_BINDING));
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .any(|diag| diag.rule_name == RULE_NO_UNSAFE_TEMPLATE_BINDING)
+    );
 }
 
 #[test]
@@ -355,12 +373,16 @@ const a = ctx2.count()
         .map(|diag| diag.message.as_str())
         .collect::<Vec<_>>();
 
-    assert!(messages
-        .iter()
-        .any(|message| message.contains("useMyComposable")));
-    assert!(messages
-        .iter()
-        .any(|message| message.contains("ctx2.count()")));
+    assert!(
+        messages
+            .iter()
+            .any(|message| message.contains("useMyComposable"))
+    );
+    assert!(
+        messages
+            .iter()
+            .any(|message| message.contains("ctx2.count()"))
+    );
 }
 
 #[test]
@@ -374,10 +396,12 @@ fn no_reactivity_loss_allows_direct_define_props_destructure() {
 const { count } = defineProps<{ count: number }>()
 </script>"#;
     let result = lint_sfc_with_corsa(&linter, source, "Component.vue");
-    assert!(!result
-        .diagnostics
-        .iter()
-        .any(|diag| diag.rule_name == RULE_NO_REACTIVITY_LOSS));
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|diag| diag.rule_name == RULE_NO_REACTIVITY_LOSS)
+    );
 }
 
 #[test]
@@ -396,10 +420,12 @@ const alias = count
 useMyComposable(alias)
 </script>"#;
     let result = lint_sfc_with_corsa(&linter, source, "Component.vue");
-    assert!(!result
-        .diagnostics
-        .iter()
-        .any(|diag| diag.rule_name == RULE_NO_REACTIVITY_LOSS));
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|diag| diag.rule_name == RULE_NO_REACTIVITY_LOSS)
+    );
 }
 
 #[test]
@@ -431,24 +457,36 @@ const a = ctx.second()
         .map(|diag| diag.message.as_str())
         .collect::<Vec<_>>();
 
-    assert!(messages
-        .iter()
-        .any(|message| message.contains("plain snapshot 'count' to 'alias'")));
-    assert!(messages
-        .iter()
-        .any(|message| message.contains("plain snapshot 'alias' to 'second'")));
-    assert!(messages
-        .iter()
-        .any(|message| message.contains("plain snapshot 'second' to 'assigned'")));
-    assert!(messages
-        .iter()
-        .any(|message| message.contains("Passing 'second'")));
-    assert!(messages
-        .iter()
-        .any(|message| message.contains("Passing 'assigned'")));
-    assert!(messages
-        .iter()
-        .any(|message| message.contains("ctx.second()")));
+    assert!(
+        messages
+            .iter()
+            .any(|message| message.contains("plain snapshot 'count' to 'alias'"))
+    );
+    assert!(
+        messages
+            .iter()
+            .any(|message| message.contains("plain snapshot 'alias' to 'second'"))
+    );
+    assert!(
+        messages
+            .iter()
+            .any(|message| message.contains("plain snapshot 'second' to 'assigned'"))
+    );
+    assert!(
+        messages
+            .iter()
+            .any(|message| message.contains("Passing 'second'"))
+    );
+    assert!(
+        messages
+            .iter()
+            .any(|message| message.contains("Passing 'assigned'"))
+    );
+    assert!(
+        messages
+            .iter()
+            .any(|message| message.contains("ctx.second()"))
+    );
 }
 
 #[test]
@@ -475,12 +513,16 @@ const user = state.user
         .map(|diag| diag.message.as_str())
         .collect::<Vec<_>>();
 
-    assert!(messages
-        .iter()
-        .any(|message| message.contains("countRef.value")));
-    assert!(messages
-        .iter()
-        .any(|message| message.contains("state.user")));
+    assert!(
+        messages
+            .iter()
+            .any(|message| message.contains("countRef.value"))
+    );
+    assert!(
+        messages
+            .iter()
+            .any(|message| message.contains("state.user"))
+    );
 }
 
 #[test]
@@ -498,10 +540,12 @@ async function loadData(): Promise<number> {
 void loadData()
 </script>"#;
     let result = lint_sfc_with_corsa(&linter, source, "Component.vue");
-    assert!(!result
-        .diagnostics
-        .iter()
-        .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES));
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES)
+    );
 }
 
 #[test]
@@ -519,10 +563,12 @@ async function save(): Promise<void> {}
   <button @click="void save()">Save</button>
 </template>"#;
     let result = lint_sfc_with_corsa(&linter, source, "Component.vue");
-    assert!(!result
-        .diagnostics
-        .iter()
-        .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES));
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES)
+    );
 }
 
 #[test]
@@ -543,10 +589,12 @@ function report(error: unknown) {
   <button @click="save().catch(report)">Save</button>
 </template>"#;
     let result = lint_sfc_with_corsa(&linter, source, "Component.vue");
-    assert!(!result
-        .diagnostics
-        .iter()
-        .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES));
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES)
+    );
 }
 
 #[test]
@@ -568,10 +616,12 @@ function report(error: unknown) {
   <button @click="save().catch(report).finally(cleanup)">Save</button>
 </template>"#;
     let result = lint_sfc_with_corsa(&linter, source, "Component.vue");
-    assert!(!result
-        .diagnostics
-        .iter()
-        .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES));
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES)
+    );
 }
 
 #[test]
@@ -615,10 +665,12 @@ const onSave = () => {}
   <button @click="onSave">Save</button>
 </template>"#;
     let result = lint_sfc_with_corsa(&linter, source, "Component.vue");
-    assert!(!result
-        .diagnostics
-        .iter()
-        .any(|diag| diag.rule_name == RULE_NO_UNSAFE_TEMPLATE_BINDING));
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|diag| diag.rule_name == RULE_NO_UNSAFE_TEMPLATE_BINDING)
+    );
 }
 
 #[test]

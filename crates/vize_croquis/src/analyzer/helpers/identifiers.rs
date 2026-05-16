@@ -13,7 +13,7 @@ use std::borrow::Cow;
 use oxc_allocator::Allocator;
 use oxc_parser::Parser;
 use oxc_span::SourceType;
-use vize_carton::{profile, CompactString};
+use vize_carton::{CompactString, profile};
 
 #[allow(clippy::disallowed_types)]
 /// Strip JS/TS comments while preserving string literals.

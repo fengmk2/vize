@@ -11,7 +11,7 @@ use oxc_allocator::Allocator;
 use oxc_ast::ast::BindingPattern;
 use oxc_parser::Parser;
 use oxc_span::SourceType;
-use vize_carton::{profile, smallvec, CompactString, SmallVec};
+use vize_carton::{CompactString, SmallVec, profile, smallvec};
 
 use super::is_valid_identifier_fast;
 

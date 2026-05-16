@@ -1,5 +1,5 @@
 use std::path::{Path, PathBuf};
-use vize_carton::{cstr, String};
+use vize_carton::{String, cstr};
 
 const EXECUTABLE_NAMES: [&str; 2] = ["corsa", "tsgo"];
 

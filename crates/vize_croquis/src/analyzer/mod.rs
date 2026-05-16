@@ -34,7 +34,7 @@ pub use helpers::{
 };
 
 use crate::analysis::Croquis;
-use vize_carton::{profile, CompactString};
+use vize_carton::{CompactString, profile};
 
 /// Analysis options for controlling what gets analyzed.
 ///

@@ -3,9 +3,9 @@
 use super::helpers::{camelize, is_constant_simple_expression};
 use crate::ast::*;
 use crate::options::{BindingMetadata, BindingType};
-use vize_carton::is_builtin_directive;
 use vize_carton::String;
 use vize_carton::ToCompactString;
+use vize_carton::is_builtin_directive;
 
 /// Check if an interpolation references only constant bindings (LiteralConst or SetupConst)
 /// These bindings never change at runtime, so no TEXT patch flag is needed.

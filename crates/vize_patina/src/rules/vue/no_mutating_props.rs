@@ -48,8 +48,8 @@ use crate::rule::{Rule, RuleCategory, RuleMeta};
 use vize_carton::FxHashSet;
 use vize_carton::String;
 use vize_carton::ToCompactString;
-use vize_relief::ast::{DirectiveNode, ElementNode, PropNode, RootNode, TemplateChildNode};
 use vize_relief::BindingType;
+use vize_relief::ast::{DirectiveNode, ElementNode, PropNode, RootNode, TemplateChildNode};
 
 static META: RuleMeta = RuleMeta {
     name: "vue/no-mutating-props",

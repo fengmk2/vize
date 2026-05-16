@@ -6,11 +6,11 @@
 //! - Expression undefined-reference checking
 
 use crate::analysis::{ElementIdInfo, ElementIdKind, UndefinedRef};
-use vize_carton::{profile, CompactString};
+use vize_carton::{CompactString, profile};
 use vize_relief::ast::{ElementNode, ExpressionNode, PropNode};
 
-use super::super::helpers::{extract_identifiers_oxc, is_keyword};
 use super::super::Analyzer;
+use super::super::helpers::{extract_identifiers_oxc, is_keyword};
 
 /// Attributes that take ID references (not the ID itself).
 const ID_REFERENCE_ATTRIBUTES: &[&str] = &[

@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 #[allow(clippy::disallowed_types)]
 use std::sync::{Arc, Mutex};
 use vize_carton::profiler::{CacheStats, Profiler};
-use vize_carton::{cstr, String};
+use vize_carton::{String, cstr};
 
 use super::types::*;
 use crate::corsa_client::CorsaProjectClient;

@@ -7,17 +7,17 @@ use vize_croquis::{BindingType, Croquis, ScopeData, ScopeKind};
 
 use super::{
     helpers::{
-        generate_template_context, to_safe_identifier, IMPORT_META_AUGMENTATION,
-        SETUP_SCOPE_HELPER_NAMES, VUE_SETUP_HELPERS, VUE_TYPE_HELPERS,
+        IMPORT_META_AUGMENTATION, SETUP_SCOPE_HELPER_NAMES, VUE_SETUP_HELPERS, VUE_TYPE_HELPERS,
+        generate_template_context, to_safe_identifier,
     },
     props::{collect_template_prop_names, generate_props_type, generate_props_variables},
     scope::generate_scope_closures,
     types::{VirtualTsOptions, VirtualTsOutput, VizeMapping},
 };
+use vize_carton::String;
 use vize_carton::append;
 use vize_carton::cstr;
 use vize_carton::profile;
-use vize_carton::String;
 
 /// Generate virtual TypeScript from Vue SFC analysis.
 ///

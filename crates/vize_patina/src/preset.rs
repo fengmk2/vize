@@ -147,14 +147,22 @@ mod tests {
         assert!(opinionated.has_rule("html/no-empty-palpable-content"));
         assert!(opinionated.has_rule("vue/multi-word-component-names"));
         assert!(opinionated.has_rule("a11y/use-list"));
-        assert!(!super::builtin_script_rule_names(LintPreset::HappyPath)
-            .contains(&"script/no-options-api"));
-        assert!(super::builtin_script_rule_names(LintPreset::Opinionated)
-            .contains(&"script/no-options-api"));
-        assert!(super::builtin_script_rule_names(LintPreset::Opinionated)
-            .contains(&"script/no-get-current-instance"));
-        assert!(super::builtin_script_rule_names(LintPreset::Opinionated)
-            .contains(&"script/no-next-tick"));
+        assert!(
+            !super::builtin_script_rule_names(LintPreset::HappyPath)
+                .contains(&"script/no-options-api")
+        );
+        assert!(
+            super::builtin_script_rule_names(LintPreset::Opinionated)
+                .contains(&"script/no-options-api")
+        );
+        assert!(
+            super::builtin_script_rule_names(LintPreset::Opinionated)
+                .contains(&"script/no-get-current-instance")
+        );
+        assert!(
+            super::builtin_script_rule_names(LintPreset::Opinionated)
+                .contains(&"script/no-next-tick")
+        );
     }
 
     #[test]

@@ -14,10 +14,10 @@ use vize_carton::ToCompactString;
 /// This is a context-aware version that uses `$setup.` for setup bindings in function mode.
 pub(crate) fn prefix_identifiers_with_context(content: &str, ctx: &CodegenContext) -> String {
     use oxc_allocator::Allocator as OxcAllocator;
+    use oxc_ast_visit::Visit;
     use oxc_ast_visit::walk::{
         walk_assignment_expression, walk_object_property, walk_update_expression,
     };
-    use oxc_ast_visit::Visit;
     use oxc_parser::Parser;
     use oxc_span::SourceType;
     use vize_carton::FxHashSet;

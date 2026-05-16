@@ -6,14 +6,14 @@ use ignore::Walk;
 use rayon::prelude::*;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 use std::time::Instant;
 use vize_armature::Parser;
-use vize_atelier_sfc::{parse_sfc, SfcParseOptions};
+use vize_atelier_sfc::{SfcParseOptions, parse_sfc};
 use vize_carton::{
-    cstr, profiler::global_profiler, Allocator, CompactString, FxHashMap, String, ToCompactString,
+    Allocator, CompactString, FxHashMap, String, ToCompactString, cstr, profiler::global_profiler,
 };
 use vize_croquis::cross_file::{
     CrossFileAnalyzer, CrossFileDiagnostic, CrossFileDiagnosticKind, CrossFileOptions,
@@ -21,12 +21,12 @@ use vize_croquis::cross_file::{
 };
 use vize_croquis::{Analyzer, AnalyzerOptions, Croquis};
 use vize_patina::{
-    format_results, format_summary, HelpLevel, LintDiagnostic, LintPreset, LintResult, Linter,
-    OutputFormat,
+    HelpLevel, LintDiagnostic, LintPreset, LintResult, Linter, OutputFormat, format_results,
+    format_summary,
 };
 
 use crate::commands::profile::{
-    print_profile_report, ProfileFileRow, ProfilePhase, ProfilePhaseKind, ProfileReport,
+    ProfileFileRow, ProfilePhase, ProfilePhaseKind, ProfileReport, print_profile_report,
 };
 
 #[derive(Args)]

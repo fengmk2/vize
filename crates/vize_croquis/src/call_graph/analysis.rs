@@ -8,8 +8,8 @@ use super::{
     CallEdge, CallGraph, ComposableCallInfo, FunctionDef, FunctionId, SetupContextKind, SmallVec,
     VueApiCall, VueApiCategory,
 };
-use vize_carton::append;
 use vize_carton::String;
+use vize_carton::append;
 
 impl CallGraph {
     /// Check if a function (or None for top-level) is in setup context.

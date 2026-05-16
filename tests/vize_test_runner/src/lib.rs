@@ -12,8 +12,8 @@ use vize_atelier_core::{
     parser::parse_with_options,
     transform::transform,
 };
-use vize_atelier_sfc::{compile_sfc, parse_sfc, SfcCompileOptions, SfcParseOptions};
-use vize_atelier_vapor::{compile_vapor, VaporCompilerOptions};
+use vize_atelier_sfc::{SfcCompileOptions, SfcParseOptions, compile_sfc, parse_sfc};
+use vize_atelier_vapor::{VaporCompilerOptions, compile_vapor};
 use vize_carton::{Allocator, String, ToCompactString};
 
 /// Test fixture file

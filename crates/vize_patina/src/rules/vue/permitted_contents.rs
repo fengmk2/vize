@@ -188,7 +188,7 @@ impl Rule for PermittedContents {
 
 #[cfg(test)]
 mod tests {
-    use super::{required_children, PermittedContents};
+    use super::{PermittedContents, required_children};
     use crate::linter::Linter;
     use crate::rule::RuleRegistry;
 
@@ -387,7 +387,12 @@ mod tests {
         assert_eq!(required_children("ol"), Some(["li"].as_slice()));
         assert_eq!(
             required_children("table"),
-            Some(["thead", "tbody", "tfoot", "tr", "caption", "colgroup", "col"].as_slice())
+            Some(
+                [
+                    "thead", "tbody", "tfoot", "tr", "caption", "colgroup", "col"
+                ]
+                .as_slice()
+            )
         );
         assert_eq!(required_children("tr"), Some(["td", "th"].as_slice()));
         assert!(required_children("div").is_none());

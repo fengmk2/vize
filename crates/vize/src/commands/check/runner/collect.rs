@@ -338,10 +338,9 @@ mod tests {
         fs::write(case_dir.join("src/nested/View.vue"), "").unwrap();
         fs::write(case_dir.join("src/nested/Skip.vue"), "").unwrap();
 
-        let files = collect_vue_files(&vec![case_dir
-            .join("src/nested/*.vue")
-            .display()
-            .to_string()]);
+        let files = collect_vue_files(&vec![
+            case_dir.join("src/nested/*.vue").display().to_string(),
+        ]);
 
         assert_eq!(
             files,

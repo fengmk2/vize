@@ -8,11 +8,12 @@ use vize_carton::{Bump, FxHashSet, String, ToCompactString};
 use vize_croquis::macros::runtime_erased_macro_names;
 
 use crate::script::{
-    resolve_template_used_identifiers, transform_destructured_props, ScriptCompileContext,
-    TemplateUsedIdentifiers,
+    ScriptCompileContext, TemplateUsedIdentifiers, resolve_template_used_identifiers,
+    transform_destructured_props,
 };
 use crate::types::{BindingType, SfcError};
 
+use super::super::ScriptCompileResult;
 use super::super::import_utils::extract_import_identifiers;
 use super::super::lazy_hydration::transform_lazy_hydration_macros;
 use super::super::props::{
@@ -20,7 +21,6 @@ use super::super::props::{
 };
 use super::super::statement_sections::extract_script_sections;
 use super::super::typescript::transform_typescript_to_js;
-use super::super::ScriptCompileResult;
 use super::helpers::{collect_runtime_identifier_references, is_reserved_word};
 use super::imports::dedupe_imports;
 
@@ -639,7 +639,7 @@ fn build_returned_bindings(
         .collect();
 
     // Add emit binding to returned (it's a runtime value that should be exposed)
-    if let Some(ref emit_name) = emit_binding_name {
+    if let Some(emit_name) = emit_binding_name {
         if !returned_bindings.contains(emit_name) {
             returned_bindings.push(emit_name.clone());
         }

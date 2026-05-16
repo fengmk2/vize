@@ -210,7 +210,7 @@ pub fn get_model_event_prop(el: &ElementNode<'_>) -> (&'static str, &'static str
 #[cfg(test)]
 mod tests {
     use super::{
-        parse_model_modifiers, supports_v_model, SimpleExpressionNode, SourceLocation, String, Vec,
+        SimpleExpressionNode, SourceLocation, String, Vec, parse_model_modifiers, supports_v_model,
     };
     use vize_carton::Allocator;
 

@@ -4,8 +4,8 @@
 
 use crate::context::{ElementContext, LintContext};
 use crate::rule::Rule;
-use vize_carton::directive::{parse_level_severity, parse_vize_directive, DirectiveKind};
-use vize_carton::{cstr, profile, CompactString};
+use vize_carton::directive::{DirectiveKind, parse_level_severity, parse_vize_directive};
+use vize_carton::{CompactString, cstr, profile};
 use vize_relief::ast::{
     CommentNode, ElementNode, ExpressionNode, PropNode, RootNode, TemplateChildNode,
 };
@@ -355,7 +355,7 @@ fn find_pattern(haystack: &[u8], needle: &[u8]) -> Option<usize> {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_v_for_variables, CompactString, ExpressionNode};
+    use super::{CompactString, ExpressionNode, parse_v_for_variables};
     use vize_carton::Bump;
     use vize_relief::ast::SimpleExpressionNode;
 

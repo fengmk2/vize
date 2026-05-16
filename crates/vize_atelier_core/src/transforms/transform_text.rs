@@ -173,7 +173,7 @@ fn escape_text(s: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{condense_whitespace, is_whitespace_only, TextPart};
+    use super::{TextPart, condense_whitespace, is_whitespace_only};
 
     #[test]
     fn test_is_whitespace_only() {

@@ -7,11 +7,11 @@ use super::{
     helpers::{generated_text_range, is_reserved_identifier},
     types::VizeMapping,
 };
+use vize_carton::FxHashSet;
+use vize_carton::String;
 use vize_carton::append;
 use vize_carton::cstr;
 use vize_carton::profile;
-use vize_carton::FxHashSet;
-use vize_carton::String;
 use vize_croquis::analysis::ComponentUsage;
 use vize_croquis::analyzer::strip_js_comments;
 

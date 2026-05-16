@@ -422,16 +422,16 @@ pub(crate) fn generate_for_item_props(
         if let Some(key) = key_exp {
             ctx.push("{ key: ");
             generate_expression(ctx, key);
-            if let Some(ref sid) = scope_id {
+            if let Some(sid) = scope_id {
                 ctx.push(", \"");
-                ctx.push(sid);
+                ctx.push(sid.as_str());
                 ctx.push("\": \"\"");
             }
             ctx.push(" }");
-        } else if let Some(ref sid) = scope_id {
+        } else if let Some(sid) = scope_id {
             // No key, no other props, but has scope_id
             ctx.push("{ \"");
-            ctx.push(sid);
+            ctx.push(sid.as_str());
             ctx.push("\": \"\" }");
         }
         return;
@@ -540,11 +540,11 @@ pub(crate) fn generate_for_item_props(
             generate_single_prop(ctx, prop, merge_static_class, merge_static_style);
         }
 
-        if let Some(ref sid) = scope_id {
+        if let Some(sid) = scope_id {
             ctx.push(",");
             ctx.newline();
             ctx.push("\"");
-            ctx.push(sid);
+            ctx.push(sid.as_str());
             ctx.push("\": \"\"");
         }
 
@@ -581,12 +581,12 @@ pub(crate) fn generate_for_item_props(
             first = false;
         }
 
-        if let Some(ref sid) = scope_id {
+        if let Some(sid) = scope_id {
             if !first {
                 ctx.push(",");
             }
             ctx.push(" \"");
-            ctx.push(sid);
+            ctx.push(sid.as_str());
             ctx.push("\": \"\"");
         }
 
@@ -669,13 +669,13 @@ fn generate_for_item_props_merged(
             first_prop = false;
         }
 
-        if let Some(ref sid) = scope_id {
+        if let Some(sid) = scope_id {
             if !first_prop {
                 ctx.push(",");
             }
             ctx.newline();
             ctx.push("\"");
-            ctx.push(sid);
+            ctx.push(sid.as_str());
             ctx.push("\": \"\"");
         }
 

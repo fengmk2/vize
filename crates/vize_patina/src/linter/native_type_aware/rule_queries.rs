@@ -1,10 +1,11 @@
 use super::{
-    markers::{push_emit_validator_markers, push_prop_type_markers, MacroQuery, QueryKind},
+    LintResult, Linter, RULE_REQUIRE_TYPED_EMITS, RULE_REQUIRE_TYPED_PROPS,
+    markers::{MacroQuery, QueryKind, push_emit_validator_markers, push_prop_type_markers},
     parsing::is_runtime_array_macro,
-    push_warning, LintResult, Linter, RULE_REQUIRE_TYPED_EMITS, RULE_REQUIRE_TYPED_PROPS,
+    push_warning,
 };
 use crate::diagnostic::LintDiagnostic;
-use vize_croquis::{virtual_ts::VirtualTsOutput, Croquis};
+use vize_croquis::{Croquis, virtual_ts::VirtualTsOutput};
 
 pub(super) struct MacroWarning<'a> {
     pub kind: QueryKind,

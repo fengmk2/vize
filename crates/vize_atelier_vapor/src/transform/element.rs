@@ -8,7 +8,7 @@ mod component;
 mod deferred;
 mod template;
 
-use vize_carton::{append, cstr, Box, String, Vec};
+use vize_carton::{Box, String, Vec, append, cstr};
 
 use crate::ir::{
     BlockIRNode, ChildRefIRNode, ComponentKind, CreateComponentIRNode, IRProp, IRSlot,

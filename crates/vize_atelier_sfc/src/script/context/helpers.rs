@@ -51,7 +51,7 @@ pub(super) fn infer_binding_type(
                 // Individual prop names are registered separately as Props bindings
                 "defineProps" => return BindingType::SetupReactiveConst,
                 "ref" | "shallowRef" | "customRef" | "toRef" | "useTemplateRef" => {
-                    return BindingType::SetupRef
+                    return BindingType::SetupRef;
                 }
                 "computed" | "toRefs" => return BindingType::SetupRef,
                 "reactive" | "shallowReactive" => return BindingType::SetupReactiveConst,

@@ -410,13 +410,12 @@ impl CssLinter {
         // Filter out disabled diagnostics
         if let Some(disabled) = disabled_rules {
             let line_starts: Vec<usize> = std::iter::once(0)
-                .chain(source.bytes().enumerate().filter_map(|(i, b)| {
-                    if b == b'\n' {
-                        Some(i + 1)
-                    } else {
-                        None
-                    }
-                }))
+                .chain(
+                    source
+                        .bytes()
+                        .enumerate()
+                        .filter_map(|(i, b)| if b == b'\n' { Some(i + 1) } else { None }),
+                )
                 .collect();
 
             let get_line =
@@ -452,7 +451,7 @@ impl Default for CssLinter {
 
 #[cfg(test)]
 mod disable_tests {
-    use super::{strip_vize_comments, CssLinter, DisabledRules};
+    use super::{CssLinter, DisabledRules, strip_vize_comments};
 
     #[test]
     fn test_parse_disable_comments() {
@@ -493,10 +492,12 @@ mod disable_tests {
         let source = ".foo { color: red !important; } /* vize-disable-line css/no-important */";
         let result = linter.lint(source, 0);
         // Should not have warnings for !important on this line
-        assert!(!result
-            .diagnostics
-            .iter()
-            .any(|d| d.rule_name == "css/no-important"));
+        assert!(
+            !result
+                .diagnostics
+                .iter()
+                .any(|d| d.rule_name == "css/no-important")
+        );
     }
 
     #[test]
@@ -515,13 +516,13 @@ mod disable_tests {
 
         // Calculate line starts
         let line_starts: Vec<usize> = std::iter::once(0)
-            .chain(source.bytes().enumerate().filter_map(|(i, b)| {
-                if b == b'\n' {
-                    Some(i + 1)
-                } else {
-                    None
-                }
-            }))
+            .chain(
+                source.bytes().enumerate().filter_map(
+                    |(i, b)| {
+                        if b == b'\n' { Some(i + 1) } else { None }
+                    },
+                ),
+            )
             .collect();
         println!("line_starts: {:?}", line_starts);
 

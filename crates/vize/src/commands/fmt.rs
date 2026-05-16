@@ -3,19 +3,19 @@
 #![allow(clippy::disallowed_macros)]
 
 use clap::Args;
-use glob::{glob, MatchOptions, Pattern};
+use glob::{MatchOptions, Pattern, glob};
 use ignore::WalkBuilder;
 use rayon::prelude::*;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 use vize_carton::cstr;
-use vize_glyph::{format_sfc_with_allocator, Allocator, FormatOptions};
+use vize_glyph::{Allocator, FormatOptions, format_sfc_with_allocator};
 
 use crate::commands::profile::{
-    print_profile_report, ProfileFileRow, ProfilePhase, ProfilePhaseKind, ProfileReport,
+    ProfileFileRow, ProfilePhase, ProfilePhaseKind, ProfileReport, print_profile_report,
 };
 use crate::config;
 
@@ -545,7 +545,7 @@ struct FormatFileProfile {
 
 #[cfg(test)]
 mod tests {
-    use super::{collect_files, FmtPattern};
+    use super::{FmtPattern, collect_files};
     use std::{
         fs,
         path::{Path, PathBuf},

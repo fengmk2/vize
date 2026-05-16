@@ -3,7 +3,7 @@
 //! v-text sets the element's textContent.
 
 use vize_atelier_core::{DirectiveNode, RuntimeHelper};
-use vize_carton::{cstr, String};
+use vize_carton::{String, cstr};
 
 /// Runtime helper for v-text
 pub const V_TEXT: RuntimeHelper = RuntimeHelper::SetBlockTracking;

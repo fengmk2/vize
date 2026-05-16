@@ -8,17 +8,17 @@ use oxc_ast::ast::{Argument, BindingPattern, Expression, Statement, VariableDecl
 use oxc_parser::Parser;
 use oxc_span::{GetSpan, SourceType};
 
-use vize_carton::{profile, String, ToCompactString};
+use vize_carton::{String, ToCompactString, profile};
 
 use crate::types::BindingType;
 
-use super::super::define_props_destructure::process_props_destructure;
 use super::super::MacroCall;
+use super::super::define_props_destructure::process_props_destructure;
+use super::ScriptCompileContext;
 use super::helpers::{
     extract_args_from_call, extract_macro_from_expr, extract_type_args_from_call,
     infer_binding_type, is_call_of, is_import_type_only,
 };
-use super::ScriptCompileContext;
 use crate::script::build_interface_type_source;
 
 impl ScriptCompileContext {

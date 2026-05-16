@@ -2,7 +2,7 @@
 //!
 //! Transforms v-bind (: shorthand) directives into SetPropIRNode.
 
-use vize_carton::{camelize, Box, Bump, Vec};
+use vize_carton::{Box, Bump, Vec, camelize};
 
 use crate::ir::{IRProp, OperationNode, SetPropIRNode};
 use vize_atelier_core::{

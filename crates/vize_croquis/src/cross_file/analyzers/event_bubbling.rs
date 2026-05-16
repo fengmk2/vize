@@ -9,7 +9,7 @@ use crate::cross_file::diagnostics::{
 };
 use crate::cross_file::graph::{DependencyEdge, DependencyGraph};
 use crate::cross_file::registry::{FileId, ModuleRegistry};
-use vize_carton::{cstr, CompactString, FxHashMap, FxHashSet};
+use vize_carton::{CompactString, FxHashMap, FxHashSet, cstr};
 
 /// Information about event bubbling.
 #[derive(Debug, Clone)]

@@ -8,7 +8,7 @@ use super::{
     BindingMetadata, BindingType, CompactString, MacroTracker, Path, RootNode, ScopeChain,
     ScopeData, ScopeKind, ScriptParseResult, VirtualTsConfig, VirtualTsGenerator, VirtualTsOutput,
 };
-use vize_carton::{profile, String, ToCompactString};
+use vize_carton::{String, ToCompactString, profile};
 
 impl VirtualTsGenerator {
     /// Extract setup scope info from ScopeChain.

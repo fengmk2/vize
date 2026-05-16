@@ -4,11 +4,11 @@
 //! onto the chain (v-for, v-slot, event handler, callback, module, etc.).
 
 use super::{
-    smallvec, BindingType, BlockScopeData, CallbackScopeData, ClientOnlyScopeData,
-    ClosureScopeData, CompactString, EventHandlerScopeData, ExternalModuleScopeData,
-    JsGlobalScopeData, NonScriptSetupScopeData, ParentScopes, Scope, ScopeBinding, ScopeChain,
-    ScopeData, ScopeId, ScopeKind, ScriptSetupScopeData, UniversalScopeData, VForScopeData,
-    VSlotScopeData, VueGlobalScopeData,
+    BindingType, BlockScopeData, CallbackScopeData, ClientOnlyScopeData, ClosureScopeData,
+    CompactString, EventHandlerScopeData, ExternalModuleScopeData, JsGlobalScopeData,
+    NonScriptSetupScopeData, ParentScopes, Scope, ScopeBinding, ScopeChain, ScopeData, ScopeId,
+    ScopeKind, ScriptSetupScopeData, UniversalScopeData, VForScopeData, VSlotScopeData,
+    VueGlobalScopeData, smallvec,
 };
 
 impl ScopeChain {

@@ -1,8 +1,8 @@
 use super::{
+    CorsaProjectClient, DiagnosticFetch, LspDiagnostic,
     diagnostics_api::{document_identifier_uri, flatten_file_diagnostics, map_project_diagnostics},
     session::uri_document_identifier,
     utils::convert_diagnostics,
-    CorsaProjectClient, DiagnosticFetch, LspDiagnostic,
 };
 use crate::file_uri::{file_uri_to_path, path_to_file_uri};
 use corsa::{
@@ -14,12 +14,12 @@ use lsp_types::{Diagnostic, DocumentDiagnosticReport, DocumentDiagnosticReportRe
 use std::{
     str::FromStr,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
     time::Duration,
 };
-use vize_carton::{cstr, FxHashMap, String};
+use vize_carton::{FxHashMap, String, cstr};
 
 type DiagnosticBatch = Vec<(String, Vec<LspDiagnostic>)>;
 const LSP_DIAGNOSTICS_BATCH_CHUNK_SIZE: usize = 128;

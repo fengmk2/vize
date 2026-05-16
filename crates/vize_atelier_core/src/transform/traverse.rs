@@ -6,7 +6,7 @@ use vize_carton::profile;
 
 use super::element::{transform_element, transform_interpolation};
 use super::structural::{
-    take_structural_directive, transform_v_for, transform_v_if, StructuralDirectiveKind,
+    StructuralDirectiveKind, take_structural_directive, transform_v_for, transform_v_if,
 };
 use super::{ExitFn, ParentNode, TransformContext};
 

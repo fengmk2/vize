@@ -5,8 +5,8 @@
 
 use oxc_ast::ast as oxc_ast_types;
 use oxc_ast_visit::{
-    walk::{walk_assignment_expression, walk_object_property, walk_update_expression},
     Visit,
+    walk::{walk_assignment_expression, walk_object_property, walk_update_expression},
 };
 use vize_carton::FxHashSet;
 use vize_carton::String;

@@ -8,31 +8,31 @@
 use std::{
     fs,
     path::PathBuf,
-    sync::{atomic::Ordering, Mutex},
+    sync::{Mutex, atomic::Ordering},
     time::{Duration, Instant},
 };
 
 use ignore::Walk;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use vize_atelier_sfc::{
-    compile_sfc, parse_sfc, ScriptCompileOptions, SfcCompileOptions, SfcParseOptions,
-    StyleCompileOptions, TemplateCompileOptions,
+    ScriptCompileOptions, SfcCompileOptions, SfcParseOptions, StyleCompileOptions,
+    TemplateCompileOptions, compile_sfc, parse_sfc,
 };
+use vize_carton::String;
+use vize_carton::ToCompactString;
 use vize_carton::cstr;
 use vize_carton::profile;
 use vize_carton::profiler::global_profiler;
-use vize_carton::String;
-use vize_carton::ToCompactString;
 
 use crate::commands::profile::{
-    print_profile_report, ProfileFileRow, ProfilePhase, ProfilePhaseKind, ProfileReport,
+    ProfileFileRow, ProfilePhase, ProfilePhaseKind, ProfileReport, print_profile_report,
 };
 
 use super::{
-    config::{
-        get_output_extension, CompileError, CompileOutput, CompileStats, ErrorPhase, FileProfile,
-    },
     BuildArgs, OutputFormat, ScriptExtension,
+    config::{
+        CompileError, CompileOutput, CompileStats, ErrorPhase, FileProfile, get_output_extension,
+    },
 };
 
 /// Main entry point for the build command.

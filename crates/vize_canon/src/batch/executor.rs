@@ -19,7 +19,7 @@ use crate::{
     lsp_client::paths::{corsa_search_roots, find_corsa_in_search_roots},
 };
 use oxc_span::SourceType;
-use vize_carton::{cstr, profile, String};
+use vize_carton::{String, cstr, profile};
 
 mod cli;
 mod diagnostics;

@@ -3,7 +3,7 @@
 //! Provides efficient lookup and tracking of symbols across
 //! the entire compilation unit.
 
-use vize_carton::{bitflags, FxHashMap, String};
+use vize_carton::{FxHashMap, String, bitflags};
 use vize_relief::BindingType;
 
 use crate::{ScopeBinding, ScopeId};

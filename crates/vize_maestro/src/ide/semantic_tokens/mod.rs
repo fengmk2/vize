@@ -570,8 +570,8 @@ impl SemanticTokensService {
 #[cfg(test)]
 mod tests {
     use super::{
-        encoding::offset_to_line_col, expressions, template, SemanticTokensService, TokenModifier,
-        TokenType,
+        SemanticTokensService, TokenModifier, TokenType, encoding::offset_to_line_col, expressions,
+        template,
     };
     use tower_lsp::lsp_types::SemanticTokensResult;
 

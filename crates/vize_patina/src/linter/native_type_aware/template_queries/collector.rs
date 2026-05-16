@@ -1,6 +1,6 @@
 use super::{
-    absolute_expression_range, calls::collect_template_call_ranges, generated_offset_for_text,
     TemplateContext, TemplatePromiseQuery, TemplateQuery, TemplateQueryKind,
+    absolute_expression_range, calls::collect_template_call_ranges, generated_offset_for_text,
 };
 use vize_carton::profile;
 use vize_croquis::virtual_ts::VirtualTsOutput;

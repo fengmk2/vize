@@ -3,7 +3,7 @@
 //! Handles text, interpolation, open/close tags, element type determination,
 //! comments, and error reporting.
 
-use vize_carton::{directive::parse_vize_directive, Box};
+use vize_carton::{Box, directive::parse_vize_directive};
 use vize_relief::{
     ast::*,
     errors::{CompilerError, ErrorCode},

@@ -14,7 +14,7 @@ mod resolution;
 
 use core::fmt;
 
-use vize_carton::{smallvec, CompactString, FxHashMap, SmallVec, String, ToCompactString};
+use vize_carton::{CompactString, FxHashMap, SmallVec, String, ToCompactString, smallvec};
 use vize_relief::BindingType;
 
 use super::types::{
@@ -361,7 +361,7 @@ impl ScopeChain {
     /// Caller must ensure id is valid
     #[inline]
     pub unsafe fn get_scope_unchecked(&self, id: ScopeId) -> &Scope {
-        self.scopes.get_unchecked(id.as_u32() as usize)
+        unsafe { self.scopes.get_unchecked(id.as_u32() as usize) }
     }
 
     /// Current scope ID

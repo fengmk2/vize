@@ -13,19 +13,19 @@ use std::{
 };
 
 use vize_canon::{
-    batch::TypeChecker as BatchTypeCheckerTrait, BatchTypeChecker, BatchTypeCheckerOptions,
-    DeclarationEmitOptions,
+    BatchTypeChecker, BatchTypeCheckerOptions, DeclarationEmitOptions,
+    batch::TypeChecker as BatchTypeCheckerTrait,
 };
-use vize_carton::{cstr, profiler::global_profiler, String};
+use vize_carton::{String, cstr, profiler::global_profiler};
 
 use crate::commands::profile::{
-    print_profile_report, ProfilePhase, ProfilePhaseKind, ProfileReport,
+    ProfilePhase, ProfilePhaseKind, ProfileReport, print_profile_report,
 };
 
 use super::{
+    CheckArgs,
     reporting::{JsonFileResult, JsonOutput},
     tsconfig_inputs::collect_default_check_files,
-    CheckArgs,
 };
 
 mod collect;

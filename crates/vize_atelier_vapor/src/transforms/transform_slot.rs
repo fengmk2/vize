@@ -225,7 +225,7 @@ fn extract_expression<'a>(
 #[cfg(test)]
 mod tests {
     use super::has_v_slot;
-    use vize_atelier_core::{parser::parse, TemplateChildNode};
+    use vize_atelier_core::{TemplateChildNode, parser::parse};
     use vize_carton::Bump;
 
     #[test]

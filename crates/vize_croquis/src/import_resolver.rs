@@ -15,7 +15,7 @@ use std::path::{Path, PathBuf};
 
 use dashmap::DashMap;
 use serde::Deserialize;
-use vize_carton::{cstr, profiler::CacheStats, CompactString, FxHashMap, String, ToCompactString};
+use vize_carton::{CompactString, FxHashMap, String, ToCompactString, cstr, profiler::CacheStats};
 
 /// Resolved module information
 #[derive(Debug, Clone)]

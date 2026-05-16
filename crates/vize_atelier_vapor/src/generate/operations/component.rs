@@ -1,5 +1,5 @@
 use crate::ir::{ComponentKind, CreateComponentIRNode, IRSlot, OperationNode};
-use vize_carton::{cstr, FxHashMap, String, ToCompactString};
+use vize_carton::{FxHashMap, String, ToCompactString, cstr};
 
 use super::{
     super::context::GenerateContext, component_props::generate_component_props_str,

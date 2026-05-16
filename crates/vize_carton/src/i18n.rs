@@ -435,7 +435,7 @@ pub fn t_fmt(locale: Locale, key: &str, vars: &[(&str, &str)]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{unescape_json_string, Locale, Translator};
+    use super::{Locale, Translator, unescape_json_string};
 
     #[test]
     fn test_locale_from_str() {

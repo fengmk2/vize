@@ -238,6 +238,31 @@ async function save(): Promise<void> {}
 }
 
 #[test]
+fn malformed_template_event_expressions_skip_type_aware_noise() {
+    if !corsa_available() {
+        return;
+    }
+
+    let linter = Linter::with_preset(LintPreset::Opinionated);
+    let source = r#"<script setup lang="ts">
+async function save(): Promise<void> {}
+</script>
+
+<template>
+  <button @click="save(">Save</button>
+</template>"#;
+    let result = lint_sfc_with_corsa(&linter, source, "Component.vue");
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|diag| diag.rule_name == RULE_NO_FLOATING_PROMISES),
+        "malformed template event should not emit floating-promise noise: {:?}",
+        result.diagnostics
+    );
+}
+
+#[test]
 fn no_floating_promises_reports_bare_template_event_handlers() {
     if !corsa_available() {
         return;
@@ -567,6 +592,29 @@ const anyHandler: any = () => {}
 }
 
 #[test]
+fn no_unsafe_template_binding_reports_event_statement_calls_after_prefix() {
+    if !corsa_available() {
+        return;
+    }
+
+    let linter = Linter::with_preset(LintPreset::Opinionated);
+    let source = r#"<script setup lang="ts">
+const safe = () => {}
+const anyHandler: any = () => {}
+</script>
+
+<template>
+  <button @click="safe(); anyHandler()">Save</button>
+</template>"#;
+    let result = lint_sfc_with_corsa(&linter, source, "TypeAwareFixture.vue");
+
+    assert!(result
+        .diagnostics
+        .iter()
+        .any(|diag| diag.rule_name == RULE_NO_UNSAFE_TEMPLATE_BINDING));
+}
+
+#[test]
 fn no_unsafe_template_binding_reports_computed_member_template_bindings() {
     if !corsa_available() {
         return;
@@ -587,6 +635,31 @@ const payload: Record<string, any> = { label: 'unsafe' }
         .diagnostics
         .iter()
         .any(|diag| diag.rule_name == RULE_NO_UNSAFE_TEMPLATE_BINDING));
+}
+
+#[test]
+fn malformed_template_interpolations_skip_type_aware_noise() {
+    if !corsa_available() {
+        return;
+    }
+
+    let linter = Linter::with_preset(LintPreset::Opinionated);
+    let source = r#"<script setup lang="ts">
+const payload: any = { label: 'unsafe' }
+</script>
+
+<template>
+  <div>{{ payload. }}</div>
+</template>"#;
+    let result = lint_sfc_with_corsa(&linter, source, "TypeAwareFixture.vue");
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|diag| diag.rule_name == RULE_NO_UNSAFE_TEMPLATE_BINDING),
+        "malformed interpolation should not emit unsafe-binding noise: {:?}",
+        result.diagnostics
+    );
 }
 
 #[test]
@@ -923,6 +996,27 @@ const onSave = () => {}
 }
 
 #[test]
+fn typed_v_for_alias_template_bindings_are_ignored() {
+    if !corsa_available() {
+        return;
+    }
+
+    let linter = Linter::with_preset(LintPreset::Opinionated);
+    let source = r#"<script setup lang="ts">
+const items: Array<{ label: string }> = [{ label: 'safe' }]
+</script>
+
+<template>
+  <p v-for="item in items" :key="item.label">{{ item.label }}</p>
+</template>"#;
+    let result = lint_sfc_with_corsa(&linter, source, "Component.vue");
+    assert!(!result
+        .diagnostics
+        .iter()
+        .any(|diag| diag.rule_name == RULE_NO_UNSAFE_TEMPLATE_BINDING));
+}
+
+#[test]
 fn typed_template_members_after_setup_object_literals_are_ignored() {
     if !corsa_available() {
         return;
@@ -944,6 +1038,32 @@ const actions = {
         diag.rule_name,
         RULE_NO_UNSAFE_TEMPLATE_BINDING | RULE_NO_FLOATING_PROMISES
     )));
+}
+
+#[test]
+fn narrowed_template_bindings_inside_v_if_are_ignored() {
+    if !corsa_available() {
+        return;
+    }
+
+    let linter = Linter::with_preset(LintPreset::Opinionated);
+    let source = r#"<script setup lang="ts">
+const payload: unknown = 'safe'
+</script>
+
+<template>
+  <p v-if="typeof payload === 'string'">{{ payload.toUpperCase() }}</p>
+</template>"#;
+    let result = lint_sfc_with_corsa(&linter, source, "NarrowedTemplate.vue");
+
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|diag| diag.rule_name == RULE_NO_UNSAFE_TEMPLATE_BINDING),
+        "v-if narrowing should keep template binding safe: {:?}",
+        result.diagnostics
+    );
 }
 
 #[test]

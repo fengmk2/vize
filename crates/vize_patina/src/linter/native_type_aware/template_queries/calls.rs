@@ -98,9 +98,10 @@ fn bare_handler_reference_range_for_expression(
 ) -> Option<FloatingPromiseRange> {
     match expression {
         Expression::Identifier(_) => Some(floating_promise_range_from_span(expression.span())),
-        Expression::StaticMemberExpression(member) => {
-            is_static_member_handler_reference(&member.object)
-                .then(|| floating_promise_range_from_span(expression.span()))
+        Expression::StaticMemberExpression(member) => is_member_handler_reference(&member.object)
+            .then(|| floating_promise_range_from_span(expression.span())),
+        Expression::ChainExpression(chain) => {
+            chain_member_handler_reference_range(chain, expression.span())
         }
         Expression::ParenthesizedExpression(paren) => {
             bare_handler_reference_range_for_expression(&paren.expression)
@@ -118,12 +119,33 @@ fn bare_handler_reference_range_for_expression(
     }
 }
 
-fn is_static_member_handler_reference(expression: &Expression<'_>) -> bool {
+fn chain_member_handler_reference_range(
+    chain: &oxc_ast::ast::ChainExpression<'_>,
+    span: Span,
+) -> Option<FloatingPromiseRange> {
+    match &chain.expression {
+        ChainElement::StaticMemberExpression(member) => is_member_handler_reference(&member.object)
+            .then(|| floating_promise_range_from_span(span)),
+        ChainElement::TSNonNullExpression(non_null) => {
+            bare_handler_reference_range_for_expression(&non_null.expression)
+        }
+        _ => None,
+    }
+}
+
+fn is_member_handler_reference(expression: &Expression<'_>) -> bool {
     match expression {
         Expression::Identifier(_) | Expression::ThisExpression(_) => true,
-        Expression::StaticMemberExpression(member) => {
-            is_static_member_handler_reference(&member.object)
-        }
+        Expression::StaticMemberExpression(member) => is_member_handler_reference(&member.object),
+        Expression::ChainExpression(chain) => match &chain.expression {
+            ChainElement::StaticMemberExpression(member) => {
+                is_member_handler_reference(&member.object)
+            }
+            ChainElement::TSNonNullExpression(non_null) => {
+                is_member_handler_reference(&non_null.expression)
+            }
+            _ => false,
+        },
         _ => false,
     }
 }
@@ -512,6 +534,17 @@ mod tests {
         assert_eq!(
             promise_slices(source, &ranges.floating_promises),
             vec!["actions.save"]
+        );
+    }
+
+    #[test]
+    fn collects_optional_member_event_handler_references_as_floating_candidates() {
+        let source = "actions?.save";
+        let ranges = collect_template_call_ranges(source, true, false, true);
+
+        assert_eq!(
+            promise_slices(source, &ranges.floating_promises),
+            vec!["actions?.save"]
         );
     }
 

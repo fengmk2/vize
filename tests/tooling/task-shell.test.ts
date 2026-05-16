@@ -5,7 +5,10 @@ import {
   getTaskShellLocaleAssignments,
   normalizeTaskShellLocale,
   shellCommand,
+  shellCommandForwardingArguments,
+  withRustTaskEnvironment,
 } from "../../tools/vite-plus/task-shell.ts";
+import { releaseTasks } from "../../tools/vite-plus/tasks/release.ts";
 
 test("macOS task shells fall back from C.UTF-8 to an installed UTF-8 locale", () => {
   assert.deepEqual(
@@ -34,6 +37,41 @@ test("task shell commands apply locale before sh starts", () => {
     shellCommand("cd examples/vite-musea && pnpm run check", ["LC_ALL='en_US.UTF-8'"]),
     "env LC_ALL='en_US.UTF-8' sh -c 'cd examples/vite-musea && pnpm run check'",
   );
+});
+
+test("task shell commands can forward Vite+ task arguments", () => {
+  assert.equal(
+    shellCommandForwardingArguments(
+      'moon run -q --target native - -- "$@" < tools/moon/scripts/release.mbtx',
+      [],
+    ),
+    "sh -c 'moon run -q --target native - -- \"$@\" < tools/moon/scripts/release.mbtx' --",
+  );
+});
+
+test("Rust task environments preserve forwarded arguments", () => {
+  const command = withRustTaskEnvironment(
+    'moon run -q --target native - -- "$@" < tools/moon/scripts/release.mbtx',
+    {
+      forwardArguments: true,
+    },
+  );
+
+  assert.match(
+    command,
+    /sh -c .*moon run -q --target native - -- "\$@" < tools\/moon\/scripts\/release\.mbtx/,
+  );
+  assert.match(command, / --$/);
+});
+
+test("release task forwards extra vp run arguments into the MoonBit script", () => {
+  const command = (releaseTasks.release as { command: string }).command;
+
+  assert.match(
+    command,
+    /moon run -q --target native - -- "\$@" < tools\/moon\/scripts\/release\.mbtx/,
+  );
+  assert.match(command, / --$/);
 });
 
 test("normalizing a macOS C.UTF-8 environment updates child-process locale variables", () => {

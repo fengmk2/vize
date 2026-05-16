@@ -6,7 +6,7 @@
 use crate::ScopeBinding;
 use crate::analyzer::Analyzer;
 use crate::scope::VForScopeData;
-use vize_carton::{CompactString, SmallVec, String, profile};
+use vize_carton::{CompactString, SmallVec, String, profile, smallvec};
 use vize_relief::BindingType;
 use vize_relief::ast::{ExpressionNode, ForNode, IfNode, PropNode};
 
@@ -130,7 +130,8 @@ impl Analyzer {
 
             self.summary.scopes.enter_v_for_scope(
                 VForScopeData {
-                    value_alias,
+                    value_alias: value_alias.clone(),
+                    value_bindings: smallvec![value_alias],
                     key_alias: vars_added.get(1).cloned(),
                     index_alias: vars_added.get(2).cloned(),
                     source: source_content,

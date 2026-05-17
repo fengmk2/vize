@@ -53,6 +53,15 @@ fn collect_directive_tokens(template: &str, base_line: u32, tokens: &mut Vec<Abs
         let mut pos = 0;
         while let Some(found) = template[pos..].find(directive) {
             let abs_pos = pos + found;
+            let directive_end = abs_pos + directive.len();
+            let is_directive_attr = is_attribute_start(template, abs_pos)
+                && is_attribute_name_boundary(template, directive_end);
+
+            if !is_directive_attr {
+                pos = directive_end;
+                continue;
+            }
+
             let (line, col) = offset_to_line_col(template, abs_pos);
 
             tokens.push(AbsoluteToken {
@@ -63,7 +72,7 @@ fn collect_directive_tokens(template: &str, base_line: u32, tokens: &mut Vec<Abs
                 modifiers: 0,
             });
 
-            pos = abs_pos + directive.len();
+            pos = directive_end;
         }
     }
 }
@@ -97,6 +106,11 @@ fn collect_event_tokens(template: &str, base_line: u32, tokens: &mut Vec<Absolut
     let mut pos = 0;
     while let Some(start) = template[pos..].find('@') {
         let abs_start = pos + start;
+        if !is_attribute_start(template, abs_start) {
+            pos = abs_start + 1;
+            continue;
+        }
+
         let remaining = &template[abs_start + 1..];
 
         // Find the event name
@@ -133,26 +147,23 @@ fn collect_bind_tokens(template: &str, base_line: u32, tokens: &mut Vec<Absolute
             continue;
         }
 
-        // Check if it's in an attribute context (after a space or tag name)
-        if abs_start > 0 {
-            let before = template.as_bytes()[abs_start - 1];
-            if before == b' ' || before == b'\n' || before == b'\t' {
-                let remaining = &template[abs_start + 1..];
-                let prop_end = remaining
-                    .find(|c: char| !c.is_ascii_alphanumeric() && c != '-')
-                    .unwrap_or(remaining.len());
+        // Check if it's in an attribute context.
+        if is_attribute_start(template, abs_start) {
+            let remaining = &template[abs_start + 1..];
+            let prop_end = remaining
+                .find(|c: char| !c.is_ascii_alphanumeric() && c != '-')
+                .unwrap_or(remaining.len());
 
-                if prop_end > 0 {
-                    let (line, col) = offset_to_line_col(template, abs_start);
+            if prop_end > 0 {
+                let (line, col) = offset_to_line_col(template, abs_start);
 
-                    tokens.push(AbsoluteToken {
-                        line: base_line + line,
-                        start: col,
-                        length: utf16_len(&template[abs_start..abs_start + prop_end + 1]),
-                        token_type: TokenType::Property as u32,
-                        modifiers: 0,
-                    });
-                }
+                tokens.push(AbsoluteToken {
+                    line: base_line + line,
+                    start: col,
+                    length: utf16_len(&template[abs_start..abs_start + prop_end + 1]),
+                    token_type: TokenType::Property as u32,
+                    modifiers: 0,
+                });
             }
         }
 
@@ -173,20 +184,14 @@ pub(crate) fn collect_directive_expression_tokens(
         // Look for attribute patterns
         let attr_start = if bytes[pos] == b':' || bytes[pos] == b'@' {
             // Shorthand :prop or @event
-            if pos > 0
-                && (bytes[pos - 1] == b' ' || bytes[pos - 1] == b'\n' || bytes[pos - 1] == b'\t')
-            {
+            if is_attribute_start(template, pos) {
                 Some(pos)
             } else {
                 None
             }
         } else if pos + 2 < bytes.len() && bytes[pos] == b'v' && bytes[pos + 1] == b'-' {
             // v-* directive
-            if pos == 0
-                || bytes[pos - 1] == b' '
-                || bytes[pos - 1] == b'\n'
-                || bytes[pos - 1] == b'\t'
-            {
+            if is_attribute_start(template, pos) {
                 Some(pos)
             } else {
                 None
@@ -195,42 +200,115 @@ pub(crate) fn collect_directive_expression_tokens(
             None
         };
 
-        if let Some(start) = attr_start {
-            // Find the = and the quoted value
-            let remaining = &template[start..];
-            if let Some(eq_pos) = remaining.find('=') {
-                let after_eq = &remaining[eq_pos + 1..];
-                let after_eq_trimmed = after_eq.trim_start();
-                let skip_ws = after_eq.len() - after_eq_trimmed.len();
+        if let Some(start) = attr_start
+            && let Some((expr_start, expr_end)) = quoted_attribute_value(template, start)
+        {
+            let expr = &template[expr_start..expr_end];
 
-                // Check for quote
-                if !after_eq_trimmed.is_empty() {
-                    let quote = after_eq_trimmed.as_bytes()[0];
-                    if quote == b'"' || quote == b'\'' {
-                        // Find closing quote
-                        let expr_start = eq_pos + 1 + skip_ws + 1;
-                        if let Some(end) = remaining[expr_start..].find(quote as char) {
-                            let expr = &remaining[expr_start..expr_start + end];
+            // Tokenize the entire expression
+            tokenize_expression(expr, template, expr_start, base_line, tokens);
 
-                            // Tokenize the entire expression
-                            tokenize_expression(
-                                expr,
-                                template,
-                                start + expr_start,
-                                base_line,
-                                tokens,
-                            );
-
-                            pos = start + expr_start + end + 1;
-                            continue;
-                        }
-                    }
-                }
-            }
+            pos = expr_end + 1;
+            continue;
         }
 
         pos += 1;
     }
+}
+
+fn is_attribute_start(template: &str, offset: usize) -> bool {
+    if offset >= template.len() || !template.is_char_boundary(offset) {
+        return false;
+    }
+
+    let Some(prev) = template[..offset].chars().next_back() else {
+        return false;
+    };
+    if !prev.is_ascii_whitespace() {
+        return false;
+    }
+
+    let Some(tag_start) = template[..offset].rfind('<') else {
+        return false;
+    };
+
+    let mut quote = None;
+    for ch in template[tag_start + 1..offset].chars() {
+        if let Some(open_quote) = quote {
+            if ch == open_quote {
+                quote = None;
+            }
+            continue;
+        }
+
+        match ch {
+            '"' | '\'' => quote = Some(ch),
+            '>' => return false,
+            _ => {}
+        }
+    }
+
+    if quote.is_some() {
+        return false;
+    }
+
+    let tag_body = template[tag_start + 1..offset].trim_start();
+    !tag_body.is_empty()
+        && !tag_body.starts_with('/')
+        && !tag_body.starts_with('!')
+        && !tag_body.starts_with('?')
+}
+
+fn is_attribute_name_boundary(template: &str, offset: usize) -> bool {
+    template[offset..].chars().next().is_none_or(|ch| {
+        matches!(ch, '=' | ':' | '.' | '/' | '>' | '"' | '\'') || ch.is_ascii_whitespace()
+    })
+}
+
+fn attribute_name_end(template: &str, start: usize) -> usize {
+    let mut end = start;
+    for (relative, ch) in template[start..].char_indices() {
+        if ch == '=' || ch == '/' || ch == '>' || ch.is_ascii_whitespace() {
+            break;
+        }
+        end = start + relative + ch.len_utf8();
+    }
+    end
+}
+
+fn quoted_attribute_value(template: &str, attr_start: usize) -> Option<(usize, usize)> {
+    let mut pos = attribute_name_end(template, attr_start);
+
+    while pos < template.len() {
+        let ch = template[pos..].chars().next()?;
+        if !ch.is_ascii_whitespace() {
+            break;
+        }
+        pos += ch.len_utf8();
+    }
+
+    if template[pos..].chars().next()? != '=' {
+        return None;
+    }
+    pos += 1;
+
+    while pos < template.len() {
+        let ch = template[pos..].chars().next()?;
+        if !ch.is_ascii_whitespace() {
+            break;
+        }
+        pos += ch.len_utf8();
+    }
+
+    let quote = template.as_bytes().get(pos).copied()?;
+    if quote != b'"' && quote != b'\'' {
+        return None;
+    }
+
+    let value_start = pos + 1;
+    let quote_char = quote as char;
+    let value_end = template[value_start..].find(quote_char)? + value_start;
+    Some((value_start, value_end))
 }
 
 /// Collect tokens from script content (compiler macros and Vue functions).

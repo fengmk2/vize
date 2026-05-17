@@ -166,12 +166,110 @@ export interface CatalogOutputNapi {
   tags: Array<string>;
 }
 
+export interface DefineReplacementNapi {
+  key: string;
+  value: string;
+}
+
+export interface CssAliasRuleNapi {
+  find: string;
+  replacement: string;
+  isRegex: boolean;
+  flags?: string;
+}
+
+export interface DynamicImportAliasRuleNapi {
+  fromPrefix: string;
+  toPrefix: string;
+}
+
+export interface ViteIdPartsNapi {
+  request: string;
+  querySuffix: string;
+}
+
 /**
  * Classify a Vite plugin module request using the native Vize request model.
  * This keeps pure query parsing and virtual module categorization in Rust while
  * JavaScript keeps Vite hook orchestration and filesystem interactions.
  */
 export declare function classifyVitePluginRequest(id: string): VitePluginRequestNapi;
+
+export declare function scopeViteCssForPipeline(css: string, scopeId: string): string;
+
+export declare function resolveViteCssImports(
+  css: string,
+  importer: string,
+  aliasRules: Array<CssAliasRuleNapi>,
+  isDev?: boolean | undefined | null,
+  devUrlBase?: string | undefined | null,
+): string;
+
+export declare function splitViteIdQuery(id: string): ViteIdPartsNapi;
+
+export declare function isViteBareSpecifier(id: string): boolean;
+
+export declare function normalizeViteRequireBase(
+  importer?: string | undefined | null,
+): string | null;
+
+export declare function resolveViteAliasRequest(
+  id: string,
+  aliasRules: Array<CssAliasRuleNapi>,
+): string | null;
+
+export declare function normalizeViteResolvedVuePath(id: string): string | null;
+
+export declare function resolveViteVuePath(
+  root: string,
+  id: string,
+  importer?: string | undefined | null,
+): string;
+
+export declare function createViteBareImportBases(
+  root: string,
+  importer?: string | undefined | null,
+): Array<string>;
+
+export declare function createViteBareImportCandidates(
+  id: string,
+  aliasRules: Array<CssAliasRuleNapi>,
+  resolvedId?: string | undefined | null,
+): Array<string>;
+
+export declare function resolveViteRelativeImport(id: string, importer: string): string | null;
+
+export declare function createViteVirtualId(
+  realPath: string,
+  ssr?: boolean | undefined | null,
+): string;
+
+export declare function fromViteVirtualId(virtualId: string): string;
+
+export declare function normalizeViteVirtualVueModuleId(id: string): string;
+
+export declare function normalizeViteFsIdForBuild(id: string): string;
+
+export declare function toViteBrowserImportPrefix(replacement: string): string;
+
+export declare function rewriteViteStaticAssetUrls(
+  code: string,
+  aliasRules: Array<DynamicImportAliasRuleNapi>,
+): string;
+
+export declare function rewriteViteDynamicTemplateImports(
+  code: string,
+  aliasRules: Array<DynamicImportAliasRuleNapi>,
+): string;
+
+export declare function isBuiltinViteDefine(key: string): boolean;
+
+export declare function shouldApplyViteDefineInVirtualModule(key: string): boolean;
+
+export declare function applyViteDefineReplacements(
+  code: string,
+  defines: Array<DefineReplacementNapi>,
+): string;
 
 /** Compile Vue template to VDom render function */
 export declare function compile(
@@ -537,6 +635,9 @@ export interface PropDefinitionNapi {
   defaultValue?: any;
 }
 
+/** Run the Rust Vize CLI with argv-style arguments. */
+export declare function runCli(args: Array<string>): void;
+
 /** Range config for NAPI */
 export interface RangeConfigNapi {
   min: number;
@@ -695,6 +796,24 @@ export interface VitePluginRequestNapi {
   /** Vue boundary file kind: `client`, `server`, or undefined. */
   boundaryKind?: string;
 }
+
+export interface HmrHashesNapi {
+  scriptHash?: string;
+  templateHash?: string;
+  styleHash?: string;
+}
+
+export declare function hasViteHmrChanges(
+  prev: HmrHashesNapi | undefined | null,
+  next: HmrHashesNapi,
+): boolean;
+
+export declare function detectViteHmrUpdateType(
+  prev: HmrHashesNapi | undefined | null,
+  next: HmrHashesNapi,
+): string;
+
+export declare function generateViteHmrCode(scopeId: string, updateType: string): string;
 
 /** Type diagnostic for NAPI */
 export interface TypeDiagnosticNapi {

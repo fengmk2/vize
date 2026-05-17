@@ -16,15 +16,15 @@
     "vue3",
     "vuejs"
   ],
+  "homepage": "https://github.com/ubugeeei/vize",
+  "bugs": {
+    "url": "https://github.com/ubugeeei/vize/issues"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/ubugeeei/vize"
   },
-  "bugs": {
-    "url": "https://github.com/ubugeeei/vize/issues"
-  },
-  "homepage": "https://github.com/ubugeeei/vize",
   "publisher": "ubugeeei",
   "main": "./dist/extension.cjs",
   "scripts": {

@@ -11,16 +11,16 @@
     "vize",
     "vue"
   ],
+  "homepage": "https://github.com/ubugeeei/vize",
+  "bugs": {
+    "url": "https://github.com/ubugeeei/vize/issues"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/ubugeeei/vize",
     "directory": "npm/fresco"
   },
-  "bugs": {
-    "url": "https://github.com/ubugeeei/vize/issues"
-  },
-  "homepage": "https://github.com/ubugeeei/vize",
   "files": [
     "dist"
   ],

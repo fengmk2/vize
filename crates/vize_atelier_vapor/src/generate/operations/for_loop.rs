@@ -163,6 +163,13 @@ fn resolve_key_expression(
 fn restore_current_alias_reference(expr: &mut String, reference: &str, alias: &str) {
     if is_simple_local_alias(alias) && expr.contains(reference) {
         *expr = expr.replace(reference, alias).into();
+    } else if alias.trim_start().starts_with(['{', '(']) {
+        for name in parse_destructure_names(alias) {
+            let property_reference = cstr!("{}.{}", reference, name);
+            if expr.contains(property_reference.as_str()) {
+                *expr = expr.replace(property_reference.as_str(), name).into();
+            }
+        }
     }
 }
 
@@ -173,4 +180,38 @@ fn is_simple_local_alias(alias: &str) -> bool {
     };
     (first.is_ascii_alphabetic() || first == '_' || first == '$')
         && chars.all(|ch| ch.is_ascii_alphanumeric() || ch == '_' || ch == '$')
+}
+
+fn parse_destructure_names(pattern: &str) -> std::vec::Vec<&str> {
+    let inner = pattern
+        .trim_start_matches(['{', '(', ' '])
+        .trim_end_matches(['}', ')', ' ']);
+    inner
+        .split(',')
+        .filter_map(|part| {
+            let part = part.trim();
+            if let Some(pos) = part.find(':') {
+                Some(part[pos + 1..].trim())
+            } else if part.is_empty() {
+                None
+            } else {
+                Some(part)
+            }
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::restore_current_alias_reference;
+    use vize_carton::ToCompactString;
+
+    #[test]
+    fn restores_destructured_key_alias_references() {
+        let mut expr = "_for_item0.value.id".to_compact_string();
+
+        restore_current_alias_reference(&mut expr, "_for_item0.value", "{ id, name }");
+
+        assert_eq!(expr, "id");
+    }
 }

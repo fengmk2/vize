@@ -93,9 +93,9 @@ pub(super) fn generate_next_ref(ctx: &mut GenerateContext, next_ref: &NextRefIRN
 }
 
 fn build_next_chain(base: String, offset: usize) -> String {
-    let mut expr = base;
-    for _ in 0..offset {
-        expr = cstr!("_next({})", expr);
+    if offset == 0 {
+        base
+    } else {
+        cstr!("_next({}, {})", base, offset)
     }
-    expr
 }

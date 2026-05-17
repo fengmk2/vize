@@ -183,5 +183,6 @@ fn main() {
 
     if total_failed > 0 {
         println!("\n{} tests failed", total_failed);
+        std::process::exit(1);
     }
 }

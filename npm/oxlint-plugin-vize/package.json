@@ -15,6 +15,10 @@
     "url": "https://github.com/ubugeeei/vize",
     "directory": "npm/oxlint-plugin-vize"
   },
+  "bugs": {
+    "url": "https://github.com/ubugeeei/vize/issues"
+  },
+  "homepage": "https://github.com/ubugeeei/vize",
   "bin": {
     "oxlint-vize": "bin/oxlint-vize"
   },

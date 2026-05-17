@@ -20,6 +20,10 @@
     "url": "https://github.com/ubugeeei/vize.git",
     "directory": "npm/nuxt"
   },
+  "bugs": {
+    "url": "https://github.com/ubugeeei/vize/issues"
+  },
+  "homepage": "https://github.com/ubugeeei/vize",
   "files": [
     "dist"
   ],

@@ -17,6 +17,10 @@
     "url": "https://github.com/ubugeeei/vize.git",
     "directory": "npm/vite-plugin-musea"
   },
+  "bugs": {
+    "url": "https://github.com/ubugeeei/vize/issues"
+  },
+  "homepage": "https://github.com/ubugeeei/vize",
   "bin": {
     "musea-vrt": "./dist/cli/index.mjs"
   },

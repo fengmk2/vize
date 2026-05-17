@@ -18,6 +18,10 @@
     "url": "https://github.com/ubugeeei/vize.git",
     "directory": "npm/musea-mcp-server"
   },
+  "bugs": {
+    "url": "https://github.com/ubugeeei/vize/issues"
+  },
+  "homepage": "https://github.com/ubugeeei/vize",
   "bin": {
     "musea-mcp": "./dist/cli.mjs"
   },

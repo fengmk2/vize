@@ -17,6 +17,10 @@
     "url": "https://github.com/ubugeeei/vize",
     "directory": "npm/vite-plugin-vize"
   },
+  "bugs": {
+    "url": "https://github.com/ubugeeei/vize/issues"
+  },
+  "homepage": "https://github.com/ubugeeei/vize",
   "files": [
     "dist"
   ],

@@ -43,9 +43,6 @@ async fn run_app() -> Int {
   if stderr != "" {
     @stdio.stderr.write(stderr)
   }
-  if exit_code != 0 {
-    return exit_code
-  }
   @afs.write_file(
     "coverage-report.txt",
     stdout,
@@ -65,7 +62,7 @@ async fn run_app() -> Int {
     create_mode=OpenOrCreate,
     permission=0o644,
   )
-  0
+  exit_code
 }
 
 ///|

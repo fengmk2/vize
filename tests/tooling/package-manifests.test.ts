@@ -66,6 +66,40 @@ function readRepoFile(filePath: string): string {
   return fs.readFileSync(path.join(root, filePath), "utf-8");
 }
 
+function releaseWorkflowJobBlock(jobName: string): string {
+  const workflow = readRepoFile(".github/workflows/release.yml");
+  const startMarker = `  ${jobName}:\n`;
+  const start = workflow.indexOf(startMarker);
+  assert.notEqual(start, -1, `missing release workflow job ${jobName}`);
+
+  const rest = workflow.slice(start + startMarker.length);
+  const nextJob = rest.search(/\n  [a-zA-Z0-9_-]+:\n/);
+  return nextJob === -1 ? rest : rest.slice(0, nextJob);
+}
+
+function parseNeedsList(value: string): string[] {
+  return value.match(/[a-zA-Z0-9][a-zA-Z0-9_-]*/g) ?? [];
+}
+
+function releaseWorkflowNeeds(jobName: string): string[] {
+  const block = releaseWorkflowJobBlock(jobName);
+  const inline = block.match(/^    needs:\s*\[(?<needs>[^\]]+)\]/m)?.groups?.needs;
+  if (inline != null) {
+    return parseNeedsList(inline);
+  }
+
+  const lines = block.split("\n");
+  const needsLine = lines.findIndex((line) => /^    needs:\s*$/.test(line));
+  assert.notEqual(needsLine, -1, `missing needs for release workflow job ${jobName}`);
+
+  const needsBlock: string[] = [];
+  for (const line of lines.slice(needsLine + 1)) {
+    if (/^    \S/.test(line)) break;
+    needsBlock.push(line);
+  }
+  return parseNeedsList(needsBlock.join("\n"));
+}
+
 test("esm packed npm manifests point at mjs and d.mts outputs", () => {
   const failures: string[] = [];
 
@@ -182,6 +216,17 @@ test("documented install commands point at supported release artifacts", () => {
   if (/^publish = false$/m.test(vizeCrateToml)) {
     assert.deepEqual(unsupportedCargoInstallDocs, []);
   }
+});
+
+test("release workflow publishes npm packages after their npm dependencies", () => {
+  const vitePluginNeeds = releaseWorkflowNeeds("release-npm-vite-plugin");
+  const nuxtNeeds = releaseWorkflowNeeds("release-npm-nuxt");
+
+  assert.ok(vitePluginNeeds.includes("release-npm-cli"));
+  assert.ok(nuxtNeeds.includes("release-npm-cli"));
+  assert.ok(nuxtNeeds.includes("release-npm-vite-plugin"));
+  assert.ok(nuxtNeeds.includes("release-npm-vite-plugin-musea"));
+  assert.ok(nuxtNeeds.includes("release-npm-musea-nuxt"));
 });
 
 test("editor extension manifests stay opt-in and version aligned", () => {

@@ -690,7 +690,7 @@ jobs:
   release-npm-vite-plugin:
     name: Release @vizejs/vite-plugin to npm
     runs-on: ubuntu-latest
-    needs: [build-release-packages, release-npm-native, smoke-release-packages]
+    needs: [build-release-packages, release-npm-native, release-npm-cli, smoke-release-packages]
     environment: npm
     permissions:
       contents: read
@@ -963,6 +963,7 @@ jobs:
         release-npm-vite-plugin,
         release-npm-vite-plugin-musea,
         release-npm-musea-nuxt,
+        release-npm-cli,
         smoke-release-packages,
       ]
     environment: npm

@@ -192,6 +192,42 @@ export interface WritableStreamLike {
   write(...args: unknown[]): unknown;
 }
 
+type Listener = (...args: unknown[]) => void;
+
+function createNoopWriteStream(columns: number, rows: number): NodeJS.WriteStream {
+  const stream = {
+    isTTY: false,
+    columns,
+    rows,
+    write: () => true,
+    on: (_event: string, _listener: Listener) => stream,
+    off: (_event: string, _listener: Listener) => stream,
+    once: (_event: string, _listener: Listener) => stream,
+    removeListener: (_event: string, _listener: Listener) => stream,
+  };
+
+  return stream as unknown as NodeJS.WriteStream;
+}
+
+function createNoopReadStream(): NodeJS.ReadStream {
+  const stream = {
+    isTTY: false,
+    isPaused: () => true,
+    pause: () => stream,
+    resume: () => stream,
+    ref: () => stream,
+    unref: () => stream,
+    setEncoding: () => stream,
+    setRawMode: () => stream,
+    on: (_event: string, _listener: Listener) => stream,
+    off: (_event: string, _listener: Listener) => stream,
+    once: (_event: string, _listener: Listener) => stream,
+    removeListener: (_event: string, _listener: Listener) => stream,
+  };
+
+  return stream as unknown as NodeJS.ReadStream;
+}
+
 function isWritableStream(value: unknown): value is WritableStreamLike {
   return (
     typeof value === "object" &&
@@ -751,18 +787,33 @@ export function render(
 export function renderToString(root: AppRoot, options: RenderToStringOptions = {}): string {
   const { createApp: createVueApp } = createRenderer();
   const app = createVueApp(componentFromRoot(root));
-  const rootElement = createRootElement(String(options.columns ?? 80), "auto");
+  const columns = options.columns ?? 80;
+  const stdout = createNoopWriteStream(columns, 24);
+  const stderr = createNoopWriteStream(columns, 24);
+  const stdin = createNoopReadStream();
+  const rootElement = createRootElement(String(columns), "auto");
 
   app.provide(
     APP_KEY,
     createAppContext({
-      width: options.columns ?? 80,
+      width: columns,
       height: 24,
+      stdout,
     }),
   );
   app.provide(FOCUS_KEY, createFocusManager());
   app.provide(SCREEN_READER_KEY, ref(false));
-  app.provide(STREAMS_KEY, createStreamsContext({ interactive: false }));
+  app.provide(
+    STREAMS_KEY,
+    createStreamsContext({
+      stdin,
+      stdout,
+      stderr,
+      interactive: false,
+      writeToStdout: () => {},
+      writeToStderr: () => {},
+    }),
+  );
   app.mount(rootElement);
 
   const output = treeToString(rootElement);

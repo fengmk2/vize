@@ -57,6 +57,7 @@ export interface RenderNodeNapi {
   nodeType: string;
   text?: string;
   wrap?: boolean;
+  wrapMode?: string;
   value?: string;
   placeholder?: string;
   focused?: boolean;
@@ -81,7 +82,7 @@ export interface ModifiersNapi {
 }
 
 export interface InputEventNapi {
-  eventType: "key" | "mouse" | "resize" | "focus" | "paste" | string;
+  eventType: "key" | "mouse" | "resize" | "focus" | "paste" | (string & {});
   key?: string;
   char?: string;
   keyEventType?: "press" | "repeat" | "release";
@@ -112,6 +113,14 @@ export interface TerminalInfoNapi {
   trueColor: boolean;
 }
 
+export interface TerminalOptionsNapi {
+  rawMode?: boolean;
+  alternateScreen?: boolean;
+  mouse?: boolean;
+  bracketedPaste?: boolean;
+  hideCursor?: boolean;
+}
+
 export interface LayoutResultNapi {
   id: number;
   x: number;
@@ -122,6 +131,7 @@ export interface LayoutResultNapi {
 
 export function initTerminal(): void;
 export function initTerminalWithMouse(): void;
+export function initTerminalWithOptions(options: TerminalOptionsNapi): void;
 export function restoreTerminal(): void;
 export function getTerminalInfo(): TerminalInfoNapi;
 export function clearScreen(): void;
@@ -162,7 +172,7 @@ export function clearRect(x: number, y: number, width: number, height: number): 
 export function setCursor(x: number, y: number): void;
 export function showCursor(): void;
 export function hideCursor(): void;
-export function setCursorShape(shape: "block" | "underline" | "bar" | string): void;
+export function setCursorShape(shape: "block" | "underline" | "bar" | (string & {})): void;
 export function renderTree(nodes: RenderNodeNapi[]): void;
 export function getLastRenderLayouts(): LayoutResultNapi[];
 

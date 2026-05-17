@@ -14,6 +14,7 @@ export type LspInitializationOptions = {
   editor?: boolean;
   lint?: boolean;
   typecheck?: boolean;
+  codeActions?: boolean;
 };
 
 export type LspDiagnostic = {
@@ -29,5 +30,6 @@ export type LspDiagnostic = {
 
 export type PublishDiagnosticsParams = {
   uri: string;
+  version?: number;
   diagnostics: LspDiagnostic[];
 };

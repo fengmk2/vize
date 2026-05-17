@@ -113,6 +113,9 @@ pub struct RenderNodeNapi {
     pub text: Option<String>,
     /// Whether text should wrap
     pub wrap: Option<bool>,
+    /// Ink-compatible text wrapping/truncation mode
+    #[napi(js_name = "wrapMode")]
+    pub wrap_mode: Option<String>,
     /// Input value (for input nodes)
     pub value: Option<String>,
     /// Placeholder text (for input nodes)
@@ -157,6 +160,7 @@ pub struct LayoutResultNapi {
 #[derive(Debug, Clone)]
 pub struct InputEventNapi {
     /// Event type: "key" | "mouse" | "resize" | "focus" | "paste"
+    #[napi(ts_type = "\"key\" | \"mouse\" | \"resize\" | \"focus\" | \"paste\" | (string & {})")]
     pub event_type: String,
     /// Key code (for key events)
     pub key: Option<String>,
@@ -232,6 +236,26 @@ pub struct TerminalInfoNapi {
     pub colors: bool,
     /// Whether true color (24-bit) is supported
     pub true_color: bool,
+}
+
+/// Terminal initialization options for NAPI.
+#[napi(object)]
+#[derive(Debug, Clone, Default)]
+pub struct TerminalOptionsNapi {
+    /// Enable raw mode
+    #[napi(js_name = "rawMode")]
+    pub raw_mode: Option<bool>,
+    /// Enable the alternate screen buffer
+    #[napi(js_name = "alternateScreen")]
+    pub alternate_screen: Option<bool>,
+    /// Enable mouse capture
+    pub mouse: Option<bool>,
+    /// Enable bracketed paste mode
+    #[napi(js_name = "bracketedPaste")]
+    pub bracketed_paste: Option<bool>,
+    /// Hide the terminal cursor
+    #[napi(js_name = "hideCursor")]
+    pub hide_cursor: Option<bool>,
 }
 
 fn modifiers_from_key(key: &crate::input::KeyEvent) -> ModifiersNapi {

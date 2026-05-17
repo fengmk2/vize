@@ -7,113 +7,30 @@ import fs from "node:fs";
 import { glob } from "tinyglobby";
 
 import type { VizeOptions, CompiledModule } from "../types.ts";
-import { compileBatch } from "../compiler.ts";
+import { compileBatch, formatCompileErrorMessage } from "../compiler.ts";
 import { resolveCssImports, type CssAliasRule } from "../utils/css.ts";
 import { hasDelegatedStyles } from "../utils/index.ts";
 import { type DynamicImportAliasRule } from "../virtual.ts";
 import { createLogger } from "../transform.ts";
 import type { HmrUpdateType } from "../hmr.ts";
+import {
+  chunkPrecompileFiles,
+  diffPrecompileFiles,
+  type PrecompileFileMetadata,
+} from "./precompile.ts";
 
-export const DEFAULT_PRECOMPILE_BATCH_SIZE = 128;
-export const DEFAULT_PRECOMPILE_BATCH_MAX_BYTES = 32 * 1024 * 1024;
-
-export const DEFAULT_PRECOMPILE_IGNORE_PATTERNS = [
-  "node_modules/**",
-  "dist/**",
-  ".git/**",
-  ".nuxt/**",
-  ".output/**",
-  ".nitro/**",
-  "coverage/**",
-];
-
-export interface PrecompileFileMetadata {
-  mtimeMs: number;
-  size: number;
-}
-
-export interface PrecompileDiff {
-  changedFiles: string[];
-  deletedFiles: string[];
-}
-
-export function hasFileMetadataChanged(
-  previous: PrecompileFileMetadata | undefined,
-  next: PrecompileFileMetadata,
-): boolean {
-  return previous === undefined || previous.mtimeMs !== next.mtimeMs || previous.size !== next.size;
-}
-
-export function diffPrecompileFiles(
-  files: readonly string[],
-  currentMetadata: ReadonlyMap<string, PrecompileFileMetadata>,
-  previousMetadata: ReadonlyMap<string, PrecompileFileMetadata>,
-): PrecompileDiff {
-  const changedFiles: string[] = [];
-  const seenFiles = new Set(files);
-
-  for (const file of files) {
-    const metadata = currentMetadata.get(file);
-    if (!metadata || hasFileMetadataChanged(previousMetadata.get(file), metadata)) {
-      changedFiles.push(file);
-    }
-  }
-
-  const deletedFiles: string[] = [];
-  for (const file of previousMetadata.keys()) {
-    if (!seenFiles.has(file)) {
-      deletedFiles.push(file);
-    }
-  }
-
-  return { changedFiles, deletedFiles };
-}
-
-export function normalizePrecompileBatchSize(value: number | undefined): number {
-  if (value === undefined || !Number.isFinite(value) || value <= 0) {
-    return DEFAULT_PRECOMPILE_BATCH_SIZE;
-  }
-
-  return Math.max(1, Math.floor(value));
-}
-
-export interface PrecompileChunkOptions {
-  maxBytes?: number;
-  metadata?: ReadonlyMap<string, PrecompileFileMetadata>;
-}
-
-export function chunkPrecompileFiles(
-  files: readonly string[],
-  batchSize: number,
-  options: PrecompileChunkOptions = {},
-): string[][] {
-  const normalizedBatchSize = normalizePrecompileBatchSize(batchSize);
-  const maxBytes = Math.max(1, Math.floor(options.maxBytes ?? DEFAULT_PRECOMPILE_BATCH_MAX_BYTES));
-  const chunks: string[][] = [];
-  let current: string[] = [];
-  let currentBytes = 0;
-
-  for (const file of files) {
-    const fileBytes = Math.max(0, options.metadata?.get(file)?.size ?? 0);
-    if (
-      current.length > 0 &&
-      (current.length >= normalizedBatchSize || currentBytes + fileBytes > maxBytes)
-    ) {
-      chunks.push(current);
-      current = [];
-      currentBytes = 0;
-    }
-
-    current.push(file);
-    currentBytes += fileBytes;
-  }
-
-  if (current.length > 0) {
-    chunks.push(current);
-  }
-
-  return chunks;
-}
+export {
+  DEFAULT_PRECOMPILE_BATCH_MAX_BYTES,
+  DEFAULT_PRECOMPILE_BATCH_SIZE,
+  DEFAULT_PRECOMPILE_IGNORE_PATTERNS,
+  chunkPrecompileFiles,
+  diffPrecompileFiles,
+  hasFileMetadataChanged,
+  normalizePrecompileBatchSize,
+  type PrecompileChunkOptions,
+  type PrecompileDiff,
+  type PrecompileFileMetadata,
+} from "./precompile.ts";
 
 export interface VizePluginState {
   cache: Map<string, CompiledModule>;
@@ -241,6 +158,7 @@ export async function compileAll(state: VizePluginState): Promise<void> {
   let successCount = 0;
   let failedCount = 0;
   let nativeTimeMs = 0;
+  const precompileFailures: string[] = [];
   const chunks = chunkPrecompileFiles(changedFiles, state.precompileBatchSize, {
     metadata: currentMetadata,
   });
@@ -256,6 +174,7 @@ export async function compileAll(state: VizePluginState): Promise<void> {
         state.cache.delete(file);
         state.collectedCss.delete(file);
         state.precompileMetadata.delete(file);
+        precompileFailures.push(`[vize] Failed to read ${file}: ${formatUnknownError(e)}`);
         state.logger.error(`Failed to read ${file}:`, e);
       }
     }
@@ -270,8 +189,11 @@ export async function compileAll(state: VizePluginState): Promise<void> {
       customRenderer: state.mergedOptions.customRenderer ?? false,
     });
 
-    successCount += result.successCount;
-    failedCount += result.failedCount;
+    const chunkFailedCount = result.results.filter(
+      (fileResult) => fileResult.errors.length > 0,
+    ).length;
+    failedCount += chunkFailedCount;
+    successCount += result.results.length - chunkFailedCount;
     nativeTimeMs += result.timeMs;
 
     // Collect CSS for production extraction.
@@ -284,6 +206,7 @@ export async function compileAll(state: VizePluginState): Promise<void> {
         state.cache.delete(fileResult.path);
         state.collectedCss.delete(fileResult.path);
         state.precompileMetadata.delete(fileResult.path);
+        precompileFailures.push(formatCompileErrorMessage(fileResult.path, fileResult.errors));
         continue;
       }
 
@@ -300,4 +223,13 @@ export async function compileAll(state: VizePluginState): Promise<void> {
   state.logger.info(
     `Pre-compilation complete: ${successCount} recompiled, ${cachedFileCount} reused, ${failedCount} failed (${elapsed}ms, native ${batchLabel}: ${nativeTimeMs.toFixed(2)}ms)`,
   );
+
+  if (failedCount > 0) {
+    const details = precompileFailures.length > 0 ? `\n\n${precompileFailures.join("\n\n")}` : "";
+    throw new Error(`[vize] Pre-compilation failed for ${failedCount} file(s).${details}`);
+  }
+}
+
+function formatUnknownError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

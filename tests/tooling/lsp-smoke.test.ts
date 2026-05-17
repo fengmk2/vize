@@ -15,7 +15,7 @@ import {
   offsetToPosition,
 } from "./support/lsp/assertions.ts";
 import { root } from "./support/lsp/paths.ts";
-import type { PublishDiagnosticsParams } from "./support/lsp/protocol.ts";
+import type { LspDiagnostic, PublishDiagnosticsParams } from "./support/lsp/protocol.ts";
 import { LspSession } from "./support/lsp/session.ts";
 
 test("vize lsp smoke-tests production editor flows", async (t) => {
@@ -73,7 +73,7 @@ const secondaryLabel = ref('secondary')
         referencesProvider?: boolean;
         semanticTokensProvider?: {
           range?: boolean;
-          full?: boolean | unknown;
+          full?: boolean | { delta?: boolean };
         };
       };
     };
@@ -235,6 +235,24 @@ const emoji = "😀"; const message = ref(emoji)
         ),
         JSON.stringify(references),
       );
+
+      const emojiPosition = offsetToPosition(utf16Source, utf16Source.indexOf("😀"));
+      const surrogateInteriorPosition = {
+        line: emojiPosition.line,
+        character: emojiPosition.character + 1,
+      };
+
+      const invalidCompletion = await session.request("textDocument/completion", {
+        textDocument: { uri: utf16Uri },
+        position: surrogateInteriorPosition,
+      });
+      assert.equal(invalidCompletion, null);
+
+      const invalidPrepareRename = await session.request("textDocument/prepareRename", {
+        textDocument: { uri: utf16Uri },
+        position: surrogateInteriorPosition,
+      });
+      assert.equal(invalidPrepareRename, null);
     });
 
     await t.test("semantic token range requests are implemented", async () => {
@@ -411,6 +429,108 @@ const emoji = "😀"; const message = ref(emoji)
   }
 });
 
+test("vize lsp code actions return UTF-16 quick fix edit ranges", async () => {
+  const agentOnlyDir = path.join(root, "__agent_only", "lsp-code-action-utf16");
+  fs.mkdirSync(agentOnlyDir, { recursive: true });
+  const workspaceDir = fs.mkdtempSync(path.join(agentOnlyDir, "workspace-"));
+  const session = new LspSession();
+
+  try {
+    await session.initialize(workspaceDir, {
+      lint: true,
+      codeActions: true,
+      typecheck: false,
+    });
+
+    const source = `<template>
+  <div title="😀"  id="target"></div>
+</template>
+`;
+    const filePath = path.join(workspaceDir, "CodeActionUtf16.vue");
+    const uri = pathToFileURL(filePath).href;
+    fs.writeFileSync(filePath, source, "utf8");
+
+    session.notify("textDocument/didOpen", {
+      textDocument: {
+        uri,
+        languageId: "vue",
+        version: 1,
+        text: source,
+      },
+    });
+
+    const publish = (await session.waitForNotification(
+      "textDocument/publishDiagnostics",
+      (params) =>
+        isDiagnosticsForUri(params, uri) &&
+        params.diagnostics.some(
+          (diagnostic) =>
+            diagnostic.source === "vize/lint" && diagnostic.code === "vue/no-multi-spaces",
+        ),
+    )) as PublishDiagnosticsParams;
+
+    const diagnostic = publish.diagnostics.find(
+      (item): item is LspDiagnostic =>
+        item.source === "vize/lint" && item.code === "vue/no-multi-spaces",
+    );
+    assert.ok(diagnostic, JSON.stringify(publish.diagnostics));
+
+    const gapStart = source.indexOf("  id");
+    const gapEnd = gapStart + 2;
+    const expectedRange = {
+      start: offsetToPosition(source, gapStart),
+      end: offsetToPosition(source, gapEnd),
+    };
+    assert.deepEqual(diagnostic.range, expectedRange);
+
+    type CodeAction = {
+      title?: string;
+      edit?: {
+        changes?: Record<
+          string,
+          Array<{
+            range: typeof expectedRange;
+            newText: string;
+          }>
+        >;
+      };
+    };
+
+    const response = (await session.request("textDocument/codeAction", {
+      textDocument: { uri },
+      range: expectedRange,
+      context: {
+        diagnostics: [diagnostic],
+      },
+    })) as CodeAction[] | null;
+
+    assert.ok(Array.isArray(response), JSON.stringify(response));
+
+    const fixAction = response.find((action) =>
+      action.title?.includes("Replace multiple spaces with single space"),
+    );
+    assert.ok(fixAction, JSON.stringify(response));
+    const fixEdit = fixAction.edit?.changes?.[uri]?.[0];
+    assert.equal(fixEdit?.newText, " ");
+    assert.deepEqual(fixEdit?.range, expectedRange);
+
+    const suppressAction = response.find((action) =>
+      action.title?.includes("Suppress with @vize:forget (vue/no-multi-spaces)"),
+    );
+    assert.ok(suppressAction, JSON.stringify(response));
+    const suppressEdit = suppressAction.edit?.changes?.[uri]?.[0];
+    assert.deepEqual(suppressEdit?.range, {
+      start: { line: 1, character: 0 },
+      end: { line: 1, character: 0 },
+    });
+    assert.match(suppressEdit?.newText ?? "", /@vize:forget vue\/no-multi-spaces/);
+  } finally {
+    await session.shutdown();
+    fs.rmSync(workspaceDir, { recursive: true, force: true });
+    fs.rmSync(agentOnlyDir, { recursive: true, force: true });
+  }
+});
+
 test("vize lsp publishes and clears malformed SFC diagnostics", async () => {
   const agentOnlyDir = path.join(root, "__agent_only", "lsp-malformed");
   fs.mkdirSync(agentOnlyDir, { recursive: true });
@@ -441,6 +561,7 @@ test("vize lsp publishes and clears malformed SFC diagnostics", async () => {
       "textDocument/publishDiagnostics",
       (params) => hasDiagnosticSource(params, brokenUri, "vize/sfc"),
     )) as PublishDiagnosticsParams;
+    assert.equal(brokenPublish.version, 1);
     const parserDiagnostic = brokenPublish.diagnostics.find(
       (diagnostic) => diagnostic.source === "vize/sfc",
     );
@@ -471,6 +592,7 @@ test("vize lsp publishes and clears malformed SFC diagnostics", async () => {
       (params) => isDiagnosticsForUri(params, brokenUri),
     )) as PublishDiagnosticsParams;
 
+    assert.equal(fixedPublish.version, 2);
     assert.deepEqual(fixedPublish.diagnostics, []);
   } finally {
     await session.shutdown();

@@ -17,7 +17,10 @@
   },
   "files": [
     "index.js",
-    "index.d.ts"
+    "index.d.ts",
+    "native-binding.js",
+    "native-targets.js",
+    "types"
   ],
   "main": "index.js",
   "types": "index.d.ts",
@@ -55,5 +58,8 @@
       "aarch64-unknown-linux-gnu",
       "aarch64-unknown-linux-musl"
     ]
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

@@ -269,6 +269,40 @@ const emoji = "😀"; const message = ref(emoji)
       assert.equal(response.data.length % 5, 0);
       assert.ok(response.data.length > 0);
     });
+
+    await t.test("semantic tokens ignore directive lookalikes in plain text", async () => {
+      const noiseSource = `<template>
+  <p>email dev@example.com and plain text v-if @click :class</p>
+</template>
+`;
+      const noisePath = path.join(workspaceDir, "SemanticNoise.vue");
+      fs.writeFileSync(noisePath, noiseSource, "utf8");
+      const noiseUri = pathToFileURL(noisePath).href;
+
+      session.notify("textDocument/didOpen", {
+        textDocument: {
+          uri: noiseUri,
+          languageId: "vue",
+          version: 1,
+          text: noiseSource,
+        },
+      });
+
+      await session.waitForNotification("textDocument/publishDiagnostics", (params) =>
+        isDiagnosticsForUri(params, noiseUri),
+      );
+
+      const response = (await session.request("textDocument/semanticTokens/range", {
+        textDocument: { uri: noiseUri },
+        range: {
+          start: { line: 1, character: 0 },
+          end: { line: 2, character: 0 },
+        },
+      })) as { data?: unknown[] } | null;
+
+      assert.ok(response);
+      assert.deepEqual(response.data, []);
+    });
   } finally {
     await session.shutdown();
     fs.rmSync(workspaceDir, { recursive: true, force: true });

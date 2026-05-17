@@ -775,6 +775,65 @@ import Button from './Button.vue'
     }
 
     #[test]
+    fn test_template_semantic_tokens_ignore_plain_text_lookalikes() {
+        let template_str = "<div>email dev@example.com and text v-if :class @click</div>";
+        let mut tokens = Vec::new();
+        template::collect_template_tokens(template_str, 0, &mut tokens);
+
+        assert!(tokens.is_empty(), "{tokens:#?}");
+    }
+
+    #[test]
+    fn test_template_semantic_tokens_ignore_static_attribute_text() {
+        let template_str = r#"<div title="plain v-if @click :class"></div>"#;
+        let mut tokens = Vec::new();
+        template::collect_template_tokens(template_str, 0, &mut tokens);
+
+        assert!(tokens.is_empty(), "{tokens:#?}");
+    }
+
+    #[test]
+    fn test_directive_expression_does_not_steal_next_attribute_value() {
+        let template_str = r#"<div v-else title="message"></div>"#;
+        let mut tokens = Vec::new();
+        template::collect_directive_expression_tokens(template_str, 0, &mut tokens);
+
+        assert!(tokens.is_empty(), "{tokens:#?}");
+    }
+
+    #[test]
+    fn test_template_semantic_tokens_still_collect_attribute_tokens() {
+        let template_str = r#"<div v-if="ready" @click="save" :class="classes"></div>"#;
+        let mut tokens = Vec::new();
+        template::collect_template_tokens(template_str, 0, &mut tokens);
+
+        assert!(
+            tokens
+                .iter()
+                .any(|token| token.token_type == TokenType::Keyword as u32),
+            "{tokens:#?}"
+        );
+        assert!(
+            tokens
+                .iter()
+                .any(|token| token.token_type == TokenType::Event as u32),
+            "{tokens:#?}"
+        );
+        assert!(
+            tokens
+                .iter()
+                .any(|token| token.token_type == TokenType::Property as u32),
+            "{tokens:#?}"
+        );
+        assert!(
+            tokens
+                .iter()
+                .any(|token| token.token_type == TokenType::Variable as u32),
+            "{tokens:#?}"
+        );
+    }
+
+    #[test]
     fn test_full_sfc_semantic_tokens() {
         let content = r#"<template>
   <div>{{ count }}</div>

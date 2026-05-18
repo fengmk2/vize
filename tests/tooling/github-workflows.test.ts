@@ -641,7 +641,7 @@ test("check workflow runs JS package unit tests and production dependency audit"
 
   assert.match(jsPackageJob, /vp run --workspace-root test:js/);
   assert.match(jsPackageJob, /shared-key:\s*"native"/);
-  assert.match(auditJob, /pnpm audit --prod --audit-level moderate/);
+  assert.match(auditJob, /vp exec pnpm audit --prod --audit-level moderate/);
   assert.match(auditJob, /tool:\s*cargo-audit/);
   assert.match(auditJob, /cargo audit --deny warnings/);
   assert.match(auditJob, /continue-on-error:\s*true/);

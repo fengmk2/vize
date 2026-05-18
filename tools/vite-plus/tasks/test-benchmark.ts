@@ -9,6 +9,10 @@ import {
   task,
 } from "../task-helpers.ts";
 
+const jsPackageTestCommand = runInPackages("test", testedPackages, {
+  concurrencyLimit: 1,
+});
+
 /**
  * Test, snapshot, coverage, and benchmark tasks.
  *
@@ -21,7 +25,7 @@ import {
 export const testAndBenchmarkTasks = defineTasks({
   test: noCacheTask(runTasks("test:rust", "test:js", "test:scripts")),
   "test:rust": task("cargo test --workspace", { input: cacheInputs.rust }),
-  "test:js": noCacheTask(`${runTask("build:native")} && ${runInPackages("test", testedPackages)}`),
+  "test:js": noCacheTask(`${runTask("build:native")} && ${jsPackageTestCommand}`),
   "test:scripts": noCacheTask("node --test --test-concurrency=1 tests/tooling/*.test.ts"),
   "test:playground": task(runInPackages("test:browser", ["./playground"]), {
     input: cacheInputs.jsChecks,

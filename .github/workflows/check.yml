@@ -334,6 +334,9 @@ jobs:
           shared-key: "coverage-source"
           cache-workspace-crates: "true"
 
+      - name: Install JS dependencies
+        run: vp install --frozen-lockfile --prefer-offline
+
       - name: Install Pkl CLI
         run: npm install --global @pkl-community/pkl@0.27.2
 
@@ -376,6 +379,9 @@ jobs:
         with:
           shared-key: "coverage-branch"
           cache-workspace-crates: "true"
+
+      - name: Install JS dependencies
+        run: vp install --frozen-lockfile --prefer-offline
 
       - name: Install Pkl CLI
         run: npm install --global @pkl-community/pkl@0.27.2

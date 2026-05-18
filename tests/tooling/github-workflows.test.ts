@@ -665,12 +665,14 @@ test("check workflow blocks on Rust source and branch coverage budgets", () => {
   const branchJob = workflowJobBody(workflow, "branch-coverage");
 
   assert.match(sourceJob, /tool:\s*cargo-llvm-cov/);
+  assert.match(sourceJob, /vp install --frozen-lockfile --prefer-offline/);
   assert.match(sourceJob, /vp run --workspace-root coverage:source/);
   assert.match(sourceJob, /source-summary\.json/);
   assert.match(sourceJob, /rust-source-coverage-summary/);
 
   assert.match(branchJob, /toolchain:\s*nightly/);
   assert.match(branchJob, /tool:\s*cargo-llvm-cov/);
+  assert.match(branchJob, /vp install --frozen-lockfile --prefer-offline/);
   assert.match(branchJob, /vp run --workspace-root coverage:source:branch/);
   assert.match(branchJob, /source-branch-summary\.json/);
   assert.match(branchJob, /rust-branch-coverage-summary/);

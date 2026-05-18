@@ -1,4 +1,8 @@
-use std::{path::Path, process::Command};
+use std::{
+    io::{BufRead, Write},
+    path::Path,
+    process::Command,
+};
 
 use vize_carton::cstr;
 
@@ -160,6 +164,93 @@ const count =
             .as_str()
             .unwrap()
             .contains("Cannot find name")
+    );
+
+    let _ = std::fs::remove_dir_all(&project_root);
+}
+
+#[cfg(unix)]
+#[test]
+fn check_socket_json_preserves_json_output_contract() {
+    use std::os::unix::net::UnixListener;
+
+    let project_root = create_cli_project(
+        "socket-json",
+        &[(
+            "src/App.vue",
+            r#"<script setup lang="ts">
+const count: string = 0;
+</script>
+"#,
+        )],
+    );
+    let socket_path = project_root.join("check.sock");
+    let listener = UnixListener::bind(&socket_path).unwrap();
+    let server = std::thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        let mut line = std::string::String::new();
+        std::io::BufReader::new(stream.try_clone().unwrap())
+            .read_line(&mut line)
+            .unwrap();
+        let request: serde_json::Value = serde_json::from_str(&line).unwrap();
+        assert_eq!(request["method"], "check");
+
+        let response = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": request["id"],
+            "result": {
+                "diagnostics": [
+                    {
+                        "message": "Type 'number' is not assignable to type 'string'.",
+                        "severity": "error",
+                        "line": 2,
+                        "column": 7,
+                        "code": "2322"
+                    },
+                    {
+                        "message": "Unused binding.",
+                        "severity": "warning",
+                        "line": 2,
+                        "column": 7,
+                        "code": null
+                    }
+                ],
+                "virtualTs": "const count: string = 0;",
+                "errorCount": 1
+            }
+        });
+        writeln!(stream, "{response}").unwrap();
+    });
+
+    let output = Command::new(env!("CARGO_BIN_EXE_vize"))
+        .current_dir(&project_root)
+        .args([
+            "check",
+            "src",
+            "--socket",
+            socket_path.to_str().unwrap(),
+            "--format",
+            "json",
+        ])
+        .output()
+        .unwrap();
+
+    server.join().unwrap();
+    let stdout = std::string::String::from_utf8(output.stdout).unwrap();
+    let json: serde_json::Value = serde_json::from_str(&stdout).unwrap();
+
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(json["errorCount"], 1);
+    assert_eq!(json["warningCount"], 1);
+    assert_eq!(json["fileCount"], 1);
+    assert_eq!(json["files"][0]["file"], "src/App.vue");
+    assert_eq!(json["files"][0]["virtualTs"], "const count: string = 0;");
+    assert_eq!(
+        json["files"][0]["diagnostics"],
+        serde_json::json!([
+            "error:2:7 [TS2322] Type 'number' is not assignable to type 'string'.",
+            "warning:2:7 Unused binding."
+        ])
     );
 
     let _ = std::fs::remove_dir_all(&project_root);

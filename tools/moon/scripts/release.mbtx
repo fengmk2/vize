@@ -207,7 +207,7 @@ fn bump_version(current : String, bump : String) -> String? {
           version.major,
           version.minor,
           version.patch + 1,
-          version.prerelease,
+          None,
           None,
         ),
       )
@@ -217,12 +217,12 @@ fn bump_version(current : String, bump : String) -> String? {
           version.major,
           version.minor + 1,
           0,
-          version.prerelease,
+          None,
           None,
         ),
       )
     "major" =>
-      Some(format_version(version.major + 1, 0, 0, version.prerelease, None))
+      Some(format_version(version.major + 1, 0, 0, None, None))
     "alpha" =>
       if version.prerelease == Some("alpha") {
         Some(
@@ -431,6 +431,15 @@ fn stage_files(files : Array[String]) -> Array[String] {
 /// without publishing duplicate packages.
 async fn run_app() -> Int {
   let args = cli_args()
+  if args.length() == 3 && args[0] == "--print-bump" {
+    match bump_version(args[1], args[2]) {
+      Some(version) => {
+        println(version)
+        return 0
+      }
+      None => return 1
+    }
+  }
   if args.is_empty() {
     @stdio.stderr.write(
       "Usage: moon run --target native - -- <patch|minor|major|alpha|beta|rc|release> [-y] [--force-tag] < tools/moon/scripts/release.mbtx\n",

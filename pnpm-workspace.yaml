@@ -45,7 +45,7 @@ catalogs:
     vue: "3.5.34"
     "@vue/runtime-core": "3.5.34"
     "@vue/test-utils": "2.4.10"
-    vue-router: "5.0.7"
+    vue-router: "4.5.1"
 
   # Vue beta track used by the playground and benchmark harnesses.
   vue-beta:
@@ -98,18 +98,15 @@ catalogs:
 
   # Published native binary packages that are installed optionally at runtime.
   native-binaries:
-    "@vizejs/native-darwin-arm64": "0.101.0"
-    "@vizejs/native-darwin-x64": "0.101.0"
-    "@vizejs/native-linux-arm64-gnu": "0.101.0"
-    "@vizejs/native-linux-arm64-musl": "0.101.0"
-    "@vizejs/native-linux-x64-gnu": "0.101.0"
-    "@vizejs/native-linux-x64-musl": "0.101.0"
-    "@vizejs/native-win32-arm64-msvc": "0.101.0"
-    "@vizejs/native-win32-x64-msvc": "0.101.0"
+    "@vizejs/native-darwin-arm64": "0.105.0"
+    "@vizejs/native-darwin-x64": "0.105.0"
+    "@vizejs/native-linux-arm64-gnu": "0.105.0"
+    "@vizejs/native-linux-arm64-musl": "0.105.0"
+    "@vizejs/native-linux-x64-gnu": "0.105.0"
+    "@vizejs/native-linux-x64-musl": "0.105.0"
+    "@vizejs/native-win32-arm64-msvc": "0.105.0"
+    "@vizejs/native-win32-x64-msvc": "0.105.0"
 
-overrides:
-  vite: "catalog:vite-stack"
-  vitest: "catalog:vite-stack"
 peerDependencyRules:
   allowAny:
     - vite

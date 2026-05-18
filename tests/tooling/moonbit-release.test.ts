@@ -25,3 +25,20 @@ test("release script fails clearly when stdin is not interactive", () => {
     ),
   );
 });
+
+test("release script clears prerelease suffixes for stable bumps", () => {
+  const cases = [
+    ["1.2.3-alpha.1", "patch", "1.2.4"],
+    ["1.2.3-beta", "minor", "1.3.0"],
+    ["1.2.3-rc.1", "major", "2.0.0"],
+    ["1.2.3-alpha.1", "release", "1.2.3"],
+    ["1.2.3-alpha.1", "alpha", "1.2.3-alpha.2"],
+  ] as const;
+
+  for (const [current, bump, expected] of cases) {
+    const result = runMoonScript("release", ["--print-bump", current, bump]);
+
+    assert.equal(result.status, 0, `${result.stderr}\n${result.stdout}`.trim());
+    assert.equal(result.stdout.trim(), expected);
+  }
+});

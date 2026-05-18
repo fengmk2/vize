@@ -150,7 +150,12 @@ function findPklBinary(): string | null {
 
       for (const candidate of candidates) {
         if (fs.existsSync(candidate)) {
-          return candidate;
+          try {
+            execFileSync(candidate, ["--version"], { stdio: "ignore" });
+            return candidate;
+          } catch {
+            // Keep looking: the bundled shim can exist even when its runtime is unavailable.
+          }
         }
       }
     }
@@ -176,18 +181,18 @@ function loadPklConfig(filePath: string): VizeConfig | null {
     return null;
   }
 
+  let output: string;
   try {
-    const output = execFileSync(pklBin, ["eval", "-f", "json", filePath], {
+    output = execFileSync(pklBin, ["eval", "-f", "json", filePath], {
       cwd: path.dirname(filePath),
       encoding: "utf-8",
       stdio: ["ignore", "pipe", "pipe"],
       timeout: 30_000,
     });
-    return parseJsonConfig(output, filePath);
   } catch (error) {
-    console.warn(`[vize] Failed to evaluate ${filePath}: ${getErrorMessage(error)}`);
-    return null;
+    throw new Error(`Failed to evaluate vize PKL config at ${filePath}: ${getErrorMessage(error)}`);
   }
+  return parseJsonConfig(output, filePath);
 }
 
 async function resolveConfigExport(

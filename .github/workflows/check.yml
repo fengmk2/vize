@@ -60,6 +60,31 @@ jobs:
       - name: Check JS/TS
         run: vp run --workspace-root check:ci
 
+  security-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NODE_OPTIONS: "--disable-warning=DEP0040 --disable-warning=DEP0169"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: voidzero-dev/setup-vp@ca1c46663915d6c1042ae23bd39ab85718bfb0fa # v1
+        with:
+          node-version-file: ".node-version"
+          cache: true
+          run-install: false
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+      - name: Install JS dependencies
+        run: vp install --frozen-lockfile --prefer-offline
+      - name: Audit production npm dependencies
+        run: pnpm audit --prod --audit-level moderate
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@184183c2401be73c3bf42c2e61268aa5855379c1 # v2
+        with:
+          tool: cargo-audit
+      - name: Audit Rust dependencies
+        run: cargo audit --deny warnings
+        continue-on-error: true
+
   node-engine-compat:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -198,6 +223,29 @@ jobs:
           path: .artifacts/shared-js-build/
           if-no-files-found: error
           retention-days: 7
+
+  test-js-packages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_OPTIONS: "--disable-warning=DEP0040 --disable-warning=DEP0169"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: voidzero-dev/setup-vp@ca1c46663915d6c1042ae23bd39ab85718bfb0fa # v1
+        with:
+          node-version-file: ".node-version"
+          cache: true
+          run-install: false
+      - uses: ./.github/actions/setup-moonbit
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          shared-key: "native"
+          cache-workspace-crates: "true"
+      - name: Install JS dependencies
+        run: vp install --frozen-lockfile --prefer-offline
+      - name: Test JS packages
+        run: vp run --workspace-root test:js
 
   clippy-and-test:
     runs-on: ubuntu-latest
@@ -350,11 +398,13 @@ jobs:
       - nix-flake
       - fmt-rust
       - check-js
+      - security-audit
       - node-engine-compat
       - check-vize-apps
       - test-scripts
       - editor-extensions
       - build-js-packages
+      - test-js-packages
       - clippy-and-test
       - coverage
       - playground-test

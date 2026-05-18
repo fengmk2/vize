@@ -167,9 +167,17 @@ test("native package catalog pins and generated loader version checks stay align
     const escapedName = escapeRegExp(name);
     const catalogVersion = workspacePins[name];
     assert.ok(catalogVersion, `${name} catalog pin`);
+    assert.equal(
+      catalogVersion,
+      nativePackage.version,
+      `${name} catalog pin should match @vizejs/native version`,
+    );
     const escapedVersion = escapeRegExp(catalogVersion);
-    assert.match(lockfile, new RegExp(`['"]?${escapedName}@${escapedVersion}['"]?:`));
-    assert.doesNotMatch(lockfile, new RegExp(`${escapedName}@(?!${escapedVersion})`));
+    assert.match(
+      lockfile,
+      new RegExp(`['"]?${escapedName}['"]?:\\n\\s+specifier: ${escapedVersion}\\n`),
+      `${name} lockfile catalog specifier should match @vizejs/native version`,
+    );
   }
 
   const nativeTargetsLoader = fs.readFileSync(
@@ -183,6 +191,21 @@ test("native package catalog pins and generated loader version checks stay align
   assert.match(nativeTargetsLoader, /bindingPackageVersion !== packageVersion/);
   assert.match(nativeTargetsLoader, /expected \$\{packageVersion\} but got/);
   assert.doesNotMatch(nativeTargetsLoader, /bindingPackageVersion !== "[^"]+"/);
+});
+
+test("musea Nuxt tests the same vue-router major that it declares as a peer", () => {
+  const workspaceYaml = readRepoFile("pnpm-workspace.yaml");
+  const catalogVersion = workspaceYaml.match(/^\s+vue-router: "([^"]+)"$/m)?.[1];
+  assert.ok(catalogVersion, "vue-router catalog pin");
+
+  const packageJson = JSON.parse(readRepoFile("npm/musea-nuxt/package.json")) as {
+    peerDependencies?: Record<string, string>;
+  };
+  const peerRange = packageJson.peerDependencies?.["vue-router"];
+  assert.ok(peerRange, "vue-router peer range");
+
+  assert.match(catalogVersion, /^4\./);
+  assert.match(peerRange, /\^4\./);
 });
 
 test("published package manifests declare support metadata", () => {

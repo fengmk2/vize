@@ -30,7 +30,6 @@
       "devalue": "5.8.1",
       "dompurify": "3.4.4",
       "h3": "1.15.11",
-      "minimatch": "5.1.9",
       "nanotar": "0.3.0",
       "nitropack": "2.13.4",
       "node-forge": "1.4.0",

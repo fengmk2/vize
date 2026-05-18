@@ -20,6 +20,11 @@ repository is not yet a stable, production-ready toolchain.
 A production-ready claim for any supported surface requires current evidence for all of these:
 
 - `vp run --workspace-root check:ci`
+- `vp run --workspace-root coverage`
+- `vp run --workspace-root coverage:source`
+- `vp run --workspace-root coverage:source:branch`
+- `vp run --filter './tests' test:check:fixtures`
+- `node tools/npm/smoke-release-install.mjs --prepare-manifests --runtime-checks ...`
 - `cargo fmt --all -- --check`
 - `cargo clippy --workspace -- -D warnings`
 - `cargo test --workspace`
@@ -30,7 +35,37 @@ A production-ready claim for any supported surface requires current evidence for
 - supported Node.js compatibility coverage
 - native host smoke coverage when native binaries are involved
 - real-world fixture coverage for the supported Vue/compiler/typecheck behavior
+- Vue parity matrix coverage for compiler, type checking, Vite, and runtime smoke behavior
 - release rollback instructions for npm, crates.io, GitHub Releases, docs, and editor channels
+
+## Current Audit Snapshot
+
+Local audit evidence from May 18, 2026:
+
+- `vp run --workspace-root check:ci` passes.
+- `cargo fmt --all -- --check` passes.
+- `cargo clippy --workspace -- -D warnings` passes.
+- `cargo test --workspace` passes.
+- `vp exec pnpm audit --prod --audit-level moderate` reports no known vulnerabilities.
+- `cargo audit --deny warnings` reports no RustSec vulnerabilities.
+- `vp run --workspace-root coverage` passes the compiler fixture budget at `625/625`.
+- `cargo llvm-cov --workspace --summary-only` reports Rust source coverage at
+  `71.18%` lines, `76.39%` functions, and `71.92%` regions, above the `70%`
+  release gate.
+- `cargo +nightly llvm-cov -p vize_carton -p vize_armature -p vize_atelier_core --branch`
+  reports core Rust branch coverage at `44.34%`, above the `40%` release gate.
+- `node bench/test-inventory.mjs --json ...` reports `4,480` tracked cases across `607` files.
+
+These results are strong alpha evidence, but they are not enough to call the whole repository
+production ready. The formerly missing release-blocking checks are tracked by these issues and now
+have explicit gates in CI and release docs:
+
+- [#492](https://github.com/ubugeeei/vize/issues/492): source line and branch coverage gates, with function and region budgets included.
+- [#493](https://github.com/ubugeeei/vize/issues/493): fresh-install smoke coverage for runtime package tarballs across supported OS and Node targets.
+- [#494](https://github.com/ubugeeei/vize/issues/494): public Vue compiler and language-tools parity matrix.
+
+The public compatibility baseline is documented in
+[Vue Parity Matrix](./vue-parity-matrix.md).
 
 ## Exit Criteria For Removing Public Warnings
 

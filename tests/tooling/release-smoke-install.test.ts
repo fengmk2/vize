@@ -86,6 +86,17 @@ test("release install smoke skips libc-incompatible tarballs", () => {
   }
 });
 
+test("release install smoke can run runtime checks for Vize packages", () => {
+  const script = fs.readFileSync(smokeScript, "utf8");
+
+  assert.match(script, /--runtime-checks/);
+  assert.match(script, /@typescript\/native-preview@7\.0\.0-dev\.20260514\.1/);
+  assert.match(script, /native\.compileSfc/);
+  assert.match(script, /"vize"[\s\S]*"lint"[\s\S]*"src\/App\.vue"/);
+  assert.match(script, /"vite"[\s\S]*"build"/);
+  assert.match(script, /runtime: @vizejs\/vite-plugin vite build/);
+});
+
 function writePackage(tempDir: string, dirName: string, manifest: Record<string, unknown>): string {
   const packageDir = path.join(tempDir, dirName);
   fs.mkdirSync(packageDir, { recursive: true });

@@ -20,6 +20,7 @@ function parseArgs(argv) {
     keepTemp: false,
     packageDirs: /** @type {string[]} */ ([]),
     prepareManifests: false,
+    runtimeChecks: false,
   };
 
   for (const arg of argv) {
@@ -31,6 +32,10 @@ function parseArgs(argv) {
       options.prepareManifests = true;
       continue;
     }
+    if (arg === "--runtime-checks") {
+      options.runtimeChecks = true;
+      continue;
+    }
     if (arg.startsWith("--")) {
       throw new Error(`Unknown argument: ${arg}`);
     }
@@ -39,7 +44,7 @@ function parseArgs(argv) {
 
   if (options.packageDirs.length === 0) {
     throw new Error(
-      "Usage: node tools/npm/smoke-release-install.mjs [--prepare-manifests] [--keep-temp] <package-dir>...",
+      "Usage: node tools/npm/smoke-release-install.mjs [--prepare-manifests] [--runtime-checks] [--keep-temp] <package-dir>...",
     );
   }
 
@@ -267,6 +272,143 @@ function installPackedPackages(tempDir, packages) {
   for (const packageInfo of packages) {
     assertInstalledPackage(nodeModules, packageInfo);
   }
+
+  return installDir;
+}
+
+function installRuntimePeerDependencies(installDir) {
+  run(
+    process.env.NPM_BIN || "npm",
+    [
+      "install",
+      "--ignore-scripts",
+      "--package-lock=false",
+      "--no-audit",
+      "--fund=false",
+      "--legacy-peer-deps",
+      "@typescript/native-preview@7.0.0-dev.20260514.1",
+      "typescript@6.0.3",
+      "vite@npm:@voidzero-dev/vite-plus-core@0.1.21",
+      "vue@3.5.34",
+    ],
+    { cwd: installDir },
+  );
+}
+
+function writeRuntimeSmokeProject(installDir) {
+  const sourceDir = path.join(installDir, "src");
+  fs.mkdirSync(sourceDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(installDir, "index.html"),
+    '<div id="app"></div><script type="module" src="/src/main.ts"></script>\n',
+  );
+  fs.writeFileSync(
+    path.join(installDir, "tsconfig.json"),
+    JSON.stringify(
+      {
+        compilerOptions: {
+          lib: ["ES2022", "DOM", "DOM.Iterable"],
+          module: "ESNext",
+          moduleResolution: "Bundler",
+          strict: true,
+          target: "ES2022",
+          types: [],
+        },
+        include: ["src/**/*.ts", "src/**/*.vue"],
+      },
+      null,
+      2,
+    ),
+  );
+  fs.writeFileSync(
+    path.join(installDir, "vite.config.mjs"),
+    [
+      'import { defineConfig } from "vite";',
+      'import vize from "@vizejs/vite-plugin";',
+      "",
+      "export default defineConfig({",
+      "  plugins: [vize()],",
+      '  build: { outDir: "dist", emptyOutDir: true },',
+      "});",
+      "",
+    ].join("\n"),
+  );
+  fs.writeFileSync(
+    path.join(sourceDir, "App.vue"),
+    [
+      "<template>",
+      '  <button class="smoke" @click="count++">{{ label }} {{ count }}</button>',
+      "</template>",
+      "",
+      '<script setup lang="ts">',
+      'import { ref } from "vue";',
+      "",
+      'const label: string = "vize smoke";',
+      "const count = ref(0);",
+      "</script>",
+      "",
+      "<style scoped>",
+      ".smoke {",
+      "  color: #0f766e;",
+      "}",
+      "</style>",
+      "",
+    ].join("\n"),
+  );
+  fs.writeFileSync(
+    path.join(sourceDir, "main.ts"),
+    [
+      'import { createApp } from "vue";',
+      'import App from "./App.vue";',
+      "",
+      'createApp(App).mount("#app");',
+      "",
+    ].join("\n"),
+  );
+}
+
+function hasPackage(packages, name) {
+  return packages.some((pkg) => pkg.name === name);
+}
+
+function runRuntimeChecks(installDir, packages) {
+  installRuntimePeerDependencies(installDir);
+  writeRuntimeSmokeProject(installDir);
+
+  if (hasPackage(packages, "@vizejs/native")) {
+    run(
+      process.execPath,
+      [
+        "-e",
+        [
+          'const native = require("@vizejs/native");',
+          "const result = native.compileSfc(",
+          '  \'<template><div>{{ msg }}</div></template><script setup lang="ts">const msg: string = "ok";</script>\',',
+          "  { filename: 'Smoke.vue', isTs: true },",
+          ");",
+          "if (!result || result.errors.length > 0 || typeof result.code !== 'string' || result.code.length === 0) {",
+          "  throw new Error('compileSfc runtime smoke failed');",
+          "}",
+        ].join("\n"),
+      ],
+      { cwd: installDir },
+    );
+    console.log("runtime: @vizejs/native compileSfc");
+  }
+
+  if (hasPackage(packages, "vize")) {
+    run(
+      process.env.NPM_BIN || "npm",
+      ["exec", "--", "vize", "lint", "src/App.vue", "--format", "json", "--quiet", "--no-config"],
+      { cwd: installDir },
+    );
+    console.log("runtime: vize lint");
+  }
+
+  if (hasPackage(packages, "@vizejs/vite-plugin")) {
+    run(process.env.NPM_BIN || "npm", ["exec", "--", "vite", "build"], { cwd: installDir });
+    console.log("runtime: @vizejs/vite-plugin vite build");
+  }
 }
 
 function main() {
@@ -306,7 +448,11 @@ function main() {
 
     const installable = packages.filter((pkg) => pkg.compatible);
     assert.ok(installable.length > 0, "no package tarballs are compatible with this runner");
-    installPackedPackages(tempDir, installable);
+    const installDir = installPackedPackages(tempDir, installable);
+
+    if (options.runtimeChecks) {
+      runRuntimeChecks(installDir, installable);
+    }
 
     console.log(`smoked ${installable.length}/${packages.length} package tarballs`);
     if (options.keepTemp) {

@@ -114,12 +114,15 @@ test("PR CI jobs cap runtime with explicit timeouts", () => {
     ["security-audit", 20],
     ["node-engine-compat", 20],
     ["check-vize-apps", 20],
+    ["vue-parity", 30],
     ["test-scripts", 15],
     ["editor-extensions", 15],
     ["build-js-packages", 30],
     ["test-js-packages", 30],
     ["clippy-and-test", 30],
     ["coverage", 10],
+    ["source-coverage", 40],
+    ["branch-coverage", 45],
     ["playground-test", 30],
     ["test-report", 5],
     ["test-report-comment", 5],
@@ -187,7 +190,10 @@ test("release workflow smoke installs npm tarballs before publishing", () => {
   assert.match(smokeJob, /name:\s*Smoke release npm package installs/);
   assert.match(smokeJob, /name:\s*Prepare native package tarballs/);
   assert.match(smokeJob, /name:\s*Prepare Fresco native package tarball/);
-  assert.match(smokeJob, /node tools\/npm\/smoke-release-install\.mjs --prepare-manifests/);
+  assert.match(
+    smokeJob,
+    /node tools\/npm\/smoke-release-install\.mjs --prepare-manifests --runtime-checks/,
+  );
 
   for (const packageDir of [
     "npm/vize-native",
@@ -240,6 +246,9 @@ test("release workflow smoke installs npm tarballs before publishing", () => {
     assert.notEqual(smokeIndex, -1, `${jobName} is missing ${smokeStep}`);
     assert.notEqual(publishIndex, -1, `${jobName} is missing ${publishStep}`);
     assert.ok(smokeIndex < publishIndex, `${jobName} must smoke install before publishing`);
+    if (jobName === "release-npm-native") {
+      assert.match(job, /smoke-release-install\.mjs --prepare-manifests --runtime-checks/);
+    }
   }
 });
 
@@ -319,12 +328,15 @@ test("check workflow comments a detailed PR test report for each head push", () 
     "security-audit",
     "node-engine-compat",
     "check-vize-apps",
+    "vue-parity",
     "test-scripts",
     "editor-extensions",
     "build-js-packages",
     "test-js-packages",
     "clippy-and-test",
     "coverage",
+    "source-coverage",
+    "branch-coverage",
     "playground-test",
   ]) {
     assert.match(reportJob, new RegExp(`- ${jobName}\\b`));
@@ -647,6 +659,32 @@ test("check workflow runs JS package unit tests and production dependency audit"
   assert.doesNotMatch(auditJob, /continue-on-error:\s*true/);
 });
 
+test("check workflow blocks on Rust source and branch coverage budgets", () => {
+  const workflow = readRepoFile(".github", "workflows", "check.yml");
+  const sourceJob = workflowJobBody(workflow, "source-coverage");
+  const branchJob = workflowJobBody(workflow, "branch-coverage");
+
+  assert.match(sourceJob, /tool:\s*cargo-llvm-cov/);
+  assert.match(sourceJob, /vp run --workspace-root coverage:source/);
+  assert.match(sourceJob, /source-summary\.json/);
+  assert.match(sourceJob, /rust-source-coverage-summary/);
+
+  assert.match(branchJob, /toolchain:\s*nightly/);
+  assert.match(branchJob, /tool:\s*cargo-llvm-cov/);
+  assert.match(branchJob, /vp run --workspace-root coverage:source:branch/);
+  assert.match(branchJob, /source-branch-summary\.json/);
+  assert.match(branchJob, /rust-branch-coverage-summary/);
+});
+
+test("check workflow gates Vue parity against official compiler and vue-tsc fixtures", () => {
+  const workflow = readRepoFile(".github", "workflows", "check.yml");
+  const job = workflowJobBody(workflow, "vue-parity");
+
+  assert.match(job, /vp install --frozen-lockfile --prefer-offline/);
+  assert.match(job, /cargo build --profile ci -p vize/);
+  assert.match(job, /vp run --filter '\.\/tests' test:check:fixtures/);
+});
+
 test("native smoke workflow covers host platforms before release tags", () => {
   const workflow = readRepoFile(".github", "workflows", "native-smoke.yml");
   const job = workflowJobBody(workflow, "host-native-smoke");
@@ -659,6 +697,22 @@ test("native smoke workflow covers host platforms before release tags", () => {
   assert.match(job, /vp run --filter '\.\/npm\/vize-native' build:ci/);
   assert.match(job, /require\('\.\/npm\/vize-native'\)/);
   assert.match(job, /smoke-release-install\.mjs --prepare-manifests npm\/vize-native/);
+});
+
+test("native smoke workflow fresh-installs runtime tarballs across supported targets", () => {
+  const workflow = readRepoFile(".github", "workflows", "native-smoke.yml");
+  const job = workflowJobBody(workflow, "fresh-install-smoke");
+
+  assert.match(job, /os:\s*\[ubuntu-latest, macos-latest, windows-latest\]/);
+  assert.match(job, /node-version:\s*\["22", "24"\]/);
+  assert.match(job, /echo "\$\{\{\s*matrix\.node-version\s*\}\}" > \.node-version\.ci/);
+  assert.match(job, /node-version-file:\s*"\.node-version\.ci"/);
+  assert.match(job, /vp exec napi create-npm-dirs/);
+  assert.match(job, /vp exec napi pre-publish -t npm --no-gh-release --skip-optional-publish/);
+  assert.match(
+    job,
+    /smoke-release-install\.mjs --prepare-manifests --runtime-checks[\s\S]*npm\/vize-native npm\/vize-native\/npm\/\*[\s\S]*npm\/vize npm\/vite-plugin-vize/,
+  );
 });
 
 test("release workflow bundles fresco-native binaries into the root package instead of publishing platform packages", () => {

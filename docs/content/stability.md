@@ -61,7 +61,9 @@ A package or command can move into the alpha-supported tier when it has:
 The alpha does not promise full compatibility with every Vue compiler edge case, every package
 manager layout, every editor capability, or every framework integration. When Vize disagrees with
 official Vue tooling, treat the official output as the compatibility baseline unless a Vize guide
-explicitly documents a different behavior.
+explicitly documents a different behavior. The release-blocking compiler, type-checking, runtime,
+and Vite build surfaces are named in the
+[Vue parity matrix](https://github.com/ubugeeei/vize/blob/main/docs/release/vue-parity-matrix.md).
 
 For security handling, see the repository `SECURITY.md`. For contribution and issue workflow, see
 `CONTRIBUTING.md`.

@@ -508,7 +508,7 @@ jobs:
 
       - name: Smoke install release package tarballs
         run: |
-          node tools/npm/smoke-release-install.mjs --prepare-manifests \
+          node tools/npm/smoke-release-install.mjs --prepare-manifests --runtime-checks \
             npm/vize-native npm/vize-native/npm/* \
             npm/fresco-native \
             npm/vize \
@@ -572,7 +572,7 @@ jobs:
         run: ls -R npm/vize-native/npm/
 
       - name: Smoke install native package tarballs
-        run: node tools/npm/smoke-release-install.mjs --prepare-manifests npm/vize-native npm/vize-native/npm/*
+        run: node tools/npm/smoke-release-install.mjs --prepare-manifests --runtime-checks npm/vize-native npm/vize-native/npm/*
 
       - name: Publish platform packages
         run: moon run --target native - -- npm/vize-native/npm --provenance < tools/moon/scripts/publish_npm_package_dirs.mbtx

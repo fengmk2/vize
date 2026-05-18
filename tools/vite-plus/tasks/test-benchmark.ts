@@ -13,6 +13,39 @@ const jsPackageTestCommand = runInPackages("test", testedPackages, {
   concurrencyLimit: 1,
 });
 
+const rustSourceCoverageJson = "target/llvm-cov/source-summary.json";
+const rustBranchCoverageJson = "target/llvm-cov/source-branch-summary.json";
+const rustSourceCoverageMinimums = "--min-lines 70 --min-functions 70 --min-regions 70";
+const rustBranchCoverageMinimums =
+  "--min-lines 55 --min-functions 70 --min-regions 55 --min-branches 40";
+const rustSourceCoverageCommand = [
+  "mkdir -p target/llvm-cov",
+  [
+    "cargo llvm-cov --workspace --json --summary-only",
+    `--output-path ${rustSourceCoverageJson}`,
+    "--fail-under-lines 70 --fail-under-functions 70 --fail-under-regions 70",
+  ].join(" "),
+  [
+    "node tools/coverage/enforce-rust-source-coverage.mjs",
+    `--json ${rustSourceCoverageJson}`,
+    rustSourceCoverageMinimums,
+  ].join(" "),
+].join(" && ");
+const rustBranchCoverageCommand = [
+  "mkdir -p target/llvm-cov",
+  [
+    "cargo +nightly llvm-cov -p vize_carton -p vize_armature -p vize_atelier_core",
+    "--branch --json --summary-only",
+    `--output-path ${rustBranchCoverageJson}`,
+    "--fail-under-lines 55 --fail-under-functions 70 --fail-under-regions 55",
+  ].join(" "),
+  [
+    "node tools/coverage/enforce-rust-source-coverage.mjs",
+    `--json ${rustBranchCoverageJson}`,
+    rustBranchCoverageMinimums,
+  ].join(" "),
+].join(" && ");
+
 /**
  * Test, snapshot, coverage, and benchmark tasks.
  *
@@ -38,6 +71,9 @@ export const testAndBenchmarkTasks = defineTasks({
   "test:e2e:vrt": task(runInPackages("test:vrt", ["./tests"]), { input: cacheInputs.e2e }),
   "test:vue": task("cargo test -p vize_test_runner", { input: cacheInputs.rust }),
   coverage: task("cargo run -p vize_test_runner --bin coverage", { input: cacheInputs.rust }),
+  "coverage:all": noCacheTask(runTasks("coverage", "coverage:source")),
+  "coverage:source": task(rustSourceCoverageCommand, { input: cacheInputs.rust }),
+  "coverage:source:branch": task(rustBranchCoverageCommand, { input: cacheInputs.rust }),
   "coverage:verbose": task("cargo run -p vize_test_runner --bin coverage -- -v", {
     input: cacheInputs.rust,
   }),

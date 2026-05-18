@@ -10,7 +10,10 @@ on:
       - "crates/**"
       - "npm/vize-native/**"
       - "npm/fresco-native/**"
+      - "npm/vize/**"
+      - "npm/vite-plugin-vize/**"
       - "tools/moon/scripts/**"
+      - "tools/npm/**"
       - ".github/workflows/**"
       - ".github/actions/**"
       - "Cargo.toml"
@@ -73,3 +76,54 @@ jobs:
       - name: Package-install smoke for host native package
         if: runner.os == 'Linux'
         run: node tools/npm/smoke-release-install.mjs --prepare-manifests npm/vize-native
+
+  fresh-install-smoke:
+    name: Fresh install smoke (${{ matrix.os }}, Node ${{ matrix.node-version }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: ["22", "24"]
+    env:
+      NODE_OPTIONS: "--disable-warning=DEP0040 --disable-warning=DEP0169"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Select Node compatibility version
+        shell: bash
+        run: echo "${{ matrix.node-version }}" > .node-version.ci
+      - uses: voidzero-dev/setup-vp@ca1c46663915d6c1042ae23bd39ab85718bfb0fa # v1
+        with:
+          node-version-file: ".node-version.ci"
+          cache: true
+          run-install: false
+      - uses: ./.github/actions/setup-moonbit
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          shared-key: fresh-install-smoke-${{ runner.os }}
+          cache-workspace-crates: "true"
+      - name: Install package dependencies
+        run: |
+          vp install --frozen-lockfile --prefer-offline \
+            --filter './npm/vize-native...' \
+            --filter './npm/vize...' \
+            --filter './npm/vite-plugin-vize...'
+      - name: Build @vizejs/native
+        run: vp run --filter './npm/vize-native' build:ci
+      - name: Prepare native platform packages
+        working-directory: npm/vize-native
+        run: |
+          vp exec napi create-npm-dirs
+          vp exec napi pre-publish -t npm --no-gh-release --skip-optional-publish
+      - name: Build npm runtime packages
+        run: |
+          vp run --filter './npm/vize' build
+          vp run --filter './npm/vite-plugin-vize' build
+      - name: Fresh install and runtime smoke published tarballs
+        shell: bash
+        run: |
+          node tools/npm/smoke-release-install.mjs --prepare-manifests --runtime-checks \
+            npm/vize-native npm/vize-native/npm/* \
+            npm/vize npm/vite-plugin-vize

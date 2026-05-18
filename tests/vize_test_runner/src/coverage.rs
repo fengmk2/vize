@@ -12,83 +12,13 @@ use vize_test_runner::{CompilerMode, run_fixture_tests};
 
 const MIN_VDOM_PASSED: usize = 383;
 const MIN_VAPOR_PASSED: usize = 104;
-const MIN_SFC_PASSED: usize = 105;
-const MIN_TOTAL_PASSED: usize = 592;
+const MIN_SFC_PASSED: usize = 138;
+const MIN_TOTAL_PASSED: usize = 625;
 
 // Known v1 alpha fixture debt. CI allows these exact failures so existing gaps
 // do not block unrelated work, but any new failure or pass-count regression
 // fails the coverage job.
-const KNOWN_FAILURES: &[(&str, &str)] = &[
-    (
-        "sfc/script-setup",
-        "script with interfaces before script setup",
-    ),
-    ("sfc/script-setup", "generic component with extends"),
-    (
-        "sfc/script-setup",
-        "generic component with complex constraint",
-    ),
-    ("sfc/script-setup", "props with union types"),
-    ("sfc/script-setup", "props with readonly arrays"),
-    ("sfc/script-setup", "props with method signatures in object"),
-    ("sfc/script-setup", "top-level await with destructuring"),
-    ("sfc/script-setup", "array with as const"),
-    ("sfc/script-setup", "withDefaults with Object type"),
-    ("sfc/script-setup", "reco RoundedBtn pattern"),
-    (
-        "sfc/script-setup",
-        "reco GuidanceProgressLapInputBtn pattern",
-    ),
-    (
-        "sfc/script-setup",
-        "nested v-if with ref should not duplicate .value",
-    ),
-    ("sfc/script-setup", "v-else-if chain with ref bindings"),
-    ("sfc/script-setup", "v-for with imported and local values"),
-    ("sfc/patches", "dynamic asset URL with import meta url"),
-    ("sfc/patches", "v-if slot outlet with v-else"),
-    ("sfc/patches", "dynamic slot outlet name in loop"),
-    (
-        "sfc/patches",
-        "v for template else interpolation wraps text vnode",
-    ),
-    (
-        "sfc/patches",
-        "v if branch keeps maybe ref style patch flag",
-    ),
-    (
-        "sfc/patches",
-        "template ref with dynamic props in v if branch",
-    ),
-    (
-        "sfc/patches",
-        "options api dynamic style and class keep patch flags",
-    ),
-    (
-        "sfc/patches",
-        "imported custom directive binding in script setup",
-    ),
-    (
-        "sfc/patches",
-        "component event member expression handler is invoked",
-    ),
-    (
-        "sfc/patches",
-        "function typed prop param does not shadow local t",
-    ),
-    ("sfc/patches", "v-if with custom directive on element"),
-    ("sfc/patches", "v-if with component props"),
-    ("sfc/patches", "v-if with v-bind object spread"),
-    ("sfc/patches", "v-else-if with v-bind object spread"),
-    ("sfc/patches", "v-for with v-click-outside"),
-    ("sfc/patches", "v-for with custom directive on element"),
-    ("sfc/patches", "type keyword in conditional"),
-    ("sfc/patches", "attribute with special characters"),
-    (
-        "sfc/patches",
-        "arrow function with multiple statements in v-for",
-    ),
-];
+const KNOWN_FAILURES: &[(&str, &str)] = &[];
 
 fn is_known_failure(path: &str, name: &str) -> bool {
     KNOWN_FAILURES
@@ -329,10 +259,10 @@ mod tests {
 
     #[test]
     fn tracks_the_current_known_failure_budget() {
-        assert_eq!(KNOWN_FAILURES.len(), 33);
+        assert_eq!(KNOWN_FAILURES.len(), 0);
         let unique_failures: FxHashSet<_> = KNOWN_FAILURES.iter().collect();
         assert_eq!(unique_failures.len(), KNOWN_FAILURES.len());
-        assert!(is_known_failure(
+        assert!(!is_known_failure(
             "sfc/script-setup",
             "generic component with extends"
         ));

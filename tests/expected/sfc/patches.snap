@@ -45,7 +45,7 @@ const height = ref(50)
   <div :style="{ width, height }">Styled</div>
 </template>
 --- OUTPUT ---
-import { openBlock as _openBlock, createElementBlock as _createElementBlock } from "vue"
+import { normalizeStyle as _normalizeStyle, openBlock as _openBlock, createElementBlock as _createElementBlock } from "vue"
 
 import { ref } from 'vue'
 
@@ -58,7 +58,7 @@ const height = ref(50)
 
 return (_ctx, _cache) => {
   return (_openBlock(), _createElementBlock("div", {
-    style: { width: width.value, height: height.value }
+    style: _normalizeStyle({ width: width.value, height: height.value })
   }, "Styled", 4 /* STYLE */))
 }
 }
@@ -318,7 +318,7 @@ const text = ref('')
   <input v-if="show" v-model="text" />
 </template>
 --- OUTPUT ---
-import { openBlock as _openBlock, createElementBlock as _createElementBlock, createCommentVNode as _createCommentVNode } from "vue"
+import { vModelText as _vModelText, withDirectives as _withDirectives, openBlock as _openBlock, createElementBlock as _createElementBlock, createCommentVNode as _createCommentVNode } from "vue"
 
 import { ref } from 'vue'
 
@@ -331,10 +331,12 @@ const text = ref('')
 
 return (_ctx, _cache) => {
   return (show.value)
-    ? (_openBlock(), _createElementBlock("input", {
+    ? _withDirectives((_openBlock(), _createElementBlock("input", {
         key: 0,
         "onUpdate:modelValue": _cache[0] || (_cache[0] = $event => ((text).value = $event))
-      }))
+      }, null, 512 /* NEED_PATCH */)), [
+        [_vModelText, text.value]
+      ])
     : _createCommentVNode("v-if", true)
 }
 }
@@ -373,7 +375,7 @@ return (_ctx, _cache) => {
         key: 0,
         modelValue: value.value,
         "onUpdate:modelValue": _cache[0] || (_cache[0] = $event => ((value).value = $event))
-      }))
+      }, null, 8 /* PROPS */, ["modelValue"]))
     : _createCommentVNode("v-if", true)
 }
 }
@@ -758,7 +760,7 @@ const data = await response.json()
 </template>
 --- OUTPUT ---
 import { withAsyncContext as _withAsyncContext } from 'vue'
-import { openBlock as _openBlock, createElementBlock as _createElementBlock, toDisplayString as _toDisplayString, unref as _unref } from "vue"
+import { unref as _unref, toDisplayString as _toDisplayString, openBlock as _openBlock, createElementBlock as _createElementBlock } from "vue"
 
 
 export default {
@@ -767,8 +769,18 @@ export default {
 
 let __temp, __restore
 
-const response = await fetch('/api/data')
-const data = await response.json()
+const response = (
+  ([__temp,__restore] = _withAsyncContext(() => fetch('/api/data'))),
+  __temp = await __temp,
+  __restore(),
+  __temp
+)
+const data = (
+  ([__temp,__restore] = _withAsyncContext(() => response.json())),
+  __temp = await __temp,
+  __restore(),
+  __temp
+)
 
 return (_ctx, _cache) => {
   return (_openBlock(), _createElementBlock("div", null, _toDisplayString(_unref(data)), 1 /* TEXT */))
@@ -1585,3 +1597,76 @@ return (_ctx, _cache) => {
 }
 
 }
+===
+name: component event rest params stay local
+options: sfc
+--- INPUT ---
+<script setup>
+const emit = defineEmits(['update'])
+</script>
+
+<template>
+  <Child
+    @update="(...$args) => emit('update', ...$args)"
+    @change="(...args) => emit('update', ...args)"
+  />
+</template>
+--- OUTPUT ---
+import { resolveComponent as _resolveComponent, openBlock as _openBlock, createBlock as _createBlock } from "vue"
+
+
+export default {
+  __name: 'test',
+  emits: ['update'],
+  setup(__props, { emit: __emit }) {
+
+const emit = __emit
+
+return (_ctx, _cache) => {
+  const _component_Child = _resolveComponent("Child")
+
+  return (_openBlock(), _createBlock(_component_Child, {
+    onUpdate: _cache[0] || (_cache[0] = (...$args) => emit('update', ...$args)),
+    onChange: _cache[1] || (_cache[1] = (...args) => emit('update', ...args))
+  }))
+}
+}
+
+}
+===
+name: nullable runtime prop types keep null
+options: sfc
+--- INPUT ---
+<script setup lang="ts">
+defineProps<{
+  activeKey: string | null
+  items: string[] | null
+  groupName: string | null
+}>()
+</script>
+
+<template>
+  <div />
+</template>
+--- OUTPUT ---
+import { defineComponent as _defineComponent } from 'vue'
+import { openBlock as _openBlock, createElementBlock as _createElementBlock } from "vue"
+
+
+export default /*@__PURE__*/_defineComponent({
+  __name: 'test',
+  props: {
+    activeKey: { type: [String, null], required: true },
+    items: { type: [Array, null], required: true },
+    groupName: { type: [String, null], required: true }
+  },
+  setup(__props: any) {
+
+
+
+return (_ctx: any,_cache: any) => {
+  return (_openBlock(), _createElementBlock("div"))
+}
+}
+
+})

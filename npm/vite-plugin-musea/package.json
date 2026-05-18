@@ -81,6 +81,7 @@
     "marked": "catalog:content",
     "marked-highlight": "catalog:content",
     "monaco-editor": "catalog:content",
+    "tsx": "catalog:typescript",
     "typescript": "catalog:typescript",
     "vite": "catalog:vite-stack",
     "vite-plus": "catalog:vite-stack",

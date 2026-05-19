@@ -33,9 +33,9 @@ catalogs:
 
   # Vite / Vite Plus stack and adjacent build-time plugins.
   vite-stack:
-    vite: "npm:@voidzero-dev/vite-plus-core@0.1.21"
-    vitest: "npm:@voidzero-dev/vite-plus-test@0.1.21"
-    vite-plus: "0.1.21"
+    vite: "https://pkg.pr.new/voidzero-dev/vite-plus/@voidzero-dev/vite-plus-core@1633"
+    vitest: "https://pkg.pr.new/voidzero-dev/vite-plus/@voidzero-dev/vite-plus-test@1633"
+    vite-plus: "https://pkg.pr.new/voidzero-dev/vite-plus@1633"
     tsdown: "0.22.0"
     "@vitejs/plugin-vue": "6.0.6"
     vite-node: "6.0.0"
@@ -116,3 +116,8 @@ peerDependencyRules:
   allowedVersions:
     vite: "*"
     vitest: "*"
+
+minimumReleaseAge: 4320
+minimumReleaseAgeExclude:
+  - vite-plus
+  - "@voidzero-dev/*"

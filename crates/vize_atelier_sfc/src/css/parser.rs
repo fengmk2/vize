@@ -93,10 +93,12 @@ pub(crate) fn parse_css_ast_internal(
 }
 
 pub(crate) fn print_css_ast_internal(
-    ast: Value,
+    mut ast: Value,
     minify: bool,
     targets: Targets,
 ) -> CssInternalResult {
+    normalize_image_set_file_types(&mut ast);
+
     let mut stylesheet: StyleSheet = match StyleSheet::deserialize(ast.into_deserializer()) {
         Ok(stylesheet) => stylesheet,
         Err(e) => {
@@ -166,6 +168,26 @@ pub(crate) fn print_css_ast_internal(
                 exports: None,
             }
         }
+    }
+}
+
+fn normalize_image_set_file_types(value: &mut Value) {
+    match value {
+        Value::Object(map) => {
+            if map.get("fileType") == Some(&Value::Null) {
+                map.remove("fileType");
+            }
+
+            for child in map.values_mut() {
+                normalize_image_set_file_types(child);
+            }
+        }
+        Value::Array(items) => {
+            for child in items {
+                normalize_image_set_file_types(child);
+            }
+        }
+        _ => {}
     }
 }
 

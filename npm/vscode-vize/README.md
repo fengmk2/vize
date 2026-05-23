@@ -15,6 +15,7 @@ Vue Language Support powered by Vize - A high-performance language server for Vu
 - **Rename** - Safe identifier renaming
 - **Semantic Highlighting** - Vue-specific syntax colors
 - **Code Lens** - Reference counts
+- **Ecosystem Helpers** - Vue Router file-route params, Vue I18n catalogs, Nuxt, and Void Vue diagnostics and completions
 
 ## Installation
 
@@ -47,8 +48,8 @@ vp exec vsce package --no-dependencies --out dist/vize.vsix
 ## Configuration
 
 Opening a Vue file now prompts you to apply a recommended workspace setup if the extension is still disabled or if no Vize capabilities are enabled yet.
-That quick setup writes `vize.enable`, `vize.lint.enable`, `vize.typecheck.enable`, and `vize.editor.enable` for the current workspace so diagnostics, hover, and jump work immediately.
-If you manually set only `vize.enable: true`, the extension uses that same recommended diagnostics and editor profile instead of starting an empty language server.
+That quick setup writes `vize.enable`, `vize.lint.enable`, `vize.typecheck.enable`, `vize.editor.enable`, and `vize.ecosystem.enable` for the current workspace so diagnostics, hover, jump, and Vue ecosystem helpers work immediately.
+If you manually set only `vize.enable: true`, the extension uses that same recommended diagnostics, editor, and ecosystem profile instead of starting an empty language server.
 
 The status bar item opens `Vize: Show Status`, a small command hub for switching profiles, selecting the `vize` executable, restarting the server, opening settings, and showing logs. If the server cannot be found, the same flow lets you pick a local binary instead of hunting through settings.
 
@@ -60,6 +61,7 @@ If you want a lighter rollout, run `Vize: Enable Lint-Only Profile`, then opt in
   "vize.lint.enable": true,
   "vize.typecheck.enable": false,
   "vize.editor.enable": false,
+  "vize.ecosystem.enable": false,
   "vize.formatting.enable": false
 }
 ```
@@ -71,7 +73,8 @@ When you are ready to evaluate Vize editor assistance separately from `vuejs/lan
   "vize.enable": true,
   "vize.lint.enable": true,
   "vize.typecheck.enable": true,
-  "vize.editor.enable": true
+  "vize.editor.enable": true,
+  "vize.ecosystem.enable": true
 }
 ```
 
@@ -79,6 +82,10 @@ When you are ready to evaluate Vize editor assistance separately from `vuejs/lan
 semantic tokens, links, folding ranges, inlay hints, and file rename handling. If you prefer
 individual switches, make sure to include `vize.completion.enable`, `vize.hover.enable`, and
 `vize.definition.enable` together when testing the core editor flow.
+
+`vize.ecosystem.enable` adds Vue Router route-name and file-route param completions, route-param
+diagnostics for `useRoute()`, Vue I18n key completions, workspace key validation, inlay previews,
+Void Vue route completions, and ecosystem lint diagnostics.
 
 When paired with the `Vize Art` extension, the same editor capabilities also apply to `*.art.vue`
 documents.

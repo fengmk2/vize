@@ -312,6 +312,7 @@ const secondaryLabel = ref('secondary')
 </i18n>
 "#;
         let (state, uri) = state_with_document("I18nCompletion.vue", source);
+        state.apply_lsp_initialization_options(Some(&serde_json::json!({ "ecosystem": true })));
         let offset = source.find("auth.").unwrap() + "auth.".len();
         let ctx = IdeContext::new(&state, &uri, offset).unwrap();
         let labels = completion_labels(CompletionService::complete(&ctx).unwrap());
@@ -330,11 +331,70 @@ router.push({ name: "" })
 </route>
 "#;
         let (state, uri) = state_with_document("RouteCompletion.vue", source);
+        state.apply_lsp_initialization_options(Some(&serde_json::json!({ "ecosystem": true })));
         let offset = source.find("name: \"\"").unwrap() + "name: \"".len();
         let ctx = IdeContext::new(&state, &uri, offset).unwrap();
         let labels = completion_labels(CompletionService::complete(&ctx).unwrap());
 
         assert_eq!(labels, vec!["home", "settings"]);
+    }
+
+    #[test]
+    fn test_route_param_completion_from_file_route_name() {
+        let dir = tempfile::tempdir().unwrap();
+        let source_path = dir.path().join("src/pages/users/[id].vue");
+        fs::create_dir_all(source_path.parent().unwrap()).unwrap();
+        let source = r#"<script setup lang="ts">
+import { useRoute } from "vue-router"
+const route = useRoute()
+route.params.
+</script>
+"#;
+        fs::write(&source_path, source).unwrap();
+
+        let uri = Url::from_file_path(&source_path).unwrap();
+        let state = ServerState::new();
+        state.apply_lsp_initialization_options(Some(&serde_json::json!({ "ecosystem": true })));
+        state
+            .documents
+            .open(uri.clone(), source.to_string(), 1, "vue".to_string());
+        state.update_virtual_docs(&uri, source);
+
+        let offset = source.find("route.params.").unwrap() + "route.params.".len();
+        let ctx = IdeContext::new(&state, &uri, offset).unwrap();
+        let labels = completion_labels(CompletionService::complete(&ctx).unwrap());
+
+        assert!(has_label(&labels, "id"));
+    }
+
+    #[test]
+    fn test_i18n_key_completion_from_workspace_json_catalog() {
+        let dir = tempfile::tempdir().unwrap();
+        let source_path = dir.path().join("src/components/LoginButton.vue");
+        let locale_path = dir.path().join("src/locales/en.json");
+        fs::create_dir_all(source_path.parent().unwrap()).unwrap();
+        fs::create_dir_all(locale_path.parent().unwrap()).unwrap();
+        fs::write(&locale_path, r#"{ "auth": { "login": "Log in" } }"#).unwrap();
+
+        let source = r#"<script setup lang="ts">
+const title = t("auth.")
+</script>
+"#;
+        fs::write(&source_path, source).unwrap();
+
+        let uri = Url::from_file_path(&source_path).unwrap();
+        let state = ServerState::new();
+        state.apply_lsp_initialization_options(Some(&serde_json::json!({ "ecosystem": true })));
+        state
+            .documents
+            .open(uri.clone(), source.to_string(), 1, "vue".to_string());
+        state.update_virtual_docs(&uri, source);
+
+        let offset = source.find("auth.").unwrap() + "auth.".len();
+        let ctx = IdeContext::new(&state, &uri, offset).unwrap();
+        let labels = completion_labels(CompletionService::complete(&ctx).unwrap());
+
+        assert_eq!(labels, vec!["auth.login"]);
     }
 
     fn completion_labels(response: CompletionResponse) -> Vec<String> {

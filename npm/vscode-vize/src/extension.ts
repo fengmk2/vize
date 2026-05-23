@@ -73,6 +73,7 @@ const FEATURE_SETTING_KEYS = [
   "diagnostics.enable",
   "typecheck.enable",
   "editor.enable",
+  "ecosystem.enable",
   "completion.enable",
   "hover.enable",
   "definition.enable",
@@ -236,7 +237,7 @@ async function maybeOfferInitialSetup(
   }
 
   const selection = await window.showInformationMessage(
-    "Vize is installed but disabled. Enable the recommended diagnostics and navigation profile for this workspace?",
+    "Vize is installed but disabled. Enable the recommended diagnostics, navigation, and ecosystem profile for this workspace?",
     RECOMMENDED_SETUP_ACTION,
     LINT_ONLY_SETUP_ACTION,
     OPEN_SETTINGS_ACTION,
@@ -276,7 +277,7 @@ async function maybeOfferCapabilitySetup(
   }
 
   const selection = await window.showInformationMessage(
-    "Vize is enabled but no language features are turned on. Enable diagnostics and navigation for this workspace?",
+    "Vize is enabled but no language features are turned on. Enable diagnostics, navigation, and ecosystem helpers for this workspace?",
     RECOMMENDED_SETUP_ACTION,
     LINT_ONLY_SETUP_ACTION,
     OPEN_SETTINGS_ACTION,
@@ -309,6 +310,7 @@ async function applyRecommendedConfiguration(): Promise<void> {
     ["lint.enable", true],
     ["typecheck.enable", true],
     ["editor.enable", true],
+    ["ecosystem.enable", true],
   ]);
 }
 
@@ -575,7 +577,7 @@ async function startClient(
 
   if (Object.keys(initializationOptions).length === 0) {
     outputChannel.appendLine(
-      "Vize server is enabled with no opt-in features. Enable lint, typecheck, and editor assistance to activate diagnostics and navigation.",
+      "Vize server is enabled with no opt-in features. Enable lint, typecheck, editor assistance, and ecosystem helpers to activate diagnostics and navigation.",
     );
     void maybeOfferCapabilitySetup(context, config);
   }
@@ -667,6 +669,7 @@ function getInitializationOptions(
   setIfEnabled(options, "lint", config.get<boolean>("diagnostics.enable", false));
   setIfEnabled(options, "typecheck", config.get<boolean>("typecheck.enable", false));
   setIfEnabled(options, "editor", config.get<boolean>("editor.enable", false));
+  setIfEnabled(options, "ecosystem", config.get<boolean>("ecosystem.enable", false));
   setIfEnabled(options, "completion", config.get<boolean>("completion.enable", false));
   setIfEnabled(options, "hover", config.get<boolean>("hover.enable", false));
   setIfEnabled(options, "definition", config.get<boolean>("definition.enable", false));
@@ -691,12 +694,13 @@ function getInitializationOptions(
   ) {
     if (behavior.logDefaultProfile !== false) {
       outputChannel.appendLine(
-        "Vize is enabled with no explicit feature switches. Using the recommended diagnostics and editor profile.",
+        "Vize is enabled with no explicit feature switches. Using the recommended diagnostics, editor, and ecosystem profile.",
       );
     }
     options.lint = true;
     options.typecheck = true;
     options.editor = true;
+    options.ecosystem = true;
   }
 
   return options;

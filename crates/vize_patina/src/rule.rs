@@ -24,7 +24,7 @@ pub enum RuleCategory {
     HtmlConformance,
     /// Type-aware rules (require semantic analysis)
     TypeAware,
-    /// Vue ecosystem integration rules (Nuxt, Vue Router, Pinia, vue-i18n, and test utilities).
+    /// Vue ecosystem integration rules (Nuxt, Vue Router, Pinia, vue-i18n, Void, and test utilities).
     Ecosystem,
 }
 
@@ -344,9 +344,20 @@ impl RuleRegistry {
         registry
     }
 
+    /// Create registry with broad defaults plus ecosystem integration rules.
+    pub fn with_ecosystem() -> Self {
+        let mut registry = Self::with_happy_path();
+        crate::rules::ecosystem::register(&mut registry);
+
+        registry
+    }
+
     /// Create registry with all available rules (including opt-in).
     pub fn with_all() -> Self {
-        Self::with_opinionated()
+        let mut registry = Self::with_opinionated();
+        crate::rules::ecosystem::register(&mut registry);
+
+        registry
     }
 
     /// Create registry with Nuxt-friendly rules (auto-imports enabled).

@@ -37,7 +37,7 @@ use crate::commands::profile::{
 #[derive(Args)]
 #[allow(clippy::disallowed_types)]
 pub struct LintArgs {
-    /// Glob pattern(s) to match .vue files
+    /// Glob pattern(s) to match .vue or standalone .html files
     #[arg(default_value = "./**/*.vue")]
     pub patterns: Vec<String>,
 
@@ -132,13 +132,16 @@ pub fn run(args: LintArgs) {
         .runtime_path()
         .map(|path| resolve_lint_config_path(config_dir, path));
 
-    // Collect .vue files using glob patterns or directory walking
+    // Collect .vue and standalone .html files using glob patterns or directory walking
     let collect_start = Instant::now();
     let files = collect_lint_files(&args.patterns);
     let collect_time = collect_start.elapsed();
 
     if files.is_empty() {
-        eprintln!("No .vue files found matching patterns: {:?}", args.patterns);
+        eprintln!(
+            "No .vue or .html files found matching patterns: {:?}",
+            args.patterns
+        );
         return;
     }
 
@@ -153,6 +156,7 @@ pub fn run(args: LintArgs) {
         .unwrap_or(args.preset.as_str());
     let preset = LintPreset::parse(preset_name).unwrap_or_default();
     let mut linter = Linter::with_preset(preset)
+        .with_additional_rules(linter_config.enabled_rules())
         .with_disabled_rules(linter_config.disabled_rules())
         .with_help_level(help_level);
     #[cfg(not(target_arch = "wasm32"))]
@@ -198,10 +202,13 @@ pub fn run(args: LintArgs) {
 
             let filename = path.to_string_lossy().to_compact_string();
             let lint_file_start = args.profile.then(Instant::now);
-            let result = profile!(
-                "cli.lint.file.lint_sfc",
-                linter.lint_sfc(&source, &filename)
-            );
+            let result = profile!("cli.lint.file.lint", {
+                if is_standalone_html_path(path) {
+                    linter.lint_standalone_html(&source, &filename)
+                } else {
+                    linter.lint_sfc(&source, &filename)
+                }
+            });
             let lint_time = lint_file_start
                 .map(|start| start.elapsed())
                 .unwrap_or(Duration::ZERO);
@@ -490,13 +497,27 @@ fn collect_lint_files_from_dir(
 }
 
 fn add_lint_file(path: &Path, files: &mut Vec<PathBuf>, seen: &mut FxHashSet<PathBuf>) {
-    if path.extension().and_then(|extension| extension.to_str()) != Some("vue") {
+    if !is_lintable_path(path) {
         return;
     }
     let normalized = normalize_lint_input_path(path);
     if seen.insert(normalized.clone()) {
         files.push(normalized);
     }
+}
+
+fn is_lintable_path(path: &Path) -> bool {
+    matches!(
+        path.extension().and_then(|extension| extension.to_str()),
+        Some("vue" | "html" | "htm")
+    )
+}
+
+fn is_standalone_html_path(path: &Path) -> bool {
+    matches!(
+        path.extension().and_then(|extension| extension.to_str()),
+        Some("html" | "htm")
+    )
 }
 
 fn base_dir_from_lint_pattern(pattern: &str) -> PathBuf {

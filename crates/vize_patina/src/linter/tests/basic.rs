@@ -253,3 +253,65 @@ export default {
     assert_eq!(result.error_count, 1);
     assert_eq!(result.diagnostics[0].rule_name, "script/no-options-api");
 }
+
+#[test]
+fn test_lint_standalone_html_reports_cdn_options_api() {
+    let linter = Linter::with_preset(LintPreset::Opinionated)
+        .with_enabled_rules(Some(vec!["script/no-options-api".into()]));
+    let source = r##"<!doctype html>
+<html>
+<head>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+  <div id="app">{{ count }}</div>
+  <script>
+Vue.createApp({
+  data() {
+    return { count: 0 }
+  }
+}).mount("#app")
+  </script>
+</body>
+</html>
+"##;
+
+    let result = linter.lint_standalone_html(source, "index.html");
+    assert_eq!(result.error_count, 1);
+    assert_eq!(result.diagnostics[0].rule_name, "script/no-options-api");
+    assert!(
+        result.diagnostics[0].start > source.find("Vue.createApp").unwrap() as u32,
+        "diagnostic should use standalone HTML source offsets"
+    );
+}
+
+#[test]
+fn test_lint_standalone_html_allows_petite_vue_create_app_scope() {
+    let linter = Linter::with_preset(LintPreset::Opinionated)
+        .with_enabled_rules(Some(vec!["script/no-options-api".into()]));
+    let source = r##"<!doctype html>
+<html>
+<body>
+  <div v-scope>{{ count }}</div>
+  <script src="https://unpkg.com/petite-vue" defer init></script>
+  <script>
+PetiteVue.createApp({
+  count: 0,
+  increment() {
+    this.count++
+  }
+}).mount()
+  </script>
+</body>
+</html>
+"##;
+
+    let result = linter.lint_standalone_html(source, "index.html");
+    assert_eq!(result.error_count, 0);
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .all(|diagnostic| diagnostic.rule_name != "script/no-options-api")
+    );
+}

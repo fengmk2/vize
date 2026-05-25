@@ -98,6 +98,7 @@ pub trait Rule: Send + Sync {
 pub struct RuleRegistry {
     rules: Vec<Box<dyn Rule>>,
     rule_names: Vec<&'static str>,
+    has_exit_element_rules: bool,
 }
 
 impl RuleRegistry {
@@ -108,6 +109,7 @@ impl RuleRegistry {
         Self {
             rules: Vec::new(),
             rule_names: Vec::new(),
+            has_exit_element_rules: true,
         }
     }
 
@@ -116,6 +118,7 @@ impl RuleRegistry {
         Self {
             rules: Vec::with_capacity(capacity),
             rule_names: Vec::with_capacity(capacity),
+            has_exit_element_rules: false,
         }
     }
 
@@ -140,6 +143,16 @@ impl RuleRegistry {
         &self.rule_names
     }
 
+    /// Whether this registry may contain rules that need exit-element hooks.
+    pub fn has_exit_element_rules(&self) -> bool {
+        self.has_exit_element_rules
+    }
+
+    /// Mark the registry as potentially containing exit-element hooks.
+    pub(crate) fn mark_has_exit_element_rules(&mut self) {
+        self.has_exit_element_rules = true;
+    }
+
     /// Check whether a rule with the given name is registered.
     pub fn has_rule(&self, name: &str) -> bool {
         self.rule_names.contains(&name)
@@ -152,6 +165,7 @@ impl RuleRegistry {
             LintPreset::Opinionated => Self::with_opinionated(),
             LintPreset::Essential => Self::with_essential(),
             LintPreset::Incremental => Self::with_incremental(),
+            LintPreset::Ecosystem => Self::with_ecosystem(),
             LintPreset::Nuxt => Self::with_nuxt(),
         }
     }

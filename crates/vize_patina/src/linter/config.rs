@@ -77,7 +77,7 @@ impl Linter {
     /// Default initial capacity for the arena (64KB).
     pub(crate) const DEFAULT_INITIAL_CAPACITY: usize = 64 * 1024;
 
-    /// Create a new linter with the default happy-path preset.
+    /// Create a new linter with the default ecosystem preset.
     #[inline]
     pub fn new() -> Self {
         let preset = LintPreset::default();
@@ -226,6 +226,7 @@ impl Linter {
         let rule_name = rule.meta().name;
         if !self.registry.has_rule(rule_name) {
             self.registry.register(rule);
+            self.registry.mark_has_exit_element_rules();
         }
         self
     }

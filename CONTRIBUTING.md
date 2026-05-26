@@ -76,6 +76,12 @@ For language-facing changes, include the fixture or snapshot diff that proves th
 snapshot refreshes, explain why the new output is correct and avoid broad baseline churn unless the
 PR is specifically about that output family.
 
+When a compiler mismatch starts from an external repro or a local project file, use the playground
+Compiler Inspector to inspect the official Vue output, Vize output, Virtual TS, VIR, and cross-file
+graph. Add the inspector permalink to the PR body, then land the minimized fixture or full snapshot
+that turns the output into a reviewed contract. Local batches can be packaged with
+`vize inspector <file-or-glob>`, and agent handoff can use `vize inspector --format agent`.
+
 ## Pull Requests
 
 - Use Conventional Commits for commit messages and PR titles, such as `fix(vite-plugin): surface SFC compile errors`.

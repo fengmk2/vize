@@ -54,6 +54,7 @@ When invoked without a command, `vize` defaults to `build`.
 | `fmt`          | Format Vue SFC files                            |
 | `lint`         | Lint Vue SFC files                              |
 | `check`        | Type check Vue SFC, TS, TSX, and `.d.ts` inputs |
+| `inspector`    | Create playground compiler inspector payloads   |
 | `clean`        | Remove Vize-generated cache artifacts           |
 | `ready`        | Run `fmt`, `lint`, `check`, and `build`         |
 | `upgrade`      | Update the installed CLI                        |
@@ -218,6 +219,36 @@ declare module "vue" {
 ```bash
 vize check --tsconfig tsconfig.app.json src
 ```
+
+## Inspector
+
+```bash
+vize inspector src/App.vue
+vize inspector "src/**/*.vue" --target ssr
+vize inspector src --format json --output inspector-payload.json
+vize inspector src --format agent --output inspector-agent.json
+```
+
+`vize inspector` packages one or more `.vue` files into the payload consumed by the playground
+compiler inspector. The browser then inspects Vue output, Vize output, Virtual TS, VIR, and the
+cross-file graph, then produces a permalink plus a prefilled pull request link.
+
+Use `--format agent` when another local tool or AI agent needs the same repro without opening the
+browser. The report contains the exact payload, playground URL, summary metrics, and import graph.
+
+Key options:
+
+| Option                | Description                              |
+| --------------------- | ---------------------------------------- |
+| `-f, --format`        | Output format: `url`, `json`, or `agent` |
+| `--target`            | Compiler target: `dom` or `ssr`          |
+| `--playground-url`    | Playground base URL for generated links  |
+| `--max-files`         | Limit files included in a batch payload  |
+| `--custom-renderer`   | Enable custom renderer comparison        |
+| `--vue-parser-quirks` | Enable Vue parser compatibility quirks   |
+| `-o, --output`        | Write the URL or JSON payload to a file  |
+
+See [Compiler Inspector](./compiler-inspector.md) for the contributor workflow.
 
 ## Clean
 

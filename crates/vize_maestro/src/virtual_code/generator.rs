@@ -390,6 +390,44 @@ pub struct ArtVariantInfo {
     pub relative_offset: usize,
 }
 
+/// A source-backed slice of an art `<script setup>` block.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ArtScriptChunk {
+    /// Absolute byte offset where the chunk starts in the art file.
+    pub source_start: usize,
+    /// Absolute byte offset where the chunk ends in the art file.
+    pub source_end: usize,
+    /// Chunk source text.
+    pub text: String,
+}
+
+/// Script setup decomposition for `.art.vue`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ArtScriptSetupParts {
+    /// The inferred component tag from `defineArt(...)`, if present.
+    pub component_name: Option<String>,
+    /// Whether the setup body should be isolated per variant.
+    pub isolate: bool,
+    /// Imports that are safe to keep at module level for generated variant setup functions.
+    pub shared_imports: Vec<ArtScriptChunk>,
+    /// Top-level setup code used as variant-local state.
+    pub isolated_body: Vec<ArtScriptChunk>,
+}
+
+impl ArtScriptSetupParts {
+    /// Concatenate isolated body chunks.
+    pub fn isolated_body_text(&self) -> String {
+        let mut text = String::new();
+        for chunk in &self.isolated_body {
+            text.push_str(&chunk.text);
+            if !text.ends_with('\n') {
+                text.push('\n');
+            }
+        }
+        text
+    }
+}
+
 /// Where the cursor is within an art block.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ArtCursorPosition {
@@ -515,19 +553,35 @@ pub fn find_art_block_at_offset(source: &str, offset: usize) -> Option<BlockType
             let variant_end = loc.end as usize;
 
             if offset >= variant_start && offset < variant_end {
-                // Determine template content position using pointer arithmetic
                 let template_ptr = variant.template.as_ptr() as usize;
                 let source_ptr = source.as_ptr() as usize;
-                let template_start = template_ptr - source_ptr;
-                let template_end = template_start + variant.template.len();
+                let trimmed_template_start = if variant.template.is_empty() {
+                    find_variant_template_body_range(source, variant_start, variant_end)
+                        .map(|(body_start, _)| body_start)
+                        .unwrap_or(variant_start)
+                } else {
+                    template_ptr.saturating_sub(source_ptr)
+                };
+                let trimmed_template_end = trimmed_template_start + variant.template.len();
+                let (body_start, body_end) =
+                    find_variant_template_body_range(source, variant_start, variant_end)
+                        .unwrap_or((trimmed_template_start, trimmed_template_end));
 
-                if offset >= template_start && offset < template_end {
+                if offset >= body_start && offset < body_end {
+                    let relative_offset = if offset <= trimmed_template_start {
+                        0
+                    } else if offset >= trimmed_template_end {
+                        variant.template.len()
+                    } else {
+                        offset - trimmed_template_start
+                    };
+
                     return Some(BlockType::Art(ArtCursorPosition::VariantTemplate(
                         ArtVariantInfo {
                             variant_index: i,
-                            template_start,
-                            template_end,
-                            relative_offset: offset - template_start,
+                            template_start: trimmed_template_start,
+                            template_end: trimmed_template_end,
+                            relative_offset,
                         },
                     )));
                 }
@@ -538,6 +592,187 @@ pub fn find_art_block_at_offset(source: &str, offset: usize) -> Option<BlockType
     }
 
     Some(BlockType::Art(ArtCursorPosition::ArtContent))
+}
+
+fn find_variant_template_body_range(
+    source: &str,
+    variant_start: usize,
+    variant_end: usize,
+) -> Option<(usize, usize)> {
+    if variant_start >= variant_end || variant_end > source.len() {
+        return None;
+    }
+
+    let tag_end = source[variant_start..variant_end].find('>')? + variant_start;
+    let body_start = tag_end + 1;
+    let close_start = source[body_start..variant_end].rfind("</variant>")? + body_start;
+
+    Some((body_start, close_start))
+}
+
+/// Split art `<script setup>` into compiler-macro metadata, shared imports, and
+/// variant-local setup body.
+pub fn analyze_art_script_setup(
+    script: &str,
+    source_start: usize,
+    isolate: bool,
+) -> ArtScriptSetupParts {
+    let parsed = vize_croquis::script_parser::parse_script_setup(script);
+    let component_name = parsed
+        .macros
+        .define_art()
+        .map(|art| art.component_name.to_string());
+    let define_art_range = parsed
+        .macros
+        .define_art_call()
+        .map(|call| (call.start as usize, call.end as usize));
+    let component_binding_range = component_name
+        .as_ref()
+        .and_then(|name| parsed.binding_spans.get(name.as_str()))
+        .map(|(start, end)| (*start as usize, *end as usize));
+    let statements = split_top_level_statements(script, source_start);
+    let mut shared_imports = Vec::new();
+    let mut isolated_body = Vec::new();
+
+    for statement in statements {
+        let relative_start = statement.source_start.saturating_sub(source_start);
+        let relative_end = statement.source_end.saturating_sub(source_start);
+        let trimmed = statement.text.trim();
+        if trimmed.is_empty()
+            || define_art_range
+                .is_some_and(|range| ranges_overlap(range, (relative_start, relative_end)))
+        {
+            continue;
+        }
+
+        if trimmed.starts_with("import ") {
+            if isolate
+                && component_binding_range.is_some_and(|range| {
+                    parsed.import_statements.iter().any(|import| {
+                        let import_range = (import.start as usize, import.end as usize);
+                        contains_range(import_range, range)
+                            && ranges_overlap(import_range, (relative_start, relative_end))
+                    })
+                })
+            {
+                continue;
+            }
+            shared_imports.push(statement);
+            continue;
+        }
+
+        isolated_body.push(statement);
+    }
+
+    ArtScriptSetupParts {
+        component_name,
+        isolate,
+        shared_imports,
+        isolated_body,
+    }
+}
+
+/// Find the component tag inferred from `defineArt(...)`.
+pub fn find_define_art_component_name(script: &str) -> Option<String> {
+    vize_croquis::script_parser::parse_script_setup(script)
+        .macros
+        .define_art()
+        .map(|art| art.component_name.to_string())
+}
+
+fn split_top_level_statements(script: &str, source_start: usize) -> Vec<ArtScriptChunk> {
+    let mut statements = Vec::new();
+    let mut start = 0usize;
+    let mut state = StatementState::default();
+
+    for (idx, ch) in script.char_indices() {
+        state.accept(ch, script, idx);
+        if state.is_boundary(ch) {
+            let end = idx + ch.len_utf8();
+            push_statement(&mut statements, script, source_start, start, end);
+            start = end;
+        }
+    }
+
+    push_statement(&mut statements, script, source_start, start, script.len());
+    statements
+}
+
+fn push_statement(
+    statements: &mut Vec<ArtScriptChunk>,
+    script: &str,
+    source_start: usize,
+    start: usize,
+    end: usize,
+) {
+    if start >= end {
+        return;
+    }
+    let text = &script[start..end];
+    if text.trim().is_empty() {
+        return;
+    }
+    statements.push(ArtScriptChunk {
+        source_start: source_start + start,
+        source_end: source_start + end,
+        text: text.to_string(),
+    });
+}
+
+#[derive(Default)]
+struct StatementState {
+    brace_depth: i32,
+    bracket_depth: i32,
+    paren_depth: i32,
+    quote: Option<char>,
+}
+
+impl StatementState {
+    fn accept(&mut self, ch: char, source: &str, idx: usize) {
+        if let Some(quote) = self.quote {
+            if ch == quote && !is_escaped(source, idx) {
+                self.quote = None;
+            }
+            return;
+        }
+
+        match ch {
+            '"' | '\'' | '`' => self.quote = Some(ch),
+            '{' => self.brace_depth += 1,
+            '}' => self.brace_depth = self.brace_depth.saturating_sub(1),
+            '[' => self.bracket_depth += 1,
+            ']' => self.bracket_depth = self.bracket_depth.saturating_sub(1),
+            '(' => self.paren_depth += 1,
+            ')' => self.paren_depth = self.paren_depth.saturating_sub(1),
+            _ => {}
+        }
+    }
+
+    fn is_boundary(&self, ch: char) -> bool {
+        self.quote.is_none()
+            && self.brace_depth == 0
+            && self.bracket_depth == 0
+            && self.paren_depth == 0
+            && (ch == ';' || ch == '\n')
+    }
+}
+
+fn ranges_overlap(a: (usize, usize), b: (usize, usize)) -> bool {
+    a.0 < b.1 && b.0 < a.1
+}
+
+fn contains_range(outer: (usize, usize), inner: (usize, usize)) -> bool {
+    outer.0 <= inner.0 && inner.1 <= outer.1
+}
+
+fn is_escaped(source: &str, idx: usize) -> bool {
+    let mut count = 0usize;
+    let mut pos = idx;
+    while pos > 0 && source.as_bytes()[pos - 1] == b'\\' {
+        count += 1;
+        pos -= 1;
+    }
+    count % 2 == 1
 }
 
 #[cfg(test)]
@@ -731,6 +966,51 @@ import Button from './Button.vue'
         assert!(matches!(
             find_art_block_at_offset(source, art_content_offset),
             Some(BlockType::Art(_))
+        ));
+    }
+
+    #[test]
+    fn test_find_art_block_at_offset_treats_variant_body_whitespace_as_template() {
+        let source = r#"<art title="Button" component="./Button.vue">
+  <variant name="Primary" default>
+
+    <Button>Click me</Button>
+  </variant>
+</art>"#;
+
+        let body_whitespace_offset = source.find("\n\n    <Button>").unwrap() + 1;
+        let result = find_art_block_at_offset(source, body_whitespace_offset);
+
+        let Some(BlockType::Art(ArtCursorPosition::VariantTemplate(info))) = result else {
+            panic!("expected variant template, got {result:?}");
+        };
+
+        assert_eq!(info.relative_offset, 0);
+        assert_eq!(info.template_start, source.find("<Button>").unwrap());
+    }
+
+    #[test]
+    fn test_find_art_block_at_offset_treats_variant_body_as_template() {
+        let source = r#"<script setup>
+const count = ref(0)
+</script>
+
+<art title="Counter" component="./Counter.vue">
+  <variant name="Interactive">
+    <Counter :count="count" />
+  </variant>
+</art>"#;
+
+        let offset = source.find("count = ref").unwrap();
+        assert_eq!(
+            find_art_block_at_offset(source, offset),
+            Some(BlockType::ScriptSetup)
+        );
+
+        let template_offset = source.find(":count=\"count\"").unwrap();
+        assert!(matches!(
+            find_art_block_at_offset(source, template_offset),
+            Some(BlockType::Art(ArtCursorPosition::VariantTemplate(_)))
         ));
     }
 }

@@ -260,7 +260,7 @@
       },
       "patterns": [
         {
-          "match": "\\b(setup|lang|src|generic)\\b",
+          "match": "\\b(setup|lang|src|generic|isolate)\\b",
           "name": "entity.other.attribute-name.html"
         },
         { "include": "#vue-tag-attributes" }

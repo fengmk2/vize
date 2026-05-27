@@ -98,7 +98,7 @@ impl super::CompletionService {
                         let items = Self::complete_art_variant_with_corsa(ctx, info, bridge).await;
                         if !items.is_empty() {
                             let mut all = items;
-                            all.extend(template::directive_completions());
+                            all.extend(template::complete_template(ctx));
                             return Some(CompletionResponse::Array(all));
                         }
                     }
@@ -106,6 +106,9 @@ impl super::CompletionService {
                     Self::complete(ctx)
                 }
                 Some(BlockType::ScriptSetup) => {
+                    if let Some(items) = crate::ide::musea::define_art_source_completions(ctx) {
+                        return Some(CompletionResponse::Array(items));
+                    }
                     // Script setup in art file: use normal script completion with Corsa.
                     if let Some(ref bridge) = corsa_bridge {
                         let items = Self::complete_script_with_corsa(ctx, true, bridge).await;

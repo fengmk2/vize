@@ -378,6 +378,258 @@ const secondaryLabel = ref('secondary')
     }
 
     #[test]
+    fn test_art_variant_completion_infers_imported_component_props() {
+        let dir = tempfile::tempdir().unwrap();
+        let component_path = dir.path().join("Button.vue");
+        fs::write(
+            &component_path,
+            r#"<script setup lang="ts">
+defineProps<{
+  label: string
+  disabled?: boolean
+  modelValue?: string
+}>()
+</script>
+<template><button><slot /></button></template>
+"#,
+        )
+        .unwrap();
+
+        let art_path = dir.path().join("Button.art.vue");
+        let source = r#"<script setup lang="ts">
+import Button from "./Button.vue"
+</script>
+
+<art title="Button" component="./Button.vue">
+  <variant name="Default">
+    <Button  />
+  </variant>
+</art>
+"#;
+        fs::write(&art_path, source).unwrap();
+
+        let uri = Url::from_file_path(&art_path).unwrap();
+        let state = ServerState::new();
+        state
+            .documents
+            .open(uri.clone(), source.to_string(), 1, "art-vue".to_string());
+        state.update_virtual_docs(&uri, source);
+
+        let offset = source.find("<Button  />").unwrap() + "<Button ".len();
+        let ctx = IdeContext::new(&state, &uri, offset).unwrap();
+        let items = completion_items(CompletionService::complete(&ctx).unwrap());
+        let labels: Vec<String> = items.iter().map(|item| item.label.clone()).collect();
+
+        assert!(has_label(&labels, "label"));
+        assert!(has_label(&labels, "disabled"));
+        assert!(has_label(&labels, "model-value"));
+
+        let label = items.iter().find(|item| item.label == "label").unwrap();
+        assert!(
+            label
+                .detail
+                .as_deref()
+                .unwrap_or_default()
+                .contains("string")
+        );
+    }
+
+    #[test]
+    fn test_art_variant_completion_infers_imported_component_slots() {
+        let dir = tempfile::tempdir().unwrap();
+        let component_path = dir.path().join("Button.vue");
+        fs::write(
+            &component_path,
+            r#"<script setup lang="ts">
+defineSlots<{
+  default(): any
+  icon(props: { size: number }): any
+}>()
+</script>
+<template>
+  <button><slot /><slot name="suffix" /></button>
+</template>
+"#,
+        )
+        .unwrap();
+
+        let art_path = dir.path().join("Button.art.vue");
+        let source = r#"<script setup lang="ts">
+import Button from "./Button.vue"
+</script>
+
+<art title="Button" component="./Button.vue">
+  <variant name="Default">
+    <Button>
+      <template #></template>
+    </Button>
+  </variant>
+</art>
+"#;
+        fs::write(&art_path, source).unwrap();
+
+        let uri = Url::from_file_path(&art_path).unwrap();
+        let state = ServerState::new();
+        state
+            .documents
+            .open(uri.clone(), source.to_string(), 1, "art-vue".to_string());
+        state.update_virtual_docs(&uri, source);
+
+        let offset = source.find("<template #").unwrap() + "<template #".len();
+        let ctx = IdeContext::new(&state, &uri, offset).unwrap();
+        let labels = completion_labels(CompletionService::complete(&ctx).unwrap());
+
+        assert!(has_label(&labels, "default"));
+        assert!(has_label(&labels, "icon"));
+        assert!(has_label(&labels, "suffix"));
+    }
+
+    #[test]
+    fn test_art_variant_completion_uses_art_component_attribute_for_props() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(
+            dir.path().join("Switch.vue"),
+            r#"<script setup lang="ts">
+defineProps<{ checked?: boolean }>()
+</script>
+"#,
+        )
+        .unwrap();
+
+        let art_path = dir.path().join("Switch.art.vue");
+        let source = r#"<art title="Switch" component="./Switch.vue">
+  <variant name="Default">
+    <Switch  />
+  </variant>
+</art>
+"#;
+        fs::write(&art_path, source).unwrap();
+
+        let uri = Url::from_file_path(&art_path).unwrap();
+        let state = ServerState::new();
+        state
+            .documents
+            .open(uri.clone(), source.to_string(), 1, "art-vue".to_string());
+        state.update_virtual_docs(&uri, source);
+
+        let offset = source.find("<Switch  />").unwrap() + "<Switch ".len();
+        let ctx = IdeContext::new(&state, &uri, offset).unwrap();
+        let labels = completion_labels(CompletionService::complete(&ctx).unwrap());
+
+        assert!(has_label(&labels, "checked"));
+    }
+
+    #[test]
+    fn test_art_variant_completion_uses_define_art_component_for_props() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(
+            dir.path().join("Switch.vue"),
+            r#"<script setup lang="ts">
+defineProps<{ checked?: boolean }>()
+</script>
+"#,
+        )
+        .unwrap();
+
+        let art_path = dir.path().join("Switch.art.vue");
+        let source = r#"<script setup lang="ts">
+defineArt("./Switch.vue", {
+  title: "Switch",
+})
+</script>
+
+<art>
+  <variant name="Default">
+    <Switch  />
+  </variant>
+</art>
+"#;
+        fs::write(&art_path, source).unwrap();
+
+        let uri = Url::from_file_path(&art_path).unwrap();
+        let state = ServerState::new();
+        state
+            .documents
+            .open(uri.clone(), source.to_string(), 1, "art-vue".to_string());
+        state.update_virtual_docs(&uri, source);
+
+        let offset = source.find("<Switch  />").unwrap() + "<Switch ".len();
+        let ctx = IdeContext::new(&state, &uri, offset).unwrap();
+        let labels = completion_labels(CompletionService::complete(&ctx).unwrap());
+
+        assert!(has_label(&labels, "checked"));
+    }
+
+    #[test]
+    fn test_define_art_source_completion_suggests_vue_files() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::create_dir_all(dir.path().join("components")).unwrap();
+        fs::write(dir.path().join("Button.vue"), "<template />").unwrap();
+        fs::write(dir.path().join("components/IconButton.vue"), "<template />").unwrap();
+
+        let art_path = dir.path().join("Button.art.vue");
+        let source = r#"<script setup lang="ts">
+defineArt("./", {
+  title: "Button",
+});
+</script>
+
+<art>
+  <variant name="Default">
+    <Button />
+  </variant>
+</art>
+"#;
+        fs::write(&art_path, source).unwrap();
+
+        let uri = Url::from_file_path(&art_path).unwrap();
+        let state = ServerState::new();
+        state
+            .documents
+            .open(uri.clone(), source.to_string(), 1, "art-vue".to_string());
+        state.update_virtual_docs(&uri, source);
+
+        let offset = source.find("\"./").unwrap() + "\"./".len();
+        let ctx = IdeContext::new(&state, &uri, offset).unwrap();
+        let labels = completion_labels(CompletionService::complete(&ctx).unwrap());
+
+        assert!(has_label(&labels, "./Button.vue"));
+        assert!(has_label(&labels, "./components/"));
+    }
+
+    #[test]
+    fn test_art_variant_completion_includes_script_setup_state_bindings() {
+        let dir = tempfile::tempdir().unwrap();
+        let source_path = dir.path().join("Counter.art.vue");
+        let source = r#"<script setup lang="ts">
+const count = ref(0)
+const doubled = computed(() => count.value * 2)
+</script>
+
+<art title="Counter" component="./Counter.vue">
+  <variant name="Default">
+    <Counter :count="" />
+  </variant>
+</art>
+"#;
+        fs::write(&source_path, source).unwrap();
+
+        let uri = Url::from_file_path(&source_path).unwrap();
+        let state = ServerState::new();
+        state
+            .documents
+            .open(uri.clone(), source.to_string(), 1, "art-vue".to_string());
+        state.update_virtual_docs(&uri, source);
+
+        let offset = source.find(":count=\"\"").unwrap() + ":count=\"".len();
+        let ctx = IdeContext::new(&state, &uri, offset).unwrap();
+        let labels = completion_labels(CompletionService::complete(&ctx).unwrap());
+
+        assert!(has_label(&labels, "count"));
+        assert!(has_label(&labels, "doubled"));
+    }
+
+    #[test]
     fn test_i18n_key_completion_from_same_file_json_block() {
         let source = r#"<template>
   <p>{{ $t("auth.") }}</p>

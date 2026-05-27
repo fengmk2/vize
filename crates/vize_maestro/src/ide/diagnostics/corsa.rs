@@ -464,7 +464,12 @@ impl DiagnosticService {
         .ok()?;
 
         // Get default variant's template
-        let variant = art_desc.default_variant()?;
+        let (_, variant) = art_desc
+            .variants
+            .iter()
+            .enumerate()
+            .find(|(_, variant)| variant.is_default)
+            .or_else(|| art_desc.variants.iter().enumerate().next())?;
         let template_content = variant.template;
         if template_content.trim().is_empty() {
             return None;
@@ -482,26 +487,45 @@ impl DiagnosticService {
         };
         let descriptor = parse_sfc(content, sfc_options).ok()?;
 
-        // Get script block info
-        let (script_content, script_offset, sfc_script_start_line) = descriptor
-            .script_setup
-            .as_ref()
-            .map(|s| {
+        let mut combined_script = String::new();
+        let (script_offset, sfc_script_start_line) =
+            if let Some(script_setup) = descriptor.script_setup.as_ref() {
+                let isolate = !script_setup
+                    .attrs
+                    .get("isolate")
+                    .is_some_and(|value| value.as_ref().eq_ignore_ascii_case("false"));
+                let parts = crate::virtual_code::analyze_art_script_setup(
+                    script_setup.content.as_ref(),
+                    script_setup.loc.start,
+                    isolate,
+                );
+
+                for chunk in parts
+                    .shared_imports
+                    .iter()
+                    .chain(parts.isolated_body.iter())
+                {
+                    combined_script.push_str(&chunk.text);
+                    if !combined_script.ends_with('\n') {
+                        combined_script.push('\n');
+                    }
+                }
+
                 (
-                    s.content.as_ref(),
-                    s.loc.start as u32,
-                    s.loc.start_line as u32,
+                    script_setup.loc.start as u32,
+                    script_setup.loc.start_line as u32,
                 )
-            })
-            .or_else(|| {
-                descriptor.script.as_ref().map(|s| {
-                    (
-                        s.content.as_ref(),
-                        s.loc.start as u32,
-                        s.loc.start_line as u32,
-                    )
-                })
-            })?;
+            } else if let Some(script) = descriptor.script.as_ref() {
+                combined_script.push_str(script.content.as_ref());
+                if !combined_script.ends_with('\n') {
+                    combined_script.push('\n');
+                }
+                (script.loc.start as u32, script.loc.start_line as u32)
+            } else {
+                return None;
+            };
+
+        let script_content = combined_script.as_str();
 
         // Parse template AST
         let template_allocator = vize_carton::Bump::new();

@@ -302,6 +302,50 @@ const count = ref(0);
     }
 
     #[test]
+    fn test_type_check_plain_script_exported_binding_in_template() {
+        let source = r#"<script lang="ts">
+export const buttonId =
+  "button-id";
+</script>
+<template>
+    <button :id="buttonId" />
+</template>"#;
+        let options = SfcTypeCheckOptions::new("test.vue");
+        let result = type_check_sfc(source, &options);
+
+        assert!(
+            !result
+                .diagnostics
+                .iter()
+                .any(|d| d.code.as_deref() == Some("undefined-binding")),
+            "unexpected diagnostics: {:#?}",
+            result.diagnostics
+        );
+    }
+
+    #[test]
+    fn test_type_check_template_undefined_binding_uses_expression_offset() {
+        let source = r#"<script lang="ts"></script>
+<template>
+    <button :id="missingButtonId" />
+</template>"#;
+        let options = SfcTypeCheckOptions::new("test.vue");
+        let result = type_check_sfc(source, &options);
+
+        let diagnostic = result
+            .diagnostics
+            .iter()
+            .find(|d| d.code.as_deref() == Some("undefined-binding"))
+            .expect("expected an undefined-binding diagnostic");
+
+        let expected_start = source.find("missingButtonId").unwrap() as u32;
+        let expected_end = expected_start + "missingButtonId".len() as u32;
+
+        assert_eq!(diagnostic.start, expected_start);
+        assert_eq!(diagnostic.end, expected_end);
+    }
+
+    #[test]
     fn test_type_check_typeof_setup_const_stays_in_setup_scope() {
         // Regression: vize check used to lift `type Name = ...` to module
         // scope while the `const names` it referenced via `typeof` stayed

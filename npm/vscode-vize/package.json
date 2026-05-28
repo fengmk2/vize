@@ -50,7 +50,7 @@
     "@vscode/test-electron": "2.5.2",
     "@vscode/vsce": "3.9.1",
     "typescript": "6.0.3",
-    "vite-plus": "0.1.19"
+    "vite-plus": "https://pkg.pr.new/voidzero-dev/vite-plus@1703"
   },
   "contributes": {
     "languages": [

@@ -2,7 +2,7 @@ import { test, expect, type Browser, type Page } from "@playwright/test";
 import type { ChildProcess } from "node:child_process";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createNpmxVisualParityApps, type AppConfig } from "../../_helpers/apps";
+import { createElkVisualParityApps, type AppConfig } from "../../_helpers/apps";
 import {
   ensurePortFree,
   killProcess,
@@ -17,7 +17,6 @@ import {
 } from "../../_helpers/visual-parity";
 
 interface VisualRoute {
-  action?: (page: Page) => Promise<void>;
   maxDiffRatio?: number;
   name: string;
   path: string;
@@ -27,58 +26,53 @@ interface VisualRoute {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUTPUT_DIR =
-  process.env.VIZE_NPMX_VRT_OUTPUT_DIR ??
-  path.resolve(__dirname, "../../../__agent_only/npmx-vrt/artifacts");
+  process.env.VIZE_ELK_VRT_OUTPUT_DIR ??
+  path.resolve(__dirname, "../../../__agent_only/elk-vrt/artifacts");
 const DEFAULT_VIEWPORT = { width: 1280, height: 720 };
-const apps = createNpmxVisualParityApps();
+const DEFAULT_MAX_DIFF_RATIO = 0.04;
+const MOBILE_VIEWPORT = { width: 390, height: 844 };
+const apps = createElkVisualParityApps();
+
+const defaultStorage = {
+  "elk-hide-explore-news-tips": "true",
+  "elk-hide-explore-posts-tips": "true",
+  "elk-hide-explore-tags-tips": "true",
+  "elk-pwa-hide-install": "true",
+  "elk-settings": JSON.stringify({
+    colorMode: "light",
+    disabledTranslationLanguages: [],
+    fontSize: "16px",
+    language: "en-US",
+    preferences: {
+      enableDataSaving: true,
+      experimentalVirtualScroller: false,
+      optimizeForLowPerformanceDevice: true,
+    },
+  }),
+} satisfies Record<string, string>;
 
 const routes: VisualRoute[] = [
   { name: "home", path: "/" },
-  { name: "about", path: "/about" },
-  { name: "accessibility", path: "/accessibility" },
-  { name: "privacy", path: "/privacy" },
-  { name: "recharging", path: "/recharging" },
+  { name: "home-mobile", path: "/", viewport: MOBILE_VIEWPORT },
+  { name: "explore", path: "/explore" },
+  { name: "explore-users", path: "/explore/users" },
+  { name: "explore-tags", path: "/explore/tags" },
+  { name: "explore-links", path: "/explore/links" },
+  { name: "public", path: "/public" },
+  { name: "public-local", path: "/public/local" },
+  { name: "search", path: "/search" },
+  { name: "hashtags", path: "/hashtags" },
   { name: "settings", path: "/settings" },
-  {
-    name: "settings-saved-theme",
-    path: "/settings",
-    storage: {
-      "npmx-settings": JSON.stringify({
-        accentColorId: "coral",
-        preferredBackgroundTheme: "slate",
-      }),
-    },
-  },
-  { name: "compare", path: "/compare" },
-  { name: "compare-packages", path: "/compare?packages=vue,react", maxDiffRatio: 0.004 },
-  { name: "package-vue", path: "/package/vue", maxDiffRatio: 0.004 },
-  { name: "org-vue", path: "/org/vue", maxDiffRatio: 0.004 },
-  { name: "user-sindresorhus", path: "/~sindresorhus?p=npm", maxDiffRatio: 0.004 },
-  { name: "user-orgs-disconnected", path: "/~sindresorhus/orgs", maxDiffRatio: 0.004 },
-  { name: "diff-vue", path: "/diff/vue/v/3.5.28...3.5.29", maxDiffRatio: 0.004 },
-  {
-    name: "search-query",
-    path: "/search",
-    action: async (page) => {
-      const input = page
-        .locator('input[type="search"], input[name="q"], input[role="searchbox"]')
-        .first();
-      await expect(input).toBeVisible({ timeout: 10_000 });
-      await input.fill("vue");
-      await expect(page.getByText(/Found\s+[\d,]+\s+packages/)).toBeVisible({
-        timeout: 20_000,
-      });
-    },
-  },
-  {
-    name: "mobile-home",
-    path: "/",
-    viewport: { width: 390, height: 844 },
-  },
-  { name: "docs-nuxt", path: "/docs/nuxt/v/4.0.0", maxDiffRatio: 0.004 },
+  { name: "settings-interface", path: "/settings/interface" },
+  { name: "settings-language", path: "/settings/language" },
+  { name: "settings-preferences", path: "/settings/preferences" },
+  { name: "settings-about", path: "/settings/about" },
+  { name: "notifications", path: "/notifications" },
+  { name: "compose", path: "/compose" },
+  { name: "share-target", path: "/share-target?text=hello" },
 ];
 
-test.describe("npmx.dev visual parity", () => {
+test.describe("elk visual parity", () => {
   test.describe.configure({ mode: "serial" });
 
   let candidateServer: ChildProcess | undefined;
@@ -123,16 +117,11 @@ async function compareRoute(browser: Browser, route: VisualRoute): Promise<void>
     const referencePage = await context.newPage();
     const candidatePage = await context.newPage();
 
-    await Promise.all([setupPage(referencePage), setupPage(candidatePage)]);
-    await Promise.all([setupRoute(referencePage, route), setupRoute(candidatePage, route)]);
+    await Promise.all([setupPage(referencePage, route), setupPage(candidatePage, route)]);
     await Promise.all([
       openRoute(referencePage, apps.reference.url, route),
       openRoute(candidatePage, apps.candidate.url, route),
     ]);
-
-    if (route.action) {
-      await Promise.all([route.action(referencePage), route.action(candidatePage)]);
-    }
 
     await Promise.all([
       prepareStableVisualState(referencePage),
@@ -140,7 +129,7 @@ async function compareRoute(browser: Browser, route: VisualRoute): Promise<void>
     ]);
 
     await expectVisualParity(referencePage, candidatePage, {
-      maxDiffRatio: route.maxDiffRatio,
+      maxDiffRatio: route.maxDiffRatio ?? DEFAULT_MAX_DIFF_RATIO,
       name: route.name,
       outputDir: OUTPUT_DIR,
     });
@@ -149,21 +138,17 @@ async function compareRoute(browser: Browser, route: VisualRoute): Promise<void>
   }
 }
 
-async function setupPage(page: Page): Promise<void> {
+async function setupPage(page: Page, route: VisualRoute): Promise<void> {
   await installVisualStabilityHooks(page);
-  await page.addInitScript(() => {
-    localStorage.setItem("npmx-color-mode", "light");
-  });
-}
-
-async function setupRoute(page: Page, route: VisualRoute): Promise<void> {
-  if (!route.storage) return;
-
-  await page.addInitScript((storage) => {
-    for (const [key, value] of Object.entries(storage)) {
-      localStorage.setItem(key, value);
-    }
-  }, route.storage);
+  await page.addInitScript(
+    (storage) => {
+      localStorage.clear();
+      for (const [key, value] of Object.entries(storage)) {
+        localStorage.setItem(key, value);
+      }
+    },
+    { ...defaultStorage, ...route.storage },
+  );
 }
 
 async function openRoute(page: Page, baseUrl: string, route: VisualRoute): Promise<void> {
@@ -173,6 +158,16 @@ async function openRoute(page: Page, baseUrl: string, route: VisualRoute): Promi
   });
   expect(response?.status()).toBeLessThan(500);
   await expect(page.locator("#__nuxt")).toBeAttached({ timeout: 15_000 });
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const el = document.querySelector("#__nuxt");
+          return el?.textContent?.trim().length ?? 0;
+        }),
+      { timeout: 30_000 },
+    )
+    .toBeGreaterThan(0);
   await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => undefined);
   await page.waitForTimeout(1000);
 }

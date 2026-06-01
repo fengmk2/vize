@@ -226,6 +226,7 @@ fn compile_sfc_inner(
                     TemplateBlockCompileContext {
                         scope_id: &scope_id,
                         apply_scope_id: options.template.ssr && has_scoped,
+                        has_scoped,
                         is_ts: template_is_ts,
                         inline: false,
                         component_name: Some(&component_name),
@@ -345,6 +346,7 @@ fn compile_sfc_inner(
                         TemplateBlockCompileContext {
                             scope_id: &scope_id,
                             apply_scope_id: options.template.ssr && has_scoped,
+                            has_scoped,
                             is_ts: template_is_ts,
                             inline: false,
                             component_name: Some(&component_name),
@@ -596,6 +598,7 @@ fn compile_sfc_inner(
                     TemplateBlockCompileContext {
                         scope_id: &scope_id,
                         apply_scope_id: options.template.ssr && has_scoped,
+                        has_scoped,
                         is_ts: template_is_ts,
                         inline: true,
                         component_name: Some(&component_name),

@@ -3,6 +3,7 @@
 import type { Compiler, RuleSetRule } from "@rspack/core";
 import type { VizeRspackPluginOptions } from "../types/index.ts";
 import { matchesPattern } from "../shared/utils.ts";
+import { getLegacyNativeCssState, resolveNativeCss } from "../shared/nativeCss.ts";
 import { applyRuleCloning } from "./ruleCloning.ts";
 
 export class VizePlugin {
@@ -22,11 +23,16 @@ export class VizePlugin {
       logger.debug("Vapor mode is enabled.");
     }
 
-    const isCssNativeEnabled = Boolean(
-      (compiler.options as { experiments?: { css?: boolean } }).experiments?.css,
+    const legacyNativeCssState = getLegacyNativeCssState(compiler.options);
+    const rspackVersion = (compiler.webpack as unknown as { rspackVersion?: string })
+      ?.rspackVersion;
+    const isCssNativeEnabled = resolveNativeCss(
+      this.options.css?.native,
+      compiler.options,
+      rspackVersion,
     );
 
-    if (this.options.css?.native && !isCssNativeEnabled) {
+    if (this.options.css?.native && legacyNativeCssState === "disabled") {
       logger.warn(
         "`css.native: true` is set but `experiments.css` is not enabled in rspack config.",
       );

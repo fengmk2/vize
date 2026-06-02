@@ -10,6 +10,7 @@ import {
   inlineSrcBlocks,
   extractCustomBlocks,
 } from "../shared/utils.ts";
+import { resolveNativeCss as resolveNativeCssMode } from "../shared/nativeCss.ts";
 import type { VizeLoaderOptions } from "../types/index.ts";
 
 /** .ce.vue → custom element */
@@ -182,13 +183,15 @@ function resolveNativeCss(
   loader: LoaderContext<VizeLoaderOptions>,
   options: VizeLoaderOptions,
 ): boolean {
-  if (options.css?.native != null) {
-    return options.css.native;
-  }
-
-  return Boolean(
-    (loader as unknown as { _compiler?: { options?: { experiments?: { css?: boolean } } } })
-      ._compiler?.options?.experiments?.css,
+  const compiler = (
+    loader as unknown as {
+      _compiler?: { options?: unknown; webpack?: { rspackVersion?: string } };
+    }
+  )._compiler;
+  return resolveNativeCssMode(
+    options.css?.native,
+    compiler?.options,
+    compiler?.webpack?.rspackVersion,
   );
 }
 

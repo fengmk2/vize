@@ -277,10 +277,13 @@ void describe("applyRuleCloning", () => {
 
     const oneOf = vueRule.oneOf as Array<Record<string, unknown>>;
 
-    // Last entry (main loader fallback) should have the loader in its use array
+    // Last entry (main loader fallback) should carry the resolved native CSS mode
     const mainBranch = oneOf[oneOf.length - 1];
-    const use = mainBranch.use as Array<string | Record<string, unknown>>;
-    assert.equal(use[0], "@vizejs/rspack-plugin/loader");
+    const use = mainBranch.use as Array<Record<string, unknown>>;
+    assert.deepEqual(use[0], {
+      loader: "@vizejs/rspack-plugin/loader",
+      options: { css: { native: true } },
+    });
 
     // SCSS clone should exist
     const scssClone = oneOf.find((r) => {
@@ -308,9 +311,12 @@ void describe("applyRuleCloning", () => {
     const mainBranch = oneOf[oneOf.length - 1];
     const use = mainBranch.use as Array<Record<string, unknown>>;
 
-    // Should be an object entry with loader + options
+    // Should preserve existing options and carry the resolved native CSS mode
     assert.equal(use[0].loader, "@vizejs/rspack-plugin/loader");
-    assert.deepEqual(use[0].options, { sourceMap: true });
+    assert.deepEqual(use[0].options, {
+      sourceMap: true,
+      css: { native: true },
+    });
   });
 
   void test("injects scope-loader between user loaders and style-loader in all cloned rules", () => {

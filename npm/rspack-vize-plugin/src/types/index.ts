@@ -207,7 +207,7 @@ export interface VizeLoaderOptions {
 
   /** CSS handling config */
   css?: {
-    /** Native CSS (experiments.css), uses LightningCSS @default auto-detected */
+    /** Rspack native CSS, uses LightningCSS @default auto-detected */
     native?: boolean;
   };
 
@@ -219,7 +219,7 @@ export interface VizeLoaderOptions {
 }
 
 export interface VizeStyleLoaderOptions {
-  /** Native CSS mode (experiments.css) @default false */
+  /** Rspack native CSS mode @default false */
   native?: boolean;
 }
 
@@ -249,7 +249,7 @@ export interface VizeRspackPluginOptions {
 
   /** CSS config */
   css?: {
-    /** Native CSS (experiments.css), uses LightningCSS @default false */
+    /** Rspack native CSS, uses LightningCSS @default false */
     native?: boolean;
   };
 

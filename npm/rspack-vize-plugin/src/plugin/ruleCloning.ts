@@ -91,7 +91,7 @@ export function applyRuleCloning(
 
   // Step 4: build oneOf
   const mainLoaderBranch: RuleSetRule = {
-    use: normalizeUseFromRule(vueRule),
+    use: withNativeCssLoaderOption(normalizeUseFromRule(vueRule), nativeCss),
   };
 
   const oneOf: RuleSetRule[] = [...clonedStyleRules, mainLoaderBranch];
@@ -234,6 +234,50 @@ function createFallbackStyleRules(nativeCss: boolean): RuleSetRule[] {
       use: [{ loader: VIZE_SCOPE_LOADER_IDENT }, { loader: VIZE_STYLE_LOADER_IDENT }],
     },
   ];
+}
+
+function withNativeCssLoaderOption(uses: RuleSetUseItem[], nativeCss: boolean): RuleSetUseItem[] {
+  return deepCloneUse(uses).map((useItem) => {
+    if (typeof useItem === "string") {
+      return isVizeMainLoader(useItem)
+        ? { loader: useItem, options: { css: { native: nativeCss } } }
+        : useItem;
+    }
+
+    if (typeof useItem !== "object" || useItem === null) {
+      return useItem;
+    }
+
+    const loader = (useItem as { loader?: string }).loader;
+    if (!loader || !isVizeMainLoader(loader)) {
+      return useItem;
+    }
+
+    const options = (useItem as { options?: unknown }).options;
+    if (!options || typeof options !== "object" || Array.isArray(options)) {
+      return { ...useItem, options: { css: { native: nativeCss } } };
+    }
+
+    const optionRecord = options as Record<string, unknown>;
+    const cssOptions = optionRecord.css;
+    if (!cssOptions || typeof cssOptions !== "object" || Array.isArray(cssOptions)) {
+      return {
+        ...useItem,
+        options: { ...optionRecord, css: { native: nativeCss } },
+      };
+    }
+
+    return {
+      ...useItem,
+      options: {
+        ...optionRecord,
+        css: {
+          ...(cssOptions as Record<string, unknown>),
+          native: nativeCss,
+        },
+      },
+    };
+  });
 }
 
 /** Exclude Vue style sub-requests from a rule via `resourceQuery: { not: [/vue/] }`. */

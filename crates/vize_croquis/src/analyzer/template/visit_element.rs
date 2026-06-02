@@ -50,6 +50,7 @@ impl Analyzer {
     ) {
         let tag = el.tag.as_str();
         let is_component = is_component_tag(tag);
+        let mut subtree_end = None;
 
         // Track component usage
         if self.options.track_usage && is_component {
@@ -130,12 +131,10 @@ impl Analyzer {
                             );
                             if let Some(aliases) = aliases {
                                 let alias_offsets = v_for_alias_declaration_offsets(exp, &aliases);
-                                for_scope = Some((
-                                    aliases,
-                                    alias_offsets,
-                                    el.loc.start.offset,
-                                    element_subtree_end(el),
-                                ));
+                                let end =
+                                    *subtree_end.get_or_insert_with(|| element_subtree_end(el));
+                                for_scope =
+                                    Some((aliases, alias_offsets, el.loc.start.offset, end));
                             }
                         }
                     }
@@ -251,7 +250,7 @@ impl Analyzer {
                             component: is_component.then(|| CompactString::new(tag)),
                         },
                         offset,
-                        element_subtree_end(el),
+                        *subtree_end.get_or_insert_with(|| element_subtree_end(el)),
                     );
 
                     for name in prop_names {

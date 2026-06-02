@@ -12,7 +12,7 @@
 
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
-use vize_carton::{CompactString, FxHashMap};
+use vize_carton::{CompactString, FxHashMap, FxHashSet};
 use vize_croquis::Croquis;
 
 /// Unique identifier for a file in the registry.
@@ -68,6 +68,8 @@ pub struct ModuleRegistry {
     path_to_id: FxHashMap<PathBuf, FileId>,
     /// Map from file ID to module entry.
     entries: FxHashMap<FileId, ModuleEntry>,
+    /// Files whose template source renders a `<slot>` outlet.
+    slot_outlets: FxHashSet<FileId>,
     /// Next available file ID.
     next_id: u32,
     /// Project root path.
@@ -129,6 +131,7 @@ impl ModuleRegistry {
                     .ok()
                     .and_then(|m| m.modified().ok());
             }
+            self.set_slot_outlet(existing_id, source_renders_slot(source));
             return (existing_id, false);
         }
 
@@ -166,8 +169,22 @@ impl ModuleRegistry {
 
         self.path_to_id.insert(abs_path, id);
         self.entries.insert(id, entry);
+        self.set_slot_outlet(id, source_renders_slot(source));
 
         (id, true)
+    }
+
+    #[inline]
+    pub(crate) fn renders_slot(&self, id: FileId) -> bool {
+        self.slot_outlets.contains(&id)
+    }
+
+    fn set_slot_outlet(&mut self, id: FileId, renders_slot: bool) {
+        if renders_slot {
+            self.slot_outlets.insert(id);
+        } else {
+            self.slot_outlets.remove(&id);
+        }
     }
 
     /// Get a module entry by file ID.
@@ -291,6 +308,24 @@ fn hash_source(source: &str) -> u64 {
     hasher.finish()
 }
 
+fn source_renders_slot(source: &str) -> bool {
+    let bytes = source.as_bytes();
+    let mut offset = 0;
+
+    while let Some(index) = source[offset..].find("<slot") {
+        let end = offset + index + "<slot".len();
+        if bytes
+            .get(end)
+            .is_some_and(|byte| matches!(byte, b'>' | b'/' | b' ' | b'\t' | b'\n' | b'\r'))
+        {
+            return true;
+        }
+        offset = end;
+    }
+
+    false
+}
+
 /// Extract component name from file path.
 ///
 /// For `MyComponent.vue`, returns `Some("MyComponent")`.
@@ -301,7 +336,7 @@ fn extract_component_name(path: &Path) -> Option<CompactString> {
 
 #[cfg(test)]
 mod tests {
-    use super::{ModuleRegistry, extract_component_name};
+    use super::{ModuleRegistry, extract_component_name, source_renders_slot};
     use std::path::Path;
     use vize_carton::CompactString;
     use vize_croquis::Croquis;
@@ -325,5 +360,13 @@ mod tests {
         let path = Path::new("/src/components/MyButton.vue");
         let name = extract_component_name(path);
         assert_eq!(name, Some(CompactString::new("MyButton")));
+    }
+
+    #[test]
+    fn test_source_renders_slot_detection() {
+        assert!(source_renders_slot("<template><slot /></template>"));
+        assert!(source_renders_slot("<slot>fallback</slot>"));
+        assert!(!source_renders_slot("<template><slotter /></template>"));
+        assert!(!source_renders_slot("<template></template>"));
     }
 }

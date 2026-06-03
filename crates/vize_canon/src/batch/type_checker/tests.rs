@@ -1216,8 +1216,7 @@ fn link_workspace_node_modules(project_root: &Path) -> std::io::Result<()> {
             write_test_vite_stub,
         )?;
 
-        let vue_namespace = workspace_node_modules.join("@vue");
-        if vue_namespace.exists() {
+        if let Some(vue_namespace) = resolve_test_vue_namespace(workspace_node_modules) {
             symlink_path(&vue_namespace, &target.join("@vue"))?;
         }
     } else {
@@ -1249,6 +1248,52 @@ fn link_workspace_node_modules(project_root: &Path) -> std::io::Result<()> {
     }
 
     Ok(())
+}
+
+fn resolve_test_vue_namespace(workspace_node_modules: &Path) -> Option<PathBuf> {
+    let vue_source = workspace_node_modules.join("vue");
+    let adjacent = resolve_adjacent_vue_namespace(&vue_source);
+    let ancestor = {
+        let path = workspace_node_modules.join("@vue");
+        path.exists().then_some(path)
+    };
+
+    adjacent
+        .as_ref()
+        .filter(|path| is_vue_runtime_namespace(path))
+        .cloned()
+        .or_else(|| {
+            ancestor
+                .as_ref()
+                .filter(|path| is_vue_runtime_namespace(path))
+                .cloned()
+        })
+        .or(adjacent)
+        .or(ancestor)
+}
+
+fn resolve_adjacent_vue_namespace(vue_source: &Path) -> Option<PathBuf> {
+    let mut candidates = Vec::new();
+
+    if let Some(parent) = vue_source.parent() {
+        candidates.push(parent.join("@vue"));
+    }
+
+    if let Ok(real_vue_source) = std::fs::canonicalize(vue_source)
+        && let Some(parent) = real_vue_source.parent()
+    {
+        candidates.push(parent.join("@vue"));
+    }
+
+    candidates
+        .iter()
+        .find(|candidate| candidate.exists() && is_vue_runtime_namespace(candidate))
+        .cloned()
+        .or_else(|| candidates.into_iter().find(|candidate| candidate.exists()))
+}
+
+fn is_vue_runtime_namespace(path: &Path) -> bool {
+    path.join("runtime-dom").exists() || path.join("runtime-core").exists()
 }
 
 fn link_or_stub_package(

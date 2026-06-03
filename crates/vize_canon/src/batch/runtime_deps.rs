@@ -21,6 +21,66 @@ const VUE_FACADE_PACKAGE_JSON: &str = r#"{
 const VUE_FACADE_TYPES: &str = r#"export * from "@vue/runtime-dom";
 "#;
 
+const VUE_RUNTIME_DOM_STUB_PACKAGE_JSON: &str = r#"{
+  "name": "@vue/runtime-dom",
+  "types": "index.d.ts"
+}
+"#;
+
+const VUE_RUNTIME_DOM_STUB_TYPES: &str = r#"export interface ComponentPublicInstance<Props = {}> {
+  $props: Props;
+  $attrs: { [key: string]: unknown };
+  $slots: { [key: string]: unknown };
+  $refs: { [key: string]: unknown };
+  $emit: (...args: any[]) => void;
+}
+
+export type DefineComponent<
+  Props = {},
+  RawBindings = {},
+  D = {},
+  C = {},
+  M = {},
+  Mixin = {},
+  Extends = {},
+  E = {},
+  EE = string,
+  PP = Props,
+  PropsDefaults = {},
+  MakeDefaultsOptional = true,
+  Options = {},
+  S = {}
+> = {
+  new (): ComponentPublicInstance<Props>;
+};
+
+export interface Ref<T = unknown, _Raw = T> {
+  value: T;
+}
+
+export interface ShallowRef<T = unknown, _Raw = T> extends Ref<T, _Raw> {
+  readonly __v_isShallow?: true;
+}
+
+export type PropType<T> = { new (...args: any[]): T & {} } | { (): T } | null;
+
+export declare const Transition: DefineComponent;
+export declare function defineComponent(options: any): DefineComponent;
+export declare function defineProps<T = {}>(): T;
+export declare function ref<T>(value: T): Ref<T>;
+export declare function shallowRef<T>(value: T): ShallowRef<T>;
+export declare function useTemplateRef<T = unknown>(key: string): ShallowRef<T | null>;
+export declare function useId(): string;
+export declare function watch<T>(source: T, callback: (...args: any[]) => void, options?: any): void;
+export declare function watchEffect(effect: (onCleanup: (cleanupFn: () => void) => void) => void): void;
+export declare function onMounted(callback: () => void): void;
+export declare function createApp(root: any): {
+  config: {
+    globalProperties: { [key: string]: any };
+  };
+};
+"#;
+
 const VITE_STUB_PACKAGE_JSON: &str = r#"{
   "name": "vite",
   "types": "client.d.ts"
@@ -57,35 +117,29 @@ fn materialize_vue_support(project_root: &Path, node_modules_dir: &Path) -> std:
     let vue_namespace_target = node_modules_dir.join("@vue");
 
     if let Some(vue_source) = resolve_vue_package(project_root)
-        && symlink_path(&vue_source, &vue_target).is_ok()
+        && symlink_path(&package_link_source(&vue_source), &vue_target).is_ok()
     {
         if let Some(vue_namespace_source) = resolve_vue_namespace_package(project_root, &vue_source)
         {
             if symlink_path(&vue_namespace_source, &vue_namespace_target).is_err() {
                 remove_path(&vue_namespace_target)?;
             }
+        } else if let Some(runtime_dom_source) = resolve_package(project_root, "@vue/runtime-dom") {
+            link_vue_runtime_dom_package(node_modules_dir, &runtime_dom_source)?;
         } else {
-            remove_path(&vue_namespace_target)?;
+            write_vue_runtime_dom_stub(node_modules_dir)?;
         }
         return Ok(());
     }
 
     if let Some(runtime_dom_source) = resolve_package(project_root, "@vue/runtime-dom") {
         write_vue_facade(node_modules_dir)?;
-        if let Some(vue_namespace_source) =
-            resolve_adjacent_vue_namespace_package(&runtime_dom_source)
-        {
-            if symlink_path(&vue_namespace_source, &vue_namespace_target).is_err() {
-                remove_path(&vue_namespace_target)?;
-            }
-        } else {
-            remove_path(&vue_namespace_target)?;
-        }
+        link_vue_runtime_dom_package(node_modules_dir, &runtime_dom_source)?;
         return Ok(());
     }
 
-    remove_path(&vue_target)?;
-    remove_path(&vue_namespace_target)?;
+    write_vue_facade(node_modules_dir)?;
+    write_vue_runtime_dom_stub(node_modules_dir)?;
     Ok(())
 }
 
@@ -106,19 +160,15 @@ fn resolve_vue_namespace_package(project_root: &Path, vue_source: &Path) -> Opti
     let ancestor = resolve_ancestor_package(project_root, "@vue");
 
     adjacent
-        .as_ref()
         .filter(|path| is_vue_runtime_namespace(path))
-        .cloned()
+        .or_else(|| ancestor.filter(|path| is_vue_runtime_namespace(path)))
         .or_else(|| {
-            ancestor
-                .as_ref()
+            resolve_package_from_runtime_node_modules("@vue")
                 .filter(|path| is_vue_runtime_namespace(path))
-                .cloned()
         })
-        .or(adjacent)
-        .or(ancestor)
-        .or_else(|| resolve_package_from_runtime_node_modules("@vue"))
-        .or_else(|| resolve_test_workspace_package("@vue"))
+        .or_else(|| {
+            resolve_test_workspace_package("@vue").filter(|path| is_vue_runtime_namespace(path))
+        })
 }
 
 fn resolve_adjacent_vue_namespace_package(vue_source: &Path) -> Option<PathBuf> {
@@ -135,10 +185,8 @@ fn resolve_adjacent_vue_namespace_package(vue_source: &Path) -> Option<PathBuf> 
     }
 
     candidates
-        .iter()
+        .into_iter()
         .find(|candidate| candidate.exists() && is_vue_runtime_namespace(candidate))
-        .cloned()
-        .or_else(|| candidates.into_iter().find(|candidate| candidate.exists()))
 }
 
 fn is_vue_runtime_namespace(path: &Path) -> bool {
@@ -156,6 +204,10 @@ fn resolve_package(project_root: &Path, package: &str) -> Option<PathBuf> {
     resolve_ancestor_package(project_root, package)
         .or_else(|| resolve_package_from_runtime_node_modules(package))
         .or_else(|| resolve_test_workspace_package(package))
+}
+
+fn package_link_source(source: &Path) -> PathBuf {
+    std::fs::canonicalize(source).unwrap_or_else(|_| source.to_path_buf())
 }
 
 fn resolve_explicit_package_env(name: &str) -> Option<PathBuf> {
@@ -223,6 +275,36 @@ fn write_vue_facade(node_modules_dir: &Path) -> std::io::Result<()> {
     )?;
     write_if_changed(&vue_dir.join("index.d.ts"), VUE_FACADE_TYPES.as_bytes())?;
     prune_stub_dir(&vue_dir, &["package.json", "index.d.ts"])?;
+    Ok(())
+}
+
+fn link_vue_runtime_dom_package(
+    node_modules_dir: &Path,
+    runtime_dom_source: &Path,
+) -> std::io::Result<()> {
+    let vue_namespace_dir = node_modules_dir.join("@vue");
+    ensure_stub_dir(&vue_namespace_dir)?;
+    let runtime_dom_target = vue_namespace_dir.join("runtime-dom");
+    symlink_path(
+        &package_link_source(runtime_dom_source),
+        &runtime_dom_target,
+    )
+}
+
+fn write_vue_runtime_dom_stub(node_modules_dir: &Path) -> std::io::Result<()> {
+    let vue_namespace_dir = node_modules_dir.join("@vue");
+    ensure_stub_dir(&vue_namespace_dir)?;
+    let runtime_dom_dir = vue_namespace_dir.join("runtime-dom");
+    ensure_stub_dir(&runtime_dom_dir)?;
+    write_if_changed(
+        &runtime_dom_dir.join("package.json"),
+        VUE_RUNTIME_DOM_STUB_PACKAGE_JSON.as_bytes(),
+    )?;
+    write_if_changed(
+        &runtime_dom_dir.join("index.d.ts"),
+        VUE_RUNTIME_DOM_STUB_TYPES.as_bytes(),
+    )?;
+    prune_stub_dir(&runtime_dom_dir, &["package.json", "index.d.ts"])?;
     Ok(())
 }
 

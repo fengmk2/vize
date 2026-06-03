@@ -3103,11 +3103,11 @@ export type DefineComponent<
   new (): ComponentPublicInstance<Props>;
 };
 
-export interface Ref<T = unknown> {
+export interface Ref<T = unknown, _Raw = T> {
   value: T;
 }
 
-export interface ShallowRef<T = unknown> extends Ref<T> {
+export interface ShallowRef<T = unknown, _Raw = T> extends Ref<T, _Raw> {
   readonly __v_isShallow?: true;
 }
 
@@ -3122,6 +3122,7 @@ export declare function useTemplateRef<T = unknown>(key: string): ShallowRef<T |
 export declare function useId(): string;
 export declare function watch<T>(source: T, callback: (...args: any[]) => void, options?: any): void;
 export declare function watchEffect(effect: (onCleanup: (cleanupFn: () => void) => void) => void): void;
+export declare function onMounted(callback: () => void): void;
 export declare function createApp(root: any): {
   config: {
     globalProperties: { [key: string]: any };

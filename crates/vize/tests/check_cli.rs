@@ -2919,8 +2919,10 @@ fn link_workspace_node_modules(project_root: &Path) -> std::io::Result<()> {
             write_test_vite_stub,
         )?;
 
-        if let Some(vue_namespace) = resolve_test_vue_namespace(workspace_node_modules) {
+        if let Some(vue_namespace) = resolve_test_vue_runtime_namespace(workspace_node_modules) {
             symlink_path(&vue_namespace, &target.join("@vue"))?;
+        } else {
+            write_test_vue_runtime_dom_stub(&target)?;
         }
     } else {
         write_test_vue_stub(&target)?;
@@ -2953,7 +2955,7 @@ fn link_workspace_node_modules(project_root: &Path) -> std::io::Result<()> {
     Ok(())
 }
 
-fn resolve_test_vue_namespace(workspace_node_modules: &Path) -> Option<std::path::PathBuf> {
+fn resolve_test_vue_runtime_namespace(workspace_node_modules: &Path) -> Option<std::path::PathBuf> {
     let vue_source = workspace_node_modules.join("vue");
     let adjacent = resolve_adjacent_vue_namespace(&vue_source);
     let ancestor = {
@@ -2962,17 +2964,8 @@ fn resolve_test_vue_namespace(workspace_node_modules: &Path) -> Option<std::path
     };
 
     adjacent
-        .as_ref()
         .filter(|path| is_vue_runtime_namespace(path))
-        .cloned()
-        .or_else(|| {
-            ancestor
-                .as_ref()
-                .filter(|path| is_vue_runtime_namespace(path))
-                .cloned()
-        })
-        .or(adjacent)
-        .or(ancestor)
+        .or_else(|| ancestor.filter(|path| is_vue_runtime_namespace(path)))
 }
 
 fn resolve_adjacent_vue_namespace(vue_source: &Path) -> Option<std::path::PathBuf> {
@@ -2989,10 +2982,8 @@ fn resolve_adjacent_vue_namespace(vue_source: &Path) -> Option<std::path::PathBu
     }
 
     candidates
-        .iter()
+        .into_iter()
         .find(|candidate| candidate.exists() && is_vue_runtime_namespace(candidate))
-        .cloned()
-        .or_else(|| candidates.into_iter().find(|candidate| candidate.exists()))
 }
 
 fn is_vue_runtime_namespace(path: &Path) -> bool {
@@ -3023,9 +3014,18 @@ fn link_or_stub_package(
 ) -> std::io::Result<()> {
     let source = workspace_node_modules.join(package);
     if source.exists() {
-        symlink_path(&source, &target.join(package))
+        let link_source = package_link_source(&source, package);
+        symlink_path(&link_source, &target.join(package))
     } else {
         stub_writer(target)
+    }
+}
+
+fn package_link_source(source: &Path, package: &str) -> std::path::PathBuf {
+    if package == "vue" {
+        std::fs::canonicalize(source).unwrap_or_else(|_| source.to_path_buf())
+    } else {
+        source.to_path_buf()
     }
 }
 
@@ -3058,6 +3058,75 @@ fn write_test_vue_stub(target: &Path) -> std::io::Result<()> {
     std::fs::write(
         vue_dir.join("index.d.ts"),
         r#"export * from "@vue/runtime-dom";
+"#,
+    )?;
+    write_test_vue_runtime_dom_stub(target)?;
+    Ok(())
+}
+
+fn write_test_vue_runtime_dom_stub(target: &Path) -> std::io::Result<()> {
+    let runtime_dom_dir = target.join("@vue").join("runtime-dom");
+    std::fs::create_dir_all(&runtime_dom_dir)?;
+    std::fs::write(
+        runtime_dom_dir.join("package.json"),
+        r#"{
+  "name": "@vue/runtime-dom",
+  "types": "index.d.ts"
+}"#,
+    )?;
+    std::fs::write(
+        runtime_dom_dir.join("index.d.ts"),
+        r#"export interface ComponentPublicInstance<Props = {}> {
+  $props: Props;
+  $attrs: { [key: string]: unknown };
+  $slots: { [key: string]: unknown };
+  $refs: { [key: string]: unknown };
+  $emit: (...args: any[]) => void;
+}
+
+export type DefineComponent<
+  Props = {},
+  RawBindings = {},
+  D = {},
+  C = {},
+  M = {},
+  Mixin = {},
+  Extends = {},
+  E = {},
+  EE = string,
+  PP = Props,
+  PropsDefaults = {},
+  MakeDefaultsOptional = true,
+  Options = {},
+  S = {}
+> = {
+  new (): ComponentPublicInstance<Props>;
+};
+
+export interface Ref<T = unknown> {
+  value: T;
+}
+
+export interface ShallowRef<T = unknown> extends Ref<T> {
+  readonly __v_isShallow?: true;
+}
+
+export type PropType<T> = { new (...args: any[]): T & {} } | { (): T } | null;
+
+export declare const Transition: DefineComponent;
+export declare function defineComponent(options: any): DefineComponent;
+export declare function defineProps<T = {}>(): T;
+export declare function ref<T>(value: T): Ref<T>;
+export declare function shallowRef<T>(value: T): ShallowRef<T>;
+export declare function useTemplateRef<T = unknown>(key: string): ShallowRef<T | null>;
+export declare function useId(): string;
+export declare function watch<T>(source: T, callback: (...args: any[]) => void, options?: any): void;
+export declare function watchEffect(effect: (onCleanup: (cleanupFn: () => void) => void) => void): void;
+export declare function createApp(root: any): {
+  config: {
+    globalProperties: { [key: string]: any };
+  };
+};
 "#,
     )?;
     Ok(())

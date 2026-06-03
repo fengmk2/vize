@@ -9,9 +9,11 @@ import {
   isVizeGeneratedVueModuleId,
   isVizeVirtualVueModuleId,
   normalizeNuxtInjectedKeysForVizeVirtualModule,
+  normalizeVizeGeneratedVueModuleId,
   normalizeVizeVirtualVueModuleId,
   preserveExplicitVueImportsFromNuxtAutoImports,
   preserveExplicitVueImportsFromVizeModuleSource,
+  stabilizeNuxtInjectedKeysForVizeVirtualModule,
 } from "./utils.ts";
 
 assert.strictEqual(
@@ -110,6 +112,12 @@ assert.equal(
   "Nuxt bridge normalization should preserve query strings on SSR virtual ids",
 );
 
+assert.equal(
+  normalizeVizeGeneratedVueModuleId("/repo/app/components/Foo.vue.ts?vue&vize"),
+  "/repo/app/components/Foo.vue?vue&vize",
+  "Nuxt bridge normalization should also handle plugin-visible dev ids",
+);
+
 {
   const clientCode =
     "useFetch('/api/a', {}, '$client-a' /* nuxt-injected */); useFetch('/api/b', {}, '$client-b' /* nuxt-injected */)";
@@ -123,6 +131,45 @@ assert.equal(
       "\0vize-ssr:/repo/app/components/Foo.vue.ts",
     ),
     "Nuxt injected keys should match between client and SSR virtual modules",
+  );
+
+  assert.equal(
+    normalizeNuxtInjectedKeysForVizeVirtualModule(
+      clientCode,
+      "/repo/app/components/Foo.vue.ts?vue&vize",
+    ),
+    normalizeNuxtInjectedKeysForVizeVirtualModule(
+      ssrCode,
+      "\0vize-ssr:/repo/app/components/Foo.vue.ts",
+    ),
+    "Nuxt injected keys should also match plugin-visible dev modules",
+  );
+}
+
+{
+  const clientCode =
+    "useFetch('/api/a', '$client-a' /* nuxt-injected */); useFetch('/api/b', {}, '$client-b' /* nuxt-injected */)";
+  const ssrCode = "useFetch('/api/a'); useFetch('/api/b', {})";
+
+  assert.equal(
+    stabilizeNuxtInjectedKeysForVizeVirtualModule(
+      clientCode,
+      "/repo/app/components/Foo.vue.ts?vue&vize",
+    ),
+    stabilizeNuxtInjectedKeysForVizeVirtualModule(
+      ssrCode,
+      "\0vize-ssr:/repo/app/components/Foo.vue.ts",
+    ),
+    "Nuxt fetch keys missing from SSR virtual modules should be injected with the same stable keys as client modules",
+  );
+
+  assert.equal(
+    stabilizeNuxtInjectedKeysForVizeVirtualModule(
+      "useFetch(() => `/api/${name}`, { default: () => null })",
+      "\0vize-ssr:/repo/app/components/Foo.vue.ts",
+    ),
+    "useFetch(() => `/api/${name}`, { default: () => null }, '$X068z93OcT' /* nuxt-injected */)",
+    "Nuxt fetch key injection should append the key after nested function arguments",
   );
 }
 

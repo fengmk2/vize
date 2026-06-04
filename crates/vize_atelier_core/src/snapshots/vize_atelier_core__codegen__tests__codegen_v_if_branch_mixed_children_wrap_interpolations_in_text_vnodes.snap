@@ -1,5 +1,6 @@
 ---
 source: crates/vize_atelier_core/src/codegen.rs
+assertion_line: 676
 expression: output.as_str()
 ---
 const { toDisplayString: _toDisplayString, openBlock: _openBlock, createElementBlock: _createElementBlock, createCommentVNode: _createCommentVNode, createTextVNode: _createTextVNode } = Vue

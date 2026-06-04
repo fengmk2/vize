@@ -181,10 +181,40 @@ fn extract_prop_type_info(segment: &str, props: &mut Vec<(String, PropTypeInfo)>
 
     // Parse "name?: Type" or "name: Type"
     if let Some(colon_pos) = trimmed.find(':') {
+        // Method-signature props (`onChange(e: E): void`, `update?(): T`)
+        // have a `(` somewhere in the parameter list *before* this colon.
+        // Detect by scanning the bytes up to `colon_pos` for `(`; on a hit,
+        // recover the name from before that `(` and treat the prop as
+        // `Function`-typed. Plain props (`name: Type`) skip this branch
+        // because there's no `(` before the colon. (#967)
+        let before_colon_bytes = &trimmed.as_bytes()[..colon_pos];
+        if let Some(paren_pos) = before_colon_bytes.iter().position(|&b| b == b'(') {
+            let before_paren = &trimmed[..paren_pos];
+            let optional = before_paren.trim_end().ends_with('?');
+            let name = before_paren.trim_end_matches('?').trim();
+            if !name.is_empty() && is_valid_identifier(name) {
+                let ts_type_str: String = (&trimmed[paren_pos..]).to_compact_string();
+                if !props.iter().any(|(n, _)| n == name) {
+                    props.push((
+                        name.to_compact_string(),
+                        PropTypeInfo {
+                            js_type: "Function".to_compact_string(),
+                            ts_type: Some(ts_type_str),
+                            optional,
+                            nullable: false,
+                        },
+                    ));
+                }
+            }
+            return;
+        }
         let name_part = &trimmed[..colon_pos];
         let type_part = &trimmed[colon_pos + 1..];
 
-        let optional = name_part.ends_with('?') || type_includes_top_level_undefined(type_part);
+        // Per Vue's type-only inference, a property is `required: false` only
+        // when the declaration carries the `?` optional modifier. `T |
+        // undefined` (no `?`) is still required. (#967)
+        let optional = name_part.ends_with('?');
         let nullable = type_includes_top_level_null(type_part);
         let name = name_part.trim().trim_end_matches('?').trim();
 
@@ -207,6 +237,7 @@ fn extract_prop_type_info(segment: &str, props: &mut Vec<(String, PropTypeInfo)>
     }
 }
 
+#[allow(dead_code)]
 fn type_includes_top_level_undefined(ts_type: &str) -> bool {
     split_type_at_top_level(ts_type.trim(), '|')
         .into_iter()

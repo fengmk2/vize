@@ -42,6 +42,7 @@ pub fn compile_sfc_batch_with_results(
     let is_ts = opts.is_ts.unwrap_or(false);
     let custom_renderer = opts.custom_renderer.unwrap_or(false);
     let vue_parser_quirks = opts.vue_parser_quirks.unwrap_or(false);
+    let standalone = opts.mode.as_deref() == Some("function");
     let start = Instant::now();
 
     files.par_iter().for_each(|file| {
@@ -87,14 +88,10 @@ pub fn compile_sfc_batch_with_results(
         let styles = style_blocks_to_napi(&descriptor.styles);
         let custom_blocks = custom_blocks_to_napi(&descriptor.custom_blocks);
         let has_scoped = descriptor.styles.iter().any(|s| s.scoped);
-        let template_compiler_options = if has_scoped {
-            Some(vize_atelier_dom::DomCompilerOptions {
-                scope_id: Some(cstr!("data-v-{scope_id}")),
-                ..Default::default()
-            })
-        } else {
-            None
-        };
+        let template_compiler_options = Some(vize_atelier_dom::DomCompilerOptions {
+            scope_id: has_scoped.then(|| cstr!("data-v-{scope_id}")),
+            ..Default::default()
+        });
         let compile_opts = SfcCompileOptions {
             parse: SfcParseOptions {
                 filename: filename_cs.clone(),
@@ -102,6 +99,7 @@ pub fn compile_sfc_batch_with_results(
             },
             script: ScriptCompileOptions {
                 id: Some(filename_cs.clone()),
+                inline_template: standalone,
                 is_ts,
                 ..Default::default()
             },

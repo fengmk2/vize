@@ -995,6 +995,52 @@ const count = 1
 }
 
 #[test]
+fn test_script_setup_standalone_rewrites_vue_imports_to_global_runtime() {
+    let source = r#"<script setup>
+import { ref } from "vue"
+const count = ref(0)
+</script>
+
+<template>
+  <button>{{ count }}</button>
+</template>"#;
+
+    let descriptor = parse_sfc(source, SfcParseOptions::default()).expect("Failed to parse SFC");
+    let result = compile_sfc(
+        &descriptor,
+        SfcCompileOptions {
+            script: ScriptCompileOptions {
+                inline_template: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+    )
+    .expect("Failed to compile SFC");
+
+    assert!(
+        result.code.contains("Vue"),
+        "standalone output should read Vue helpers from the CDN global:\n{}",
+        result.code
+    );
+    assert!(
+        !result.code.contains("import {"),
+        "standalone output should rewrite Vue runtime imports:\n{}",
+        result.code
+    );
+    assert!(
+        !result.code.contains("export default"),
+        "standalone output should be a function body without ESM default export:\n{}",
+        result.code
+    );
+    assert!(
+        result.code.contains("return {"),
+        "standalone output should return the compiled component:\n{}",
+        result.code
+    );
+}
+
+#[test]
 fn test_v_if_branch_component_dynamic_prop_keeps_props_patch_flag() {
     let source = r#"<script setup lang="ts">
 import { ref } from 'vue';

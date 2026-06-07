@@ -16,101 +16,58 @@
   <a href="https://github.com/sponsors/ubugeeei"><strong>Sponsor</strong></a>
 </p>
 
-> [!WARNING]
-> Vize is under active development. It is not a completely production-ready toolchain yet; see the
-> [production-readiness checklist](./docs/release/production-readiness.md),
-> [support policy](./docs/release/support-policy.md), and [stability guide](./docs/content/stability.md)
-> before adopting it in production.
+<p align="center">
+  <strong>Real World Testing — Wanted</strong>
+</p>
 
-> [!IMPORTANT]
-> For day-to-day editor support, keep using the official Vue language tools (`vuejs/language-tools`)
-> for now. Vize's VS Code extension, Zed extension, and `vize lsp` remain opt-in while the editor
-> surface matures.
+<p align="center">
+  <video src="https://raw.githubusercontent.com/ubugeeei-prod/vize/main/docs/public/blog/vize-real-world-testing.mp4" controls muted width="600"></video>
+</p>
+
+<p align="center">
+  <a href="https://raw.githubusercontent.com/ubugeeei-prod/vize/main/docs/public/blog/vize-real-world-testing.mp4"><strong>▶ Watch the Real World Testing PV</strong></a>
+</p>
+
+> [!WARNING]
+> Vize is experimental and in its **Real World Testing** phase — not a completely
+> production-ready toolchain yet. Breaking changes and behavior that diverges from Vue are
+> expected. Review the [stability guide](https://vizejs.dev/stability),
+> [production-readiness checklist](https://github.com/ubugeeei-prod/vize/blob/main/docs/release/production-readiness.md),
+> and [support policy](https://github.com/ubugeeei-prod/vize/blob/main/docs/release/support-policy.md)
+> before adopting it.
 
 ## What Is Vize?
 
-Vize is an unofficial Rust-native Vue toolchain. It experiments with a shared parser, semantic
-analysis, compiler, lint, type-checking, formatting, and editor pipeline for Vue single-file
-components.
+Vize is an unofficial, Rust-native toolchain for Vue — one fast, vertically integrated pipeline
+for single-file components. A single shared parser powers compilation, linting, type-checking,
+formatting, and editor tooling, so your whole Vue workflow runs on the same high-performance core
+instead of a patchwork of disconnected tools.
 
-The main entry points today are:
+It plugs into where you already work: `@vizejs/vite-plugin` (Vite), `vize` (npm CLI), the native
+`vize` binary (full CLI / LSP / profiling), `@vizejs/vite-plugin-musea` (Musea), and
+`oxlint-plugin-vize` (Oxlint).
 
-- `@vizejs/vite-plugin` for Rust-native Vue SFC compilation in Vite.
-- `vize` on npm for package scripts such as `build`, `fmt`, `lint`, `check`, and `ready`.
-- the Rust `vize` binary for the full native CLI, LSP, profiling, and project-backed checking.
-- `@vizejs/vite-plugin-musea` for Musea component gallery workflows.
-- `oxlint-plugin-vize` for running Vize diagnostics inside Oxlint.
+**Everything lives in the [documentation](https://vizejs.dev)** — start with
+[Getting Started](https://vizejs.dev/getting-started).
 
-## Quick Start
+Vize is in its Real World Testing phase: issues and PRs are very welcome, and we are looking for
+reasonably large Vue projects to use as test beds.
 
-Need `vp` first? Install Vite+ once from the [Vite+ install guide](https://viteplus.dev/guide/install).
+## Benchmarks
 
-```bash
-vp install -D @vizejs/vite-plugin
-```
+Measured on Blacksmith `blacksmith-32vcpu-ubuntu-2404`, 15,000 generated Vue SFCs, median of 5 runs
+([latest run](https://github.com/ubugeeei-prod/vize/actions/runs/27081731245)):
 
-```ts
-// vite.config.ts
-import { defineConfig } from "vite";
-import vize from "@vizejs/vite-plugin";
+| Surface     | Existing tool      | Existing |    Vize |    Speedup |
+| ----------- | ------------------ | -------: | ------: | ---------: |
+| SFC compile | @vue/compiler-sfc  |    9.94s | 272.7ms |  **36.4×** |
+| Lint        | eslint-plugin-vue  |   42.14s | 218.0ms | **193.3×** |
+| Format      | Prettier           |   85.16s |   1.62s |  **52.6×** |
+| Type check  | vue-tsc            |    3.86s | 629.6ms |   **6.1×** |
+| Vite build  | @vitejs/plugin-vue |    1.07s | 487.0ms |   **2.2×** |
 
-export default defineConfig({
-  plugins: [vize()],
-});
-```
-
-Add the npm CLI when you want package scripts:
-
-```bash
-vp install -D vize
-vp exec vize lint src
-vp exec vize check src
-vp exec vize fmt --check src
-```
-
-Use the native binary when you need the full CLI:
-
-```bash
-nix run github:ubugeeei-prod/vize#vize -- --help
-```
-
-## Documentation Map
-
-| Need                                    | Read                                                                                            |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| First setup and package choices         | [Getting Started](./docs/content/getting-started.md)                                            |
-| Vite integration                        | [Vite Plugin](./docs/content/guide/vite-plugin.md)                                              |
-| CLI commands                            | [CLI Reference](./docs/content/guide/cli.md)                                                    |
-| Linting, type checking, and diagnostics | [Static Analysis](./docs/content/guide/static-analysis.md)                                      |
-| Shared config files                     | [Configuration](./docs/content/guide/configuration.md)                                          |
-| Rule catalog                            | [Rules](./docs/content/rules/index.md)                                                          |
-| Musea component gallery                 | [Musea](./docs/content/guide/musea.md)                                                          |
-| Editor integration                      | [VS Code Integration](./docs/content/integrations/vscode.md)                                    |
-| Architecture                            | [Architecture Overview](./docs/content/architecture/overview.md)                                |
-| Language-engineering workflow           | [Language Engineering Practices](./docs/content/architecture/language-engineering-practices.md) |
-| Production posture                      | [Production Readiness](./docs/release/production-readiness.md)                                  |
-
-## Local Development
-
-The primary local setup is `Nix + vp`:
-
-```bash
-nix develop
-vp install --frozen-lockfile
-vp check
-vp fmt
-vp dev
-```
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for repository setup, pull-request expectations, and
-language-facing change-class guidance.
-
-## Community
-
-- [Governance](./GOVERNANCE.md)
-- [Support](./SUPPORT.md)
-- [Contributing](./CONTRIBUTING.md)
-- [Sponsor](https://github.com/sponsors/ubugeeei)
+See the [Blacksmith benchmark snapshot](https://vizejs.dev/architecture/performance-blacksmith) for
+methodology and per-variant numbers.
 
 ## Credits
 

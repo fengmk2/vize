@@ -568,8 +568,10 @@ fn push_indented_lines(output: &mut String, text: &str, indent: &str) {
 }
 
 struct SourceLineIndex {
+    is_ascii: bool,
     source_len: usize,
     line_starts: SmallVec<[usize; 64]>,
+    multibyte_adjustments: SmallVec<[(usize, u32); 16]>,
 }
 
 impl SourceLineIndex {
@@ -584,9 +586,24 @@ impl SourceLineIndex {
             }
         }
 
+        let is_ascii = source.is_ascii();
+        let mut multibyte_adjustments = SmallVec::new();
+        if !is_ascii {
+            let mut extra_bytes = 0u32;
+            for (index, ch) in source.char_indices() {
+                let width = ch.len_utf8();
+                if width > 1 {
+                    extra_bytes += (width - 1) as u32;
+                    multibyte_adjustments.push((index + width, extra_bytes));
+                }
+            }
+        }
+
         Self {
+            is_ascii,
             source_len: bytes.len(),
             line_starts,
+            multibyte_adjustments,
         }
     }
 
@@ -598,9 +615,26 @@ impl SourceLineIndex {
             .saturating_sub(1);
         let line_start = self.line_starts.get(line_index).copied().unwrap_or(0);
         let line = line_index as u32 + 1;
-        let column = offset.saturating_sub(line_start) as u32 + 1;
+        if self.is_ascii {
+            return (line, offset.saturating_sub(line_start) as u32 + 1);
+        }
+        let byte_column = offset.saturating_sub(line_start) as u32 + 1;
+        let extra_bytes_before_column = self
+            .extra_bytes_before(offset)
+            .saturating_sub(self.extra_bytes_before(line_start));
+        let column = byte_column.saturating_sub(extra_bytes_before_column);
 
         (line, column)
+    }
+
+    fn extra_bytes_before(&self, offset: usize) -> u32 {
+        let adjustment_index = self
+            .multibyte_adjustments
+            .partition_point(|&(byte_offset, _)| byte_offset <= offset);
+        adjustment_index
+            .checked_sub(1)
+            .map(|index| self.multibyte_adjustments[index].1)
+            .unwrap_or(0)
     }
 }
 
@@ -636,6 +670,37 @@ const items = [1]
             output.contains(r#""ruleDocsPath": "docs/content/rules/vue.md""#),
             "{output}"
         );
+    }
+
+    #[test]
+    fn json_output_uses_character_columns_after_multibyte_text() {
+        let source = r#"<template><div title="café" v-html="x"></div></template>"#;
+        let filename = vize_carton::String::from("Component.vue");
+        let start = source.find("v-html").unwrap() as u32;
+        let end = start + "v-html".len() as u32;
+        let result = LintResult {
+            filename: filename.clone(),
+            diagnostics: vec![LintDiagnostic::warn(
+                "vue/no-v-html",
+                "Avoid raw HTML",
+                start,
+                end,
+            )],
+            error_count: 0,
+            warning_count: 1,
+        };
+        let output = format_results(
+            &[result],
+            &[(filename, vize_carton::String::from(source))],
+            OutputFormat::Json,
+        );
+        let json: serde_json::Value = serde_json::from_str(&output).unwrap();
+        let diagnostic = &json[0]["messages"][0];
+
+        assert_eq!(diagnostic["line"], 1);
+        assert_eq!(diagnostic["column"], 29);
+        assert_eq!(diagnostic["endLine"], 1);
+        assert_eq!(diagnostic["endColumn"], 35);
     }
 
     #[test]

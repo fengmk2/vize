@@ -9,6 +9,7 @@ use super::v_for_scope::v_for_scope_bindings;
 
 pub(super) type SlotScopeInfo = (
     CompactString,
+    bool,
     SmallVec<[CompactString; 4]>,
     Option<CompactString>,
     u32,
@@ -39,19 +40,21 @@ impl Drawer {
         subtree_end: &mut Option<u32>,
         scope_vars: &mut Vec<CompactString>,
     ) -> usize {
-        let Some((slot_name, prop_names, props_pattern, offset)) = slot_scope else {
+        let Some((slot_name, name_is_static, prop_names, props_pattern, offset)) = slot_scope
+        else {
             return 0;
         };
 
         let count = prop_names.len();
         if count > 0 || self.options.analyze_template_scopes {
-            self.croquis.scopes.enter_v_slot_scope(
+            self.croquis.scopes.enter_v_slot_scope_with_name_kind(
                 VSlotScopeData {
                     name: slot_name,
                     props_pattern,
                     prop_names: prop_names.iter().cloned().collect(),
                     component: is_component.then(|| CompactString::new(tag)),
                 },
+                name_is_static,
                 offset,
                 *subtree_end.get_or_insert_with(|| element_subtree_end(el)),
             );

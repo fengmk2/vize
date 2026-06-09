@@ -78,6 +78,7 @@ jobs:
         with:
           shared-key: release-cli-${{ matrix.settings.target }}
           cache-workspace-crates: "true"
+          save-if: "false"
 
       - name: Tune Windows release profile
         if: runner.os == 'Windows'
@@ -136,6 +137,7 @@ jobs:
         with:
           shared-key: release-tools
           cache-workspace-crates: "true"
+          save-if: "false"
 
       - name: Package VS Code extension
         run: vp run --workspace-root package:vscode-extension
@@ -324,6 +326,7 @@ jobs:
         with:
           shared-key: release-wasm
           cache-workspace-crates: "true"
+          save-if: "false"
 
       - name: Cache WASM package build
         id: cache-wasm
@@ -426,6 +429,7 @@ jobs:
         with:
           shared-key: release-native-${{ matrix.settings.target }}
           cache-workspace-crates: "true"
+          save-if: "false"
 
       - name: Tune Windows release profile
         if: runner.os == 'Windows'
@@ -1019,6 +1023,7 @@ jobs:
         with:
           shared-key: release-crates
           cache-workspace-crates: "true"
+          save-if: "false"
 
       - name: Get crates.io token via Trusted Publishing
         id: crates-io-auth

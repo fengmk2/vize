@@ -134,7 +134,8 @@ pub(crate) fn run_direct(args: &CheckArgs) {
             .runtime_path()
             .map(|candidate| resolve_from_config_dir(config_dir, candidate))
     });
-    if let Err(error) = validate_corsa_server_count(args.servers.or(config.type_checker.servers)) {
+    let corsa_servers = args.servers.or(config.type_checker.servers);
+    if let Err(error) = validate_corsa_server_count(corsa_servers) {
         eprintln!("\x1b[31mError:\x1b[0m {}", error);
         std::process::exit(2);
     }
@@ -276,6 +277,7 @@ pub(crate) fn run_direct(args: &CheckArgs) {
             std::process::exit(1);
         }
     };
+    checker.set_server_count(corsa_servers);
     if options_api {
         checker.enable_options_api();
     }
@@ -513,7 +515,28 @@ pub(crate) fn run_direct(args: &CheckArgs) {
             })
             .collect();
         files_json.sort_by(|left, right| left.file.cmp(&right.file));
+        // `fileCount` counts checked source files; project-level diagnostic
+        // groups (anchored to a tsconfig) are appended to `files` afterwards
+        // so every counted error appears in the output, but they are not
+        // checked files themselves.
         let reported_file_count = files_json.len();
+
+        let virtual_keys: FxHashSet<String> = virtual_files
+            .iter()
+            .map(|file| String::from(file.original_path.to_string_lossy()))
+            .collect();
+        let mut project_level: Vec<JsonFileResult> = diagnostics
+            .iter()
+            .filter(|(key, file_diagnostics)| {
+                !file_diagnostics.is_empty() && !virtual_keys.contains(key.as_str())
+            })
+            .map(|(key, file_diagnostics)| JsonFileResult {
+                file: display_path(&cwd, Path::new(key)).into(),
+                virtual_ts: "".into(),
+                diagnostics: file_diagnostics.clone(),
+            })
+            .collect();
+        files_json.append(&mut project_level);
 
         let declarations = emitted_declarations.as_ref().map(|(_, result)| {
             result
@@ -538,8 +561,10 @@ pub(crate) fn run_direct(args: &CheckArgs) {
     }
 
     if !args.quiet {
+        let mut printed_keys: FxHashSet<String> = FxHashSet::default();
         for file in checker.virtual_files() {
             let key = file.original_path.to_string_lossy();
+            printed_keys.insert(String::from(key.as_ref()));
             let Some(file_diagnostics) = diagnostics.get(key.as_ref()) else {
                 continue;
             };
@@ -547,6 +572,23 @@ pub(crate) fn run_direct(args: &CheckArgs) {
                 continue;
             }
 
+            println!("\n\x1b[4m{}\x1b[0m", key);
+            for diagnostic in file_diagnostics {
+                let color = if diagnostic.starts_with("error") {
+                    "\x1b[31m"
+                } else {
+                    "\x1b[33m"
+                };
+                println!("  {}{}\x1b[0m", color, diagnostic);
+            }
+        }
+
+        // Project-level diagnostics (anchored to a tsconfig, not a checked
+        // source file) — print after the per-file groups.
+        for (key, file_diagnostics) in &diagnostics {
+            if file_diagnostics.is_empty() || printed_keys.contains(key.as_str()) {
+                continue;
+            }
             println!("\n\x1b[4m{}\x1b[0m", key);
             for diagnostic in file_diagnostics {
                 let color = if diagnostic.starts_with("error") {

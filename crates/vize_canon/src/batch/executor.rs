@@ -24,7 +24,7 @@ use vize_carton::{String, cstr, profile};
 mod cli;
 mod diagnostics;
 
-use cli::check_with_cli;
+use cli::{auto_server_count, check_with_cli, check_with_cli_sharded};
 use diagnostics::map_batch_diagnostics;
 
 /// Batch executor backed by `corsa`'s project-session diagnostics API.
@@ -96,9 +96,35 @@ impl CorsaExecutor {
         &self.corsa_path
     }
 
-    /// Run type checking on the virtual project.
+    /// Run type checking on the virtual project with an auto-tuned number of
+    /// parallel Corsa CLI processes.
     pub fn check(&self, project: &VirtualProject) -> CorsaResult<TypeCheckResult> {
+        self.check_with_servers(project, None)
+    }
+
+    /// Run type checking on the virtual project. `servers` is the number of
+    /// parallel Corsa CLI processes the project is partitioned across
+    /// (`None` auto-tunes from the machine width and project size).
+    pub fn check_with_servers(
+        &self,
+        project: &VirtualProject,
+        servers: Option<usize>,
+    ) -> CorsaResult<TypeCheckResult> {
         profile!("canon.executor.materialize", project.materialize())?;
+
+        let servers = servers.unwrap_or_else(|| auto_server_count(project));
+        if servers > 1 {
+            match profile!(
+                "canon.corsa.cli",
+                check_with_cli_sharded(&self.corsa_path, project, servers)
+            ) {
+                Ok(result) => return Ok(result),
+                Err(_cli_error) => {
+                    // Degrade to a single CLI program before the session API:
+                    // a shard-specific failure must not cost CLI support.
+                }
+            }
+        }
 
         match profile!("canon.corsa.cli", check_with_cli(&self.corsa_path, project)) {
             Ok(result) => return Ok(result),
@@ -531,6 +557,48 @@ mod tests {
         assert_eq!(files.len(), 1);
         assert_eq!(files[0].path, out_dir.join("App.vue.d.ts"));
         assert_eq!(files[0].content, "export {};\n");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn cli_global_diagnostics_do_not_trigger_session_fallback() {
+        use crate::batch::VirtualProject;
+        use std::os::unix::fs::PermissionsExt;
+
+        let case_dir = unique_case_dir("global-diagnostics");
+        let _ = fs::remove_dir_all(&case_dir);
+        let cache_dir = case_dir.join(".cache");
+        let source = case_dir.join("src").join("main.ts");
+        fs::create_dir_all(&cache_dir).unwrap();
+        fs::create_dir_all(source.parent().unwrap()).unwrap();
+        fs::write(&source, "const value: number = 1;\n").unwrap();
+
+        // A runtime whose project check exits non-zero with only file-less
+        // config diagnostics (e.g. TS2688) ran fine; treating that as a CLI
+        // failure would fall back to the far slower project-session API
+        // (`--api` here would hang the test forever). The project-level
+        // diagnostic surfaces attributed to the project's tsconfig anchor.
+        let tsgo = cache_dir.join("tsgo");
+        fs::write(
+            &tsgo,
+            "#!/bin/sh\nif [ \"$1\" = \"--api\" ]; then exec sleep 600; fi\necho \"error TS2688: Cannot find type definition file for 'vite/client'.\"\nexit 2\n",
+        )
+        .unwrap();
+        fs::set_permissions(&tsgo, fs::Permissions::from_mode(0o755)).unwrap();
+
+        let mut project = VirtualProject::new(&case_dir).unwrap();
+        project.register_path(&source).unwrap();
+        let executor = CorsaExecutor::new(&case_dir).unwrap();
+        let result = executor.check(&project).unwrap();
+
+        assert!(!result.success);
+        assert_eq!(result.exit_code, 2);
+        assert_eq!(result.diagnostics.len(), 1);
+        assert_eq!(result.diagnostics[0].code, Some(2688));
+        assert_eq!(result.diagnostics[0].severity, 1);
+        assert_eq!(result.diagnostics[0].file, case_dir);
+
+        let _ = fs::remove_dir_all(&case_dir);
     }
 
     #[cfg(unix)]

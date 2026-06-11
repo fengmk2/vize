@@ -32,6 +32,37 @@ impl VirtualProject {
         self.preserve_unused_diagnostics
     }
 
+    /// Alias prefixes declared in the effective tsconfig `paths` map, with
+    /// wildcard suffixes stripped: `@/*` → `@/`, `@scope/*` → `@scope/`,
+    /// `#imports` → `#imports`. Used as a cost model for shard planning:
+    /// files importing through the same project alias are coupled. Aliases
+    /// whose every target lives under `node_modules` (e.g. a pinned `vue`
+    /// mapping) are dependency cost every program pays anyway and are skipped.
+    pub(crate) fn path_alias_prefixes(&self) -> Vec<CompactString> {
+        let Ok(compiler_options) =
+            self.load_compiler_options(self.resolved_tsconfig_path().as_deref())
+        else {
+            return Vec::new();
+        };
+        let Some(paths) = compiler_options.get("paths").and_then(Value::as_object) else {
+            return Vec::new();
+        };
+        paths
+            .iter()
+            .filter(|(_, targets)| {
+                !targets.as_array().is_some_and(|targets| {
+                    !targets.is_empty()
+                        && targets.iter().all(|target| {
+                            target
+                                .as_str()
+                                .is_some_and(|target| target.contains("node_modules"))
+                        })
+                })
+            })
+            .map(|(alias, _)| alias.trim_end_matches('*').to_compact_string())
+            .collect()
+    }
+
     pub(super) fn resolve_tsconfig_preserves_unused_diagnostics(&self) -> bool {
         let Some(tsconfig_path) = self.resolved_tsconfig_path() else {
             return false;
@@ -50,7 +81,38 @@ impl VirtualProject {
         out_dir: Option<&Path>,
         declaration_map: bool,
     ) -> CorsaResult<()> {
-        let tsconfig = self.generate_tsconfig_value(out_dir, declaration_map)?;
+        self.write_tsconfig_file_with_includes(path, out_dir, declaration_map, None)
+    }
+
+    /// Write a tsconfig whose `include` lists only the given virtual paths
+    /// (plus the shared stub files). Used for shard configs that partition the
+    /// project across parallel Corsa CLI runs.
+    pub(crate) fn write_shard_tsconfig(
+        &self,
+        shard_index: usize,
+        include_virtual_paths: &[&Path],
+    ) -> CorsaResult<PathBuf> {
+        let config_path = self
+            .virtual_root
+            .join(cstr!("tsconfig.shard{shard_index}.json").as_str());
+        self.write_tsconfig_file_with_includes(
+            &config_path,
+            None,
+            false,
+            Some(include_virtual_paths),
+        )?;
+        Ok(config_path)
+    }
+
+    fn write_tsconfig_file_with_includes(
+        &self,
+        path: &Path,
+        out_dir: Option<&Path>,
+        declaration_map: bool,
+        include_virtual_paths: Option<&[&Path]>,
+    ) -> CorsaResult<()> {
+        let tsconfig =
+            self.generate_tsconfig_value(out_dir, declaration_map, include_virtual_paths)?;
         let content = serde_json::to_string_pretty(&tsconfig)?;
         write_if_changed(path, content.as_bytes())?;
         Ok(())
@@ -60,25 +122,31 @@ impl VirtualProject {
         &self,
         out_dir: Option<&Path>,
         declaration_map: bool,
+        include_virtual_paths: Option<&[&Path]>,
     ) -> CorsaResult<Value> {
         let mut config = Map::new();
         let original_tsconfig = self.resolved_tsconfig_path();
-        if out_dir.is_none()
-            && let Some(ref tsconfig_path) = original_tsconfig
-        {
-            config.insert(
-                "extends".into(),
-                Value::String(tsconfig_path.to_string_lossy().into_owned()),
-            );
-        }
 
+        // The effective compiler options are flattened into the generated
+        // config instead of `extends`-ing the user's tsconfig. Corsa would
+        // otherwise re-parse the whole original chain and fail the entire CLI
+        // run on config-file diagnostics vize already compensates for (e.g.
+        // TS5102 for the removed `baseUrl` the mirror strips and re-anchors),
+        // and the real tree's `files`/`include` lists must not leak into the
+        // virtual program anyway.
         let mut compiler_options = self.load_compiler_options(original_tsconfig.as_deref())?;
 
-        // Capture the original path-alias map before stripping path-sensitive
-        // options, so it can be re-anchored into the virtual mirror below.
+        // Capture the original path-alias map and type roots before stripping
+        // path-sensitive options, so they can be re-anchored into the virtual
+        // mirror below.
         let original_paths = compiler_options
             .get("paths")
             .and_then(Value::as_object)
+            .cloned()
+            .unwrap_or_default();
+        let original_type_roots = compiler_options
+            .get("typeRoots")
+            .and_then(Value::as_array)
             .cloned()
             .unwrap_or_default();
 
@@ -98,6 +166,18 @@ impl VirtualProject {
             compiler_options.insert(
                 "paths".into(),
                 Value::Object(self.remap_paths(&original_paths)),
+            );
+        }
+
+        // Re-anchor custom `typeRoots` the same way: list the mirror copy and
+        // the real-tree directory. TypeScript scans every listed root and
+        // skips missing directories, so `types: [...]` entries served by a
+        // custom root keep resolving instead of raising a false TS2688 that
+        // only exists inside the mirror.
+        if !original_type_roots.is_empty() {
+            compiler_options.insert(
+                "typeRoots".into(),
+                Value::Array(self.remap_dir_entries(&original_type_roots)),
             );
         }
 
@@ -130,7 +210,7 @@ impl VirtualProject {
         config.insert(
             "include".into(),
             Value::Array(
-                self.include_paths()
+                self.include_paths(include_virtual_paths)
                     .into_iter()
                     .map(|path| Value::String(path.into()))
                     .collect(),
@@ -141,13 +221,20 @@ impl VirtualProject {
         Ok(Value::Object(config))
     }
 
-    fn include_paths(&self) -> Vec<CompactString> {
-        let mut includes: Vec<_> = self
-            .virtual_files
-            .keys()
-            .filter_map(|path| path.strip_prefix(&self.virtual_root).ok())
-            .map(|path| path.to_string_lossy().to_compact_string())
-            .collect();
+    fn include_paths(&self, include_virtual_paths: Option<&[&Path]>) -> Vec<CompactString> {
+        let relative = |path: &Path| {
+            path.strip_prefix(&self.virtual_root)
+                .ok()
+                .map(|path| path.to_string_lossy().to_compact_string())
+        };
+        let mut includes: Vec<_> = match include_virtual_paths {
+            Some(paths) => paths.iter().filter_map(|path| relative(path)).collect(),
+            None => self
+                .virtual_files
+                .keys()
+                .filter_map(|path| relative(path))
+                .collect(),
+        };
         if !self.virtual_ts_options.auto_import_stubs.is_empty() {
             includes.push(AUTO_IMPORT_STUBS_FILE.into());
         }
@@ -192,15 +279,30 @@ impl VirtualProject {
         let base_dir = normalized.parent().unwrap_or(self.project_root.as_path());
         self.normalize_paths_for_project_root(&mut compiler_options, base_dir);
 
-        let Some(parent_path) = config
-            .get("extends")
-            .and_then(Value::as_str)
-            .and_then(|extends| resolve_extended_tsconfig_path(&normalized, extends))
-        else {
+        // `extends` may be a single specifier or an array; array entries are
+        // applied in order, with later entries overriding earlier ones, and
+        // the extending file overriding them all.
+        let mut inherited = Map::new();
+        match config.get("extends") {
+            Some(Value::String(extends)) => {
+                if let Some(parent_path) = resolve_extended_tsconfig_path(&normalized, extends) {
+                    inherited = self.load_compiler_options_inner(&parent_path, seen)?;
+                }
+            }
+            Some(Value::Array(entries)) => {
+                for extends in entries.iter().filter_map(Value::as_str) {
+                    if let Some(parent_path) = resolve_extended_tsconfig_path(&normalized, extends)
+                    {
+                        inherited.extend(self.load_compiler_options_inner(&parent_path, seen)?);
+                    }
+                }
+            }
+            _ => {}
+        }
+        if inherited.is_empty() {
             return Ok(compiler_options);
-        };
+        }
 
-        let mut inherited = self.load_compiler_options_inner(&parent_path, seen)?;
         inherited.extend(compiler_options);
         Ok(inherited)
     }
@@ -211,6 +313,26 @@ impl VirtualProject {
         compiler_options: &mut Map<std::string::String, Value>,
         base_dir: &Path,
     ) {
+        // Relative path-ish options resolve against the tsconfig that declares
+        // them; rebase them onto the project root so the flattened option set
+        // keeps the declaring config's meaning.
+        if let Some(type_roots) = compiler_options
+            .get_mut("typeRoots")
+            .and_then(Value::as_array_mut)
+        {
+            for entry in type_roots {
+                let Some(raw_entry) = entry.as_str() else {
+                    continue;
+                };
+                if Path::new(raw_entry).is_absolute() {
+                    continue;
+                }
+                *entry = Value::String(
+                    normalize_tsconfig_path_target(base_dir, &self.project_root, raw_entry).into(),
+                );
+            }
+        }
+
         let Some(paths) = compiler_options
             .get_mut("paths")
             .and_then(Value::as_object_mut)
@@ -268,6 +390,29 @@ impl VirtualProject {
                 candidates.push(Value::String(cstr!("{up}{core}").into()));
             }
             remapped.insert(alias.clone(), Value::Array(candidates));
+        }
+        remapped
+    }
+
+    /// Re-anchor a list of project-root-relative directories (e.g. `typeRoots`)
+    /// into the virtual mirror: each relative entry yields the mirror copy
+    /// followed by the real source-tree directory. Absolute and non-string
+    /// entries pass through unchanged.
+    fn remap_dir_entries(&self, entries: &[Value]) -> Vec<Value> {
+        let up = self.virtual_root_to_project_prefix();
+        let mut remapped = Vec::with_capacity(entries.len() * 2);
+        for entry in entries {
+            let Some(entry_str) = entry.as_str() else {
+                remapped.push(entry.clone());
+                continue;
+            };
+            if Path::new(entry_str).is_absolute() {
+                remapped.push(Value::String(entry_str.to_owned()));
+                continue;
+            }
+            let core = entry_str.strip_prefix("./").unwrap_or(entry_str);
+            remapped.push(Value::String(cstr!("./{core}").into()));
+            remapped.push(Value::String(cstr!("{up}{core}").into()));
         }
         remapped
     }

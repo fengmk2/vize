@@ -55,9 +55,97 @@ pub fn analyze_setup_context(
                 end: violation.end,
             });
         }
+
+        diagnostics.extend(lifecycle_pair_diagnostics(file_id, analysis));
     }
 
     (issues, diagnostics)
+}
+
+fn lifecycle_pair_diagnostics(
+    file_id: FileId,
+    analysis: &vize_croquis::Croquis,
+) -> Vec<CrossFileDiagnostic> {
+    let mut mounted_offset = None;
+    let mut before_mount_offset = None;
+    let mut activated_offset = None;
+    let mut has_unmounted = false;
+    let mut has_before_unmount = false;
+    let mut has_deactivated = false;
+
+    for scope in analysis.scopes.iter() {
+        let vize_croquis::ScopeData::ClientOnly(data) = scope.data() else {
+            continue;
+        };
+
+        match data.hook_name.as_str() {
+            "onMounted" => {
+                mounted_offset.get_or_insert(scope.span.start);
+            }
+            "onUnmounted" => has_unmounted = true,
+            "onBeforeMount" => {
+                before_mount_offset.get_or_insert(scope.span.start);
+            }
+            "onBeforeUnmount" => has_before_unmount = true,
+            "onActivated" => {
+                activated_offset.get_or_insert(scope.span.start);
+            }
+            "onDeactivated" => has_deactivated = true,
+            _ => {}
+        }
+    }
+
+    let mut diagnostics = Vec::new();
+    push_lifecycle_pair_diagnostic(
+        &mut diagnostics,
+        file_id,
+        mounted_offset.filter(|_| !has_unmounted),
+        "onMounted",
+        "onUnmounted",
+    );
+    push_lifecycle_pair_diagnostic(
+        &mut diagnostics,
+        file_id,
+        before_mount_offset.filter(|_| !has_before_unmount),
+        "onBeforeMount",
+        "onBeforeUnmount",
+    );
+    push_lifecycle_pair_diagnostic(
+        &mut diagnostics,
+        file_id,
+        activated_offset.filter(|_| !has_deactivated),
+        "onActivated",
+        "onDeactivated",
+    );
+    diagnostics
+}
+
+fn push_lifecycle_pair_diagnostic(
+    diagnostics: &mut Vec<CrossFileDiagnostic>,
+    file_id: FileId,
+    offset: Option<u32>,
+    hook_name: &str,
+    cleanup_hook: &str,
+) {
+    let Some(offset) = offset else {
+        return;
+    };
+
+    diagnostics.push(
+        CrossFileDiagnostic::new(
+            CrossFileDiagnosticKind::LifecycleHookWithoutCleanup {
+                hook_name: CompactString::new(hook_name),
+                cleanup_hook: CompactString::new(cleanup_hook),
+            },
+            DiagnosticSeverity::Warning,
+            file_id,
+            offset,
+            cstr!("`{hook_name}()` has no matching `{cleanup_hook}()` cleanup hook"),
+        )
+        .with_suggestion(cstr!(
+            "Register `{cleanup_hook}()` when `{hook_name}()` creates listeners, timers, subscriptions, or activated resources"
+        )),
+    );
 }
 
 /// Create a diagnostic from a setup context violation.

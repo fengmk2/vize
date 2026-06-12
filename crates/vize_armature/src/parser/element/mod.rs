@@ -13,7 +13,7 @@ mod tags;
 mod text;
 
 use vize_relief::{
-    ast::SourceLocation,
+    SourceLocation,
     errors::{CompilerError, ErrorCode},
 };
 

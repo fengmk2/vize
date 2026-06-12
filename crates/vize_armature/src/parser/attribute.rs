@@ -5,10 +5,8 @@
 
 use vize_carton::{Box, String, Vec, appends};
 use vize_relief::{
-    ast::{
-        AttributeNode, ConstantType, DirectiveNode, ExpressionNode, PropNode, SimpleExpressionNode,
-        TextNode,
-    },
+    AttributeNode, ConstantType, DirectiveNode, ExpressionNode, PropNode, SimpleExpressionNode,
+    TextNode,
     errors::{CompilerError, ErrorCode},
 };
 

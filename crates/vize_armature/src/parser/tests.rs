@@ -7,7 +7,7 @@ use super::{
 };
 use vize_carton::Bump;
 use vize_relief::{
-    ast::{ElementType, ExpressionNode, Namespace, PropNode, TemplateChildNode},
+    ElementType, ExpressionNode, Namespace, PropNode, TemplateChildNode,
     errors::{CompilerError, ErrorCode},
     options::{ParserOptions, TemplateSyntaxMode},
 };
@@ -1767,7 +1767,7 @@ fn test_parse_nested_p_without_boundary_still_auto_closes() {
 fn find_element<'a, 'b>(
     children: &'b [TemplateChildNode<'a>],
     tag: &str,
-) -> Option<&'b vize_relief::ast::ElementNode<'a>> {
+) -> Option<&'b vize_relief::ElementNode<'a>> {
     for child in children {
         if let TemplateChildNode::Element(el) = child {
             if el.tag.as_str() == tag {

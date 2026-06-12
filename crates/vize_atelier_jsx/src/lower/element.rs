@@ -1,8 +1,8 @@
 //! Lowering JSX elements and fragments into [`ElementNode`]s.
 
 use oxc_ast::ast::{JSXElement, JSXElementName, JSXFragment};
-use vize_relief::ast::ElementNode;
-use vize_relief::ast::core::ElementType;
+use vize_relief::ElementNode;
+use vize_relief::ElementType;
 
 use super::{Lowerer, name};
 

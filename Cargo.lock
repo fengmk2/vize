@@ -3825,6 +3825,7 @@ dependencies = [
  "vize",
  "vize_atelier_core",
  "vize_atelier_dom",
+ "vize_atelier_jsx",
  "vize_atelier_sfc",
  "vize_atelier_ssr",
  "vize_atelier_vapor",

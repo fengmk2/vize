@@ -83,6 +83,7 @@ export const LINT_RULE_NAMES = [
   "script/no-potential-component-option-typo",
   "script/no-reactive-destructure",
   "script/no-reserved-identifiers",
+  "script/no-reserved-keys",
   "script/no-side-effects-in-computed-properties",
   "script/no-top-level-ref-in-script",
   "script/no-with-defaults",

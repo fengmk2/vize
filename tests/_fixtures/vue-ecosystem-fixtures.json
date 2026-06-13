@@ -155,6 +155,99 @@
       }
     },
     {
+      "id": "primevue",
+      "displayName": "PrimeVue",
+      "kind": "component-library",
+      "fixturePath": "tests/_fixtures/_git/primevue",
+      "repository": "https://github.com/primefaces/primevue",
+      "revision": "0394f1e4157de7698048a255a38a9983bf689a34",
+      "license": {
+        "spdx": "MIT",
+        "files": ["LICENSE.md"]
+      },
+      "vueGlobs": [
+        "packages/primevue/src/**/*.vue",
+        "packages/icons/src/**/*.vue",
+        "packages/forms/src/**/*.vue",
+        "apps/showcase/**/*.vue",
+        "apps/volt/**/*.vue"
+      ],
+      "tsconfig": "packages/primevue/tsconfig.json",
+      "coverage": [
+        "compiler",
+        "linter",
+        "typechecker",
+        "formatter",
+        "syntax-highlighter",
+        "lsp"
+      ],
+      "diff": "curator-compare",
+      "typecheckPerformance": {
+        "enabled": true,
+        "compareTo": "vue-tsc",
+        "hangTimeoutMs": 300000,
+        "maxFalsePositiveRatio": 0.05
+      }
+    },
+    {
+      "id": "vuetify",
+      "displayName": "Vuetify",
+      "kind": "component-library",
+      "fixturePath": "tests/_fixtures/_git/vuetify",
+      "repository": "https://github.com/vuetifyjs/vuetify",
+      "revision": "ea293786199d5ce5711bf98354cd473eedaa64f9",
+      "license": {
+        "spdx": "MIT",
+        "files": ["LICENSE.md"]
+      },
+      "vueGlobs": ["packages/vuetify/**/*.vue", "packages/docs/src/**/*.vue"],
+      "tsconfig": "tsconfig.json",
+      "coverage": [
+        "compiler",
+        "linter",
+        "typechecker",
+        "formatter",
+        "syntax-highlighter",
+        "lsp"
+      ],
+      "diff": "curator-compare",
+      "typecheckPerformance": {
+        "enabled": true,
+        "compareTo": "vue-tsc",
+        "hangTimeoutMs": 300000,
+        "maxFalsePositiveRatio": 0.05
+      }
+    },
+    {
+      "id": "naive-ui",
+      "displayName": "Naive UI",
+      "kind": "component-library",
+      "fixturePath": "tests/_fixtures/_git/naive-ui",
+      "repository": "https://github.com/tusen-ai/naive-ui",
+      "revision": "7a12097edc91962712d78f8cd9e301928eb5e558",
+      "license": {
+        "spdx": "MIT",
+        "files": ["LICENSE"]
+      },
+      "vueGlobs": ["src/**/*.vue", "demo/**/*.vue", "generic/**/*.vue"],
+      "tsconfig": "tsconfig.json",
+      "coverage": [
+        "compiler",
+        "linter",
+        "typechecker",
+        "formatter",
+        "syntax-highlighter",
+        "lsp"
+      ],
+      "diff": "curator-compare",
+      "typecheckPerformance": {
+        "enabled": true,
+        "compareTo": "vue-tsc",
+        "hangTimeoutMs": 300000,
+        "maxFalsePositiveRatio": 0.05
+      }
+    },
+    {
       "id": "voicevox",
       "displayName": "VOICEVOX",
       "kind": "application",

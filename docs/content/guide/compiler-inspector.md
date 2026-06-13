@@ -74,7 +74,7 @@ Useful options:
 
 | Option              | Description                                   |
 | ------------------- | --------------------------------------------- |
-| `--target dom`      | Compare DOM compiler output                   |
+| `--target dom`      | Compare VDOM compiler output                  |
 | `--target ssr`      | Compare SSR compiler output                   |
 | `--format agent`    | Emit agent-readable JSON with graph metadata  |
 | `--format compare`  | Run dev-only CLI comparison against Vue       |

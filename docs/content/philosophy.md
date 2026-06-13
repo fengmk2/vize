@@ -66,7 +66,7 @@ Every Vize crate is named after a concept from the visual arts — painting, scu
 | **Musea**    | Plural of museum                | Component gallery — exhibiting the work |
 | **Fresco**   | Wall painting technique         | TUI framework — painting the terminal   |
 
-This naming system serves a practical purpose: it makes the crate hierarchy intuitive. When you see `vize_atelier_dom`, you immediately understand it is a _workshop_ that produces _DOM output_. When you see `vize_patina`, you know it _polishes_ your code.
+This naming system serves a practical purpose: it makes the crate hierarchy intuitive. When you see `vize_atelier_dom`, you immediately understand it is a _workshop_ that produces _VDOM output_. When you see `vize_patina`, you know it _polishes_ your code.
 
 #### The Sculpture Analogy
 
@@ -78,7 +78,7 @@ The deepest analogy is between software compilation and sculpture. Consider how 
 
 3. **Croquis** — Before committing to a final sculpture, the artist makes quick sketches (_croquis_) to understand the subject's essential character. In Vize, semantic analysis (`vize_croquis`) is a quick pass that captures the meaning of code — what variables are bound, what expressions are valid — without committing to a compilation target.
 
-4. **Atelier** — The sculptor moves to the _atelier_ (workshop) to create the final piece. Multiple ateliers may produce different renditions of the same subject. In Vize, the compilation backends (`vize_atelier_dom`, `vize_atelier_vapor`, `vize_atelier_ssr`) are different workshops that produce different renditions (DOM, Vapor, SSR) of the same analyzed AST.
+4. **Atelier** — The sculptor moves to the _atelier_ (workshop) to create the final piece. Multiple ateliers may produce different renditions of the same subject. In Vize, the compilation backends (`vize_atelier_dom`, `vize_atelier_vapor`, `vize_atelier_ssr`) are different workshops that produce different renditions (VDOM, Vapor, SSR) of the same analyzed AST.
 
 5. **Vitrine** — The finished work is placed in a _vitrine_ (glass display case) so others can observe it. In Vize, the bindings (`vize_vitrine`) are a transparent layer that lets JavaScript consumers access the compiled output.
 

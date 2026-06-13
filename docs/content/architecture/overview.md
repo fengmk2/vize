@@ -65,7 +65,7 @@ graph LR
     B --> C[Relief<br/>AST]
     C --> D[Croquis<br/>Semantic Analysis]
     D --> E{Atelier}
-    E --> F[DOM Compiler]
+    E --> F[VDOM Compiler]
     E --> G[Vapor Compiler]
     E --> H[SSR Compiler]
     F --> I[Output JS]
@@ -80,7 +80,7 @@ graph LR
 3. **Relief** (AST) — The intermediate representation. All downstream stages operate on this shared AST, eliminating redundant parsing.
 4. **Croquis** (Semantic Analysis) — Resolves template expressions, tracks variable scopes, detects binding types (setup, data, props, inject), and validates expression correctness. Uses OXC for JavaScript/TypeScript AST parsing.
 5. **Atelier** (Compilation) — Transforms the analyzed AST into JavaScript output. Three backends serve different targets:
-   - **DOM** (`vize_atelier_dom`) — `createVNode`/`h` calls with patch flag optimization and static hoisting
+   - **VDOM** (`vize_atelier_dom`) — `createVNode`/`h` calls with patch flag optimization and static hoisting
    - **Vapor** (`vize_atelier_vapor`) — Fine-grained reactive code with direct DOM manipulation (no VDOM)
    - **SSR** (`vize_atelier_ssr`) — String concatenation with hydration markers
 6. **Output** — Generated JavaScript code with source maps
@@ -120,7 +120,7 @@ parity, benchmark, and readiness evidence expected for review.
 | Parsing       | `vize_armature`      | Tokenizer + recursive descent parser                   |
 | Analysis      | `vize_croquis`       | Semantic analysis, scope tracking, binding detection   |
 | Compilation   | `vize_atelier_core`  | Shared transforms, codegen utilities, source maps      |
-| Compilation   | `vize_atelier_dom`   | DOM (VDom) code generation                             |
+| Compilation   | `vize_atelier_dom`   | VDOM code generation                                   |
 | Compilation   | `vize_atelier_vapor` | Vapor mode code generation                             |
 | Compilation   | `vize_atelier_sfc`   | SFC orchestration (script + template + style + HMR)    |
 | Compilation   | `vize_atelier_ssr`   | Server-side rendering compilation                      |
@@ -167,7 +167,7 @@ The analogy between software compilation and artistic creation is surprisingly d
 - The **linter** (Patina) examines the surface finish — finding imperfections that affect the overall quality
 - The **formatter** (Glyph) ensures consistent proportions — like a typographer carving letterforms with precise spacing
 
-This naming convention makes the crate hierarchy intuitive: when you see `vize_atelier_dom`, you immediately understand it is a _workshop_ that produces _DOM output_.
+This naming convention makes the crate hierarchy intuitive: when you see `vize_atelier_dom`, you immediately understand it is a _workshop_ that produces _VDOM output_.
 
 ## External Dependencies
 

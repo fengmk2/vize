@@ -1,4 +1,4 @@
-//! Integration tests for the DOM compiler entry points.
+//! Integration tests for the VDOM compiler entry points.
 
 use super::{
     DomCompilerOptions, Namespace, TemplateChildNode, compile_template,

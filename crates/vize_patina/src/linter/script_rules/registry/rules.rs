@@ -1,16 +1,10 @@
-//! The ordered table of built-in script rules.
-//!
-//! To add a rule, import its type below, add a configured `static <NAME>_RULE`
-//! instance if it needs parameters (otherwise reference the unit struct
-//! directly), then append a [`BuiltinScriptRuleEntry`] to
-//! [`BUILTIN_SCRIPT_RULES`]. Existing entry order is load-bearing: the first
-//! three rules are always-on and the order fixes default diagnostic ordering,
-//! so append new rules at the end of their category grouping and mirror the
-//! addition in `names.rs`.
+//! The ordered table of built-in script rules. Order is load-bearing: the
+//! first three are always-on and fix default diagnostic ordering. Append new
+//! rules at the end of their category and mirror the addition in `names.rs`.
 
 use super::names::{
-    RULE_COMPONENT_OPTIONS_NAME_CASING, RULE_DEFINE_MACROS_ORDER, RULE_NO_ARROW_FUNCTIONS_IN_WATCH,
-    RULE_NO_ASYNC_IN_COMPUTED, RULE_NO_DEEP_DESTRUCTURE_IN_PROPS,
+    RULE_COMPONENT_OPTIONS_NAME_CASING, RULE_DEFINE_EMITS_DECLARATION, RULE_DEFINE_MACROS_ORDER,
+    RULE_NO_ARROW_FUNCTIONS_IN_WATCH, RULE_NO_ASYNC_IN_COMPUTED, RULE_NO_DEEP_DESTRUCTURE_IN_PROPS,
     RULE_NO_DEPRECATED_DATA_OBJECT_DECLARATION, RULE_NO_DEPRECATED_DOLLAR_LISTENERS_API,
     RULE_NO_DEPRECATED_DOLLAR_SCOPEDSLOTS_API, RULE_NO_DEPRECATED_EVENTS_API, RULE_NO_DUPE_KEYS,
     RULE_NO_EXPORT_IN_SCRIPT_SETUP, RULE_NO_GET_CURRENT_INSTANCE, RULE_NO_IMPORT_COMPILER_MACROS,
@@ -29,14 +23,15 @@ use super::{
     OPT_IN_SCRIPT_PRESETS,
 };
 use crate::rules::script::{
-    ComponentOptionsNameCasing, DefineMacrosOrder, NoArrowFunctionsInWatch, NoAsyncInComputed,
-    NoDeepDestructureInProps, NoDeprecatedDataObjectDeclaration, NoDeprecatedDollarListenersApi,
-    NoDeprecatedDollarScopedSlotsApi, NoDeprecatedEventsApi, NoDupeKeys, NoExportInScriptSetup,
-    NoGetCurrentInstance, NoImportCompilerMacros, NoInternalImports, NoNextTick, NoOptionsApi,
-    NoPotentialComponentOptionTypo, NoReactiveDestructure, NoReservedIdentifiers, NoReservedKeys,
-    NoSideEffectsInComputed, NoTopLevelRefInScript, NoWithDefaults, PiniaPreferStoreToRefs,
-    PreferComputed, PreferImportFromVue, PreferRefOverReactive, PreferUseAttrs, PreferUseId,
-    PreferUseSlots, PreferUseTemplateRef, RequireFunctionReturnType, RequirePropTypeConstructor,
+    ComponentOptionsNameCasing, DefineEmitsDeclaration, DefineMacrosOrder, NoArrowFunctionsInWatch,
+    NoAsyncInComputed, NoDeepDestructureInProps, NoDeprecatedDataObjectDeclaration,
+    NoDeprecatedDollarListenersApi, NoDeprecatedDollarScopedSlotsApi, NoDeprecatedEventsApi,
+    NoDupeKeys, NoExportInScriptSetup, NoGetCurrentInstance, NoImportCompilerMacros,
+    NoInternalImports, NoNextTick, NoOptionsApi, NoPotentialComponentOptionTypo,
+    NoReactiveDestructure, NoReservedIdentifiers, NoReservedKeys, NoSideEffectsInComputed,
+    NoTopLevelRefInScript, NoWithDefaults, PiniaPreferStoreToRefs, PreferComputed,
+    PreferImportFromVue, PreferRefOverReactive, PreferUseAttrs, PreferUseId, PreferUseSlots,
+    PreferUseTemplateRef, RequireFunctionReturnType, RequirePropTypeConstructor,
     RequireSymbolProvide, ReturnInComputedProperty, VueRouterPreferNamedPush,
     VueTestUtilsNoHtmlSnapshot,
 };
@@ -44,11 +39,8 @@ use crate::rules::script::{
 static NO_DEEP_DESTRUCTURE_IN_PROPS_RULE: NoDeepDestructureInProps =
     NoDeepDestructureInProps { max_depth: 1 };
 
-/// The full ordered set of built-in script rules.
-///
-/// The original 6 engine-reachable rules stay first so existing default
-/// diagnostic ordering is preserved. The remaining script rules follow as
-/// opt-in built-ins and are reachable through explicit rule selection.
+/// The full ordered set of built-in script rules. The first 6 engine-reachable
+/// rules stay first to preserve default diagnostic ordering; the rest are opt-in.
 pub(in crate::linter::script_rules) static BUILTIN_SCRIPT_RULES: &[BuiltinScriptRuleEntry] = &[
     BuiltinScriptRuleEntry {
         rule_name: RULE_NO_OPTIONS_API,
@@ -345,5 +337,13 @@ pub(in crate::linter::script_rules) static BUILTIN_SCRIPT_RULES: &[BuiltinScript
         fixable: false,
         presets: OPINIONATED_SCRIPT_PRESETS,
         rule: &DefineMacrosOrder,
+    },
+    BuiltinScriptRuleEntry {
+        rule_name: RULE_DEFINE_EMITS_DECLARATION,
+        profile_name: "patina.script_rule.define_emits_declaration",
+        category: "Script",
+        fixable: false,
+        presets: OPINIONATED_SCRIPT_PRESETS,
+        rule: &DefineEmitsDeclaration,
     },
 ];

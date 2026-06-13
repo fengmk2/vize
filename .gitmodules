@@ -49,3 +49,18 @@
 	path = tests/_fixtures/_git/voicevox
 	url = https://github.com/VOICEVOX/voicevox
 	shallow = true
+
+[submodule "tests/_fixtures/_git/primevue"]
+	path = tests/_fixtures/_git/primevue
+	url = https://github.com/primefaces/primevue
+	shallow = true
+
+[submodule "tests/_fixtures/_git/vuetify"]
+	path = tests/_fixtures/_git/vuetify
+	url = https://github.com/vuetifyjs/vuetify
+	shallow = true
+
+[submodule "tests/_fixtures/_git/naive-ui"]
+	path = tests/_fixtures/_git/naive-ui
+	url = https://github.com/tusen-ai/naive-ui
+	shallow = true

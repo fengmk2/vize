@@ -53,9 +53,20 @@ const requestedFixtures = [
   "element-plus",
   "ant-design-vue",
   "reka-ui",
+  "primevue",
+  "vuetify",
+  "naive-ui",
 ] as const;
 const requiredTypecheckProjects = ["voicevox", "elk", "misskey"] as const;
-const newlyAddedSubmodules = new Set(["vue-vben-admin", "hoppscotch", "element-plus", "voicevox"]);
+const newlyAddedSubmodules = new Set([
+  "vue-vben-admin",
+  "hoppscotch",
+  "element-plus",
+  "voicevox",
+  "primevue",
+  "vuetify",
+  "naive-ui",
+]);
 
 function readJsonFile<T>(filePath: string): T {
   return JSON.parse(fs.readFileSync(filePath, "utf8")) as T;
@@ -88,16 +99,17 @@ function parseGitmodules(): Map<string, SubmoduleEntry> {
   return entries;
 }
 
-function readGitlinkPaths(): Set<string> {
+function readGitlinks(): Map<string, string> {
   const output = execFileSync("git", ["ls-files", "--stage", "tests/_fixtures/_git"], {
     cwd: root,
     encoding: "utf8",
   });
-  return new Set(
+  return new Map(
     output
       .split("\n")
-      .map((line) => /^160000\s+[0-9a-f]{40}\s+\d+\t(.+)$/.exec(line)?.[1])
-      .filter((value): value is string => value != null),
+      .map((line) => /^160000\s+([0-9a-f]{40})\s+\d+\t(.+)$/.exec(line))
+      .filter((match): match is RegExpExecArray => match != null)
+      .map((match) => [match[2], match[1]]),
   );
 }
 
@@ -117,15 +129,16 @@ test("Vue ecosystem registry covers the requested projects", () => {
 test("registered fixtures are pinned submodules with declared licenses", () => {
   const registry = readRegistry();
   const submodules = parseGitmodules();
-  const gitlinks = readGitlinkPaths();
+  const gitlinks = readGitlinks();
 
   for (const project of registry.projects) {
     const entry = submodules.get(project.fixturePath);
+    const gitlinkRevision = gitlinks.get(project.fixturePath);
     assert.ok(entry, `${project.id} should be present in .gitmodules`);
     assert.equal(entry?.path, project.fixturePath);
     assert.equal(entry?.url, project.repository);
     assert.match(project.revision, /^[0-9a-f]{40}$/);
-    assert.ok(gitlinks.has(project.fixturePath), `${project.id} should be tracked as a gitlink`);
+    assert.equal(gitlinkRevision, project.revision, `${project.id} revision should match gitlink`);
     assert.ok(project.license.spdx.length > 0, `${project.id} should declare an SPDX expression`);
     assert.ok(project.license.files.length > 0, `${project.id} should declare license files`);
 

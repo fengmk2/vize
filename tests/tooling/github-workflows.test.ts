@@ -845,12 +845,16 @@ test("deploy-docs deploy job keeps a full checkout so local actions and scripts 
 });
 
 test("deploy-docs isolates musea example cargo checks from the sticky target cache", () => {
-  const workflow = readRepoFile(".github", "workflows", "deploy-docs.yml");
-  const buildPlaygroundJob = workflowJobBody(workflow, "build-playground");
+  const manifest = JSON.parse(readRepoFile("examples", "vite-musea", "package.json")) as {
+    scripts?: Record<string, string>;
+  };
+  const checkScript = manifest.scripts?.check;
+  assert.ok(checkScript, "examples/vite-musea/package.json must define a check script");
 
   assert.match(
-    buildPlaygroundJob,
-    /- name: Build musea-examples\s+env:\s+CARGO_TARGET_DIR:\s*target\/docs-example\s+run: vp run --filter '\.\/examples\/vite-musea' build/,
+    checkScript,
+    /cargo run\s[^&]*--target-dir\s+\.\.\/\.\.\/target\/docs-example\b/,
+    "musea example check script must pin cargo's target dir to target/docs-example so it does not reuse the sticky target cache",
   );
 });
 

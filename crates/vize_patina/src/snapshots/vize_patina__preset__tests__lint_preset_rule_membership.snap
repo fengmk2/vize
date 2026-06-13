@@ -562,6 +562,11 @@ expression: "serde_json::to_string_pretty(&snapshot).unwrap()"
     "script/define-props-declaration",
     "script/no-required-prop-with-default",
     "script/no-deprecated-props-default-this",
-    "script/no-boolean-default"
+    "script/no-boolean-default",
+    "script/valid-next-tick",
+    "script/valid-define-options",
+    "script/define-props-destructuring",
+    "script/require-typed-ref",
+    "script/prefer-define-options"
   ]
 }

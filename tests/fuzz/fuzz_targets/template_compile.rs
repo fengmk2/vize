@@ -2,7 +2,7 @@
 
 // Vue template → render IR fuzz target.
 //
-// Drives `vize_atelier_dom::compile_template` (parse + transform + codegen)
+// Drives `vize_atelier_dom::compile_template` (parse + VDOM codegen)
 // with arbitrary UTF-8 input. Compile errors are returned in the
 // `Vec<CompilerError>` channel; a panic here means the template pipeline lost
 // invariants on adversarial input.

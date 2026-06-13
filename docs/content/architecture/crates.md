@@ -24,7 +24,7 @@ editor tooling can share the same syntax model.
 | Crate                | Role                                                          |
 | -------------------- | ------------------------------------------------------------- |
 | `vize_atelier_core`  | Shared transform pipeline and code generation infrastructure  |
-| `vize_atelier_dom`   | DOM-oriented template compilation                             |
+| `vize_atelier_dom`   | VDOM-oriented template compilation                            |
 | `vize_atelier_vapor` | Vapor-mode template compilation                               |
 | `vize_atelier_ssr`   | Server-side rendering template compilation                    |
 | `vize_atelier_sfc`   | `.vue` parsing plus script, template, and style orchestration |

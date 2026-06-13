@@ -1,4 +1,4 @@
-//! DOM compiler options.
+//! VDOM compiler options.
 
 use serde::{Deserialize, Serialize};
 use vize_atelier_core::options::{BindingMetadata, CodegenMode};
@@ -6,7 +6,7 @@ use vize_carton::String;
 use vize_carton::config::VueVersion;
 use vize_croquis::Croquis;
 
-/// DOM compiler options
+/// VDOM compiler options
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DomCompilerOptions {

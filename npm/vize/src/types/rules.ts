@@ -158,6 +158,7 @@ export const LINT_RULE_NAMES = [
   "vue/use-v-on-exact",
   "vue/v-bind-style",
   "vue/v-on-event-hyphenation",
+  "vue/v-on-handler-style",
   "vue/v-on-style",
   "vue/v-slot-style",
   "vue/valid-attribute-name",

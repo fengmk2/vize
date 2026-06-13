@@ -122,6 +122,7 @@ export const LINT_RULE_NAMES = [
   "vue/no-deprecated-v-on-number-modifiers",
   "vue/no-dupe-v-else-if",
   "vue/no-duplicate-attributes",
+  "vue/no-empty-component-block",
   "vue/no-inline-style",
   "vue/no-lone-template",
   "vue/no-multi-spaces",

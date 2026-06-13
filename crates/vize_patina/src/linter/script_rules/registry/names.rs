@@ -62,6 +62,11 @@ pub(crate) const RULE_VALID_DEFINE_OPTIONS: &str = "script/valid-define-options"
 pub(crate) const RULE_DEFINE_PROPS_DESTRUCTURING: &str = "script/define-props-destructuring";
 pub(crate) const RULE_REQUIRE_TYPED_REF: &str = "script/require-typed-ref";
 pub(crate) const RULE_PREFER_DEFINE_OPTIONS: &str = "script/prefer-define-options";
+pub(crate) const RULE_REQUIRE_DEFAULT_PROP: &str = "script/require-default-prop";
+pub(crate) const RULE_REQUIRE_PROP_TYPES: &str = "script/require-prop-types";
+pub(crate) const RULE_NO_RESERVED_PROPS: &str = "script/no-reserved-props";
+pub(crate) const RULE_NO_UNUSED_EMIT_DECLARATIONS: &str = "script/no-unused-emit-declarations";
+pub(crate) const RULE_RETURN_IN_EMITS_VALIDATOR: &str = "script/return-in-emits-validator";
 
 pub(in crate::linter::script_rules) const ALL_BUILTIN_SCRIPT_RULE_NAMES: &[&str] = &[
     RULE_NO_OPTIONS_API,
@@ -112,6 +117,11 @@ pub(in crate::linter::script_rules) const ALL_BUILTIN_SCRIPT_RULE_NAMES: &[&str]
     RULE_DEFINE_PROPS_DESTRUCTURING,
     RULE_REQUIRE_TYPED_REF,
     RULE_PREFER_DEFINE_OPTIONS,
+    RULE_REQUIRE_DEFAULT_PROP,
+    RULE_REQUIRE_PROP_TYPES,
+    RULE_NO_RESERVED_PROPS,
+    RULE_NO_UNUSED_EMIT_DECLARATIONS,
+    RULE_RETURN_IN_EMITS_VALIDATOR,
 ];
 
 #[cfg(test)]
@@ -161,4 +171,9 @@ pub(in crate::linter::script_rules) const OPT_IN_SCRIPT_RULE_NAMES: &[&str] = &[
     RULE_DEFINE_PROPS_DESTRUCTURING,
     RULE_REQUIRE_TYPED_REF,
     RULE_PREFER_DEFINE_OPTIONS,
+    RULE_REQUIRE_DEFAULT_PROP,
+    RULE_REQUIRE_PROP_TYPES,
+    RULE_NO_RESERVED_PROPS,
+    RULE_NO_UNUSED_EMIT_DECLARATIONS,
+    RULE_RETURN_IN_EMITS_VALIDATOR,
 ];

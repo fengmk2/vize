@@ -1162,7 +1162,30 @@ pub(crate) fn generate_virtual_ts_with_offsets_and_checks(
     ts.push_str(
         "type __VizeComponentConstructor = new (...args: any[]) => __VizeComponentInstance;\n",
     );
-    ts.push_str("type __VizeVueComponentOptions = Omit<ReturnType<typeof import('vue').defineComponent>, keyof __VizeComponentConstructor>;\n");
+    ts.push_str("type __VizeVueComponentOptions = {\n");
+    ts.push_str("  name?: string;\n");
+    ts.push_str("  __name?: string;\n");
+    ts.push_str("  __file?: string;\n");
+    ts.push_str("  __vccOpts?: any;\n");
+    ts.push_str("  props?: any;\n");
+    ts.push_str("  emits?: any;\n");
+    ts.push_str("  slots?: any;\n");
+    ts.push_str("  setup?: any;\n");
+    ts.push_str("  render?: Function;\n");
+    ts.push_str("  components?: any;\n");
+    ts.push_str("  directives?: any;\n");
+    ts.push_str("  inheritAttrs?: boolean;\n");
+    ts.push_str("  compatConfig?: any;\n");
+    ts.push_str("  call?: (this: unknown, ...args: unknown[]) => never;\n");
+    ts.push_str("  __isFragment?: never;\n");
+    ts.push_str("  __isTeleport?: never;\n");
+    ts.push_str("  __isSuspense?: never;\n");
+    ts.push_str("  __defaults?: any;\n");
+    ts.push_str("  __vapor?: boolean;\n");
+    ts.push_str("  __multiRoot?: boolean;\n");
+    ts.push_str("  __isKeepAlive?: boolean;\n");
+    ts.push_str("  __isBuiltIn?: boolean;\n");
+    ts.push_str("};\n");
     // For a `<script setup generic="...">` component the construct signature's
     // `$props` collapses `Props<T>` to its constraint, so a parent that extracts
     // props via `typeof Comp extends { new (): { $props } }` cannot infer `T`

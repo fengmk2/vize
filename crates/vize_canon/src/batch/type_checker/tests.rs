@@ -2466,7 +2466,62 @@ export type DefineComponent<
   S = {}
 > = {
   new (): ComponentPublicInstance<Props>;
+} & ComponentOptions<Props, RawBindings, D, C, M>;
+
+export type ComponentOptions<
+  Props = {},
+  RawBindings = any,
+  D = any,
+  C = any,
+  M = any
+> = {
+  name?: string;
+  __name?: string;
+  __file?: string;
+  __vccOpts?: any;
+  props?: any;
+  emits?: any;
+  slots?: any;
+  setup?: any;
+  render?: Function;
+  components?: any;
+  directives?: any;
+  inheritAttrs?: boolean;
+  compatConfig?: any;
+  call?: (this: unknown, ...args: unknown[]) => never;
+  __isFragment?: never;
+  __isTeleport?: never;
+  __isSuspense?: never;
+  __defaults?: any;
+  __vapor?: boolean;
+  __multiRoot?: boolean;
+  __isKeepAlive?: boolean;
+  __isBuiltIn?: boolean;
 };
+
+export interface FunctionalComponent<
+  P = {},
+  E = {},
+  S = any
+> {
+  (props: P, ctx: any): any;
+  props?: any;
+  emits?: any;
+  slots?: any;
+  inheritAttrs?: boolean;
+  displayName?: string;
+  compatConfig?: any;
+}
+
+export type ConcreteComponent<
+  Props = {},
+  RawBindings = any,
+  D = any,
+  C = any,
+  M = any,
+  E = {},
+  S = any
+> = ComponentOptions<Props, RawBindings, D, C, M> | FunctionalComponent<Props, E, S>;
 
 export interface Ref<T = unknown, _Raw = T> {
   value: T;

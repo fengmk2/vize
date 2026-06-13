@@ -117,7 +117,7 @@ The built-in presets are meant to support adoption in stages:
 | `nuxt`        | Opinionated rules adjusted for Nuxt auto-import assumptions          |
 | `incremental` | Empty starting point for host-driven, rule-by-rule adoption          |
 
-## Cross-File Analyzer
+## Cross-File Rules
 
 Cross-file analysis lives in Croquis and is exposed to linting through Patina diagnostics. It is
 opt-in because it builds a module registry, import graph, component-usage graph, and additional
@@ -132,9 +132,9 @@ vp run vize:lint:cross-file
 vp run vize:lint:cross-file-tree
 ```
 
-The lower-level analyzer is broader than the current CLI surface:
+The lower-level cross-file engine is broader than the current CLI surface:
 
-| Analyzer option           | Intended diagnostics or facts                                               |
+| Cross-file option         | Intended diagnostics or facts                                               |
 | ------------------------- | --------------------------------------------------------------------------- |
 | `provide_inject`          | Unmatched injects, unused provides, string-key warnings, non-reactive flows |
 | `unique_ids`              | Duplicate IDs and non-unique IDs introduced inside loops                    |

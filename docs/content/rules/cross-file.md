@@ -1,8 +1,8 @@
 ---
-title: Cross-file Analyzer Rules
+title: Cross-file Rules
 ---
 
-# Cross-file Analyzer Rules
+# Cross-file Rules
 
 Cross-file diagnostics are emitted by `vize lint --cross-file`. They use
 `vize:croquis/cf/*` diagnostic codes because they analyze a project graph rather than one isolated
@@ -355,7 +355,7 @@ provide(ThemeKey, theme);
 
 ## `vize:croquis/cf/duplicate-id`
 
-Reports duplicate static IDs across the analyzed component graph. The analyzer reports this when two
+Reports duplicate static IDs across the analyzed component graph. The rule reports this when two
 different components can be rendered together and produce the same DOM ID.
 
 Bad:
@@ -877,8 +877,8 @@ watch(query, async (value, _oldValue, onCleanup) => {
 </script>
 ```
 
-## Analyzer Direction
+## Implementation Direction
 
-The cross-file analyzer is intentionally shaped like rule documentation, even though it uses
+The cross-file engine is intentionally documented as rules, even though it uses
 diagnostic codes today. Future work can promote more Patina rules into this layer when they need
 imports, component relationships, or project-wide symbol identity to explain a bug accurately.

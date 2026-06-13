@@ -22,7 +22,7 @@ manual.
 - [Ecosystem rules](./ecosystem.md): preset-backed checks for Nuxt, Vue Router, Pinia, vue-i18n,
   Vue Test Utils, and Void Vue.
 - [Musea and CSS rules](./musea-and-css.md): Musea art-block checks and style diagnostics.
-- [Cross-file analyzer rules](./cross-file.md): project-graph diagnostics emitted by
+- [Cross-file rules](./cross-file.md): project-graph diagnostics emitted by
   `vize lint --cross-file`.
 
 ## Presets

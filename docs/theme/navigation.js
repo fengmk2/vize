@@ -58,7 +58,7 @@ const vizeDocsNavigation = (() => {
     ["/rules/ssr", "SSR"],
     ["/rules/vapor", "Vapor"],
     ["/rules/musea-and-css", "Musea & CSS"],
-    ["/rules/cross-file", "Cross-file Analyzer"],
+    ["/rules/cross-file", "Cross-file Rules"],
     ["/guide/musea", "Musea"],
     ["/integrations/nuxt", "Nuxt"],
     ["/integrations/vscode", "VS Code"],

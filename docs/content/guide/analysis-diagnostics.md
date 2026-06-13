@@ -17,7 +17,7 @@ examples together.
 - [HTML rules](../rules/html.md)
 - [SSR rules](../rules/ssr.md)
 - [Vapor rules](../rules/vapor.md)
-- [Cross-file analyzer rules](../rules/cross-file.md)
+- [Cross-file rules](../rules/cross-file.md)
 - [Musea and CSS rules](../rules/musea-and-css.md)
 
 ## Diagnostic Families
@@ -25,7 +25,7 @@ examples together.
 Patina rules are single-file lint rules. They use names such as `vue/require-v-for-key` and can be
 configured from `vize.config.*`, the CLI, the JavaScript API, and the Oxlint bridge.
 
-Cross-file analyzer diagnostics use `vize:croquis/cf/*` codes. They are emitted by
+Cross-file diagnostics use `vize:croquis/cf/*` codes. They are emitted by
 `vize lint --cross-file` after Vize builds a project graph, so they can compare providers with
 injectors, track duplicated IDs, and spot reactivity hazards across component boundaries.
 

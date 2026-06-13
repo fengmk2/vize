@@ -1,4 +1,4 @@
-//! Individual cross-file analyzers.
+//! Individual cross-file rules.
 //!
 //! Each analyzer focuses on a specific aspect of cross-file analysis.
 //!
@@ -23,7 +23,7 @@ mod race_conditions;
 mod reactivity;
 mod setup_context;
 
-// Re-export analyzer types
+// Re-export rule result types
 pub use boundary::{BoundaryInfo, BoundaryKind, analyze_boundaries};
 pub use component_resolution::{ComponentResolutionIssue, analyze_component_resolution};
 pub use element_id::{UniqueIdIssue, analyze_element_ids};

@@ -8,7 +8,7 @@
 //!
 //! - **Dependency Graph**: Track import/export relationships between files
 //! - **Module Registry**: Cache analyzed file results for incremental updates
-//! - **Cross-File Analyzers**:
+//! - **Cross-File Rules**:
 //!   - Fallthrough Attributes: Detect unused `$attrs` and `inheritAttrs` issues
 //!   - Component Emits: Track emit call flows across component boundaries
 //!   - Event Bubbling: Analyze event propagation through component trees
@@ -44,7 +44,7 @@
 //! - Builds and traverses dependency graphs
 //! - May require multiple passes over component trees
 //!
-//! Enable only the analyzers you need to minimize overhead.
+//! Enable only the rules you need to minimize overhead.
 
 mod analyzer;
 mod diagnostics;
@@ -52,7 +52,8 @@ mod graph;
 mod registry;
 mod suppression;
 
-// Analyzer implementations
+// Rule implementations. The historical module is kept as a compatibility
+// source path while internal callers use the clearer `rules` name.
 pub(crate) mod analyzers;
 pub(crate) use analyzers as rules;
 
@@ -63,8 +64,8 @@ pub use graph::{DependencyEdge, DependencyGraph, ModuleNode};
 pub use registry::{FileId, ModuleEntry, ModuleRegistry};
 pub use suppression::{SuppressionDirective, SuppressionError, SuppressionMap};
 
-// Re-export analyzer types
-pub use analyzers::{
+// Re-export rule result types
+pub use rules::{
     BoundaryInfo, BoundaryKind, EmitFlow, EventBubble, FallthroughInfo, PropsValidationIssue,
     PropsValidationIssueKind, ProvideInjectMatch, ReactivityIssue, ReactivityIssueKind,
     UniqueIdIssue,

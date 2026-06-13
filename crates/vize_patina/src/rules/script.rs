@@ -1,25 +1,6 @@
-//! Script-level lint rules for Vue.js SFC files.
-//!
-//! These rules check TypeScript/JavaScript code in `<script>` and `<script setup>` blocks.
-//! Rules in this module are **opt-in** and disabled by default.
-//!
-//! ## Enabling Script Rules
-//!
-//! Script rules can be enabled in your configuration:
-//!
-//! ```toml
-//! [rules.script]
-//! "prefer-import-from-vue" = "warn"
-//! "no-internal-imports" = "error"
-//! ```
-//!
-//! ## Vapor Mode Rules
-//!
-//! These rules help with Vapor mode compatibility (Vue 3.6+):
-//!
-//! - `script/no-options-api` - Disallow Options API patterns
-//! - `script/no-get-current-instance` - Disallow getCurrentInstance() calls
-//! - `script/no-next-tick` - Disallow nextTick() scheduling
+//! Script-level lint rules for Vue.js SFC files. These rules check
+//! TypeScript/JavaScript code in `<script>` and `<script setup>` blocks and
+//! are **opt-in**: enable them via `[rules.script]` in your configuration.
 
 mod component_options_name_casing;
 mod no_arrow_functions_in_watch;
@@ -51,6 +32,7 @@ mod prefer_use_id;
 mod prefer_use_slots;
 mod prefer_use_template_ref;
 mod require_function_return_type;
+mod require_prop_type_constructor;
 mod require_symbol_provide;
 mod return_in_computed_property;
 mod vue_router_prefer_named_push;
@@ -95,6 +77,7 @@ pub use prefer_use_id::PreferUseId;
 pub use prefer_use_slots::PreferUseSlots;
 pub use prefer_use_template_ref::PreferUseTemplateRef;
 pub use require_function_return_type::RequireFunctionReturnType;
+pub use require_prop_type_constructor::RequirePropTypeConstructor;
 pub use require_symbol_provide::RequireSymbolProvide;
 pub use return_in_computed_property::ReturnInComputedProperty;
 pub use vue_router_prefer_named_push::VueRouterPreferNamedPush;

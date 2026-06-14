@@ -494,6 +494,266 @@ const state = useHelper(option);
 }
 
 #[test]
+fn check_computed_map_values_preserve_record_types() {
+    let Some(corsa_path) = resolve_test_corsa_path() else {
+        return;
+    };
+    let project_root = create_cli_project(
+        "computed-map-values-record-types",
+        &[(
+            "src/App.vue",
+            r#"<script setup lang="ts">
+import { computed } from 'vue';
+
+interface Talk {
+  title: string;
+}
+
+interface Speaker {
+  name: string;
+  talks: Talk[];
+}
+
+interface SpeakerRecord {
+  name: string;
+  talks: Talk[];
+}
+
+const props = defineProps<{
+  allSpeakers: Speaker[];
+}>();
+
+function buildSpeakerMap(speakers: Speaker[]): Map<string, SpeakerRecord> {
+  return new Map(
+    speakers.map((speaker) => [
+      speaker.name,
+      { name: speaker.name, talks: speaker.talks },
+    ]),
+  );
+}
+
+const speakerMap = computed(() => buildSpeakerMap(props.allSpeakers));
+const allRecords = computed(() => Array.from(speakerMap.value.values()));
+const speakerOptions = computed(() =>
+  allRecords.value.map((record) => ({
+    label: `${record.name} (${record.talks.length})`,
+    value: record.name,
+  })),
+);
+
+const firstOptionValue: string | undefined = speakerOptions.value[0]?.value;
+void firstOptionValue;
+</script>
+"#,
+        )],
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_vize"))
+        .current_dir(&project_root)
+        .env("CORSA_PATH", corsa_path)
+        .args(["check", ".", "--format", "json"])
+        .output()
+        .unwrap();
+
+    let stdout = std::string::String::from_utf8(output.stdout).unwrap();
+    let stderr = std::string::String::from_utf8(output.stderr).unwrap();
+    let json: serde_json::Value = serde_json::from_str(&stdout).unwrap_or_else(|error| {
+        panic!("failed to parse stdout as JSON: {error}\nstdout:\n{stdout}\nstderr:\n{stderr}")
+    });
+
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "stdout:\n{stdout}\nstderr:\n{stderr}"
+    );
+    assert_eq!(
+        json["errorCount"].as_u64(),
+        Some(0),
+        "stdout:\n{stdout}\nstderr:\n{stderr}"
+    );
+
+    let _ = std::fs::remove_dir_all(&project_root);
+}
+
+#[test]
+fn check_nuxt_generated_computed_map_values_preserve_record_types() {
+    let Some(corsa_path) = resolve_test_corsa_path() else {
+        return;
+    };
+    let project_root = create_cli_project(
+        "nuxt-computed-map-values-record-types",
+        &[
+            ("nuxt.config.ts", "export default {}\n"),
+            (
+                "src/App.vue",
+                r#"<script setup lang="ts">
+interface Talk {
+  title: string;
+}
+
+interface Speaker {
+  name: string;
+  talks: Talk[];
+}
+
+interface SpeakerRecord {
+  name: string;
+  talks: Talk[];
+}
+
+const props = defineProps<{
+  allSpeakers: Speaker[];
+}>();
+
+function buildSpeakerMap(speakers: Speaker[]): Map<string, SpeakerRecord> {
+  return new Map(
+    speakers.map((speaker) => [
+      speaker.name,
+      { name: speaker.name, talks: speaker.talks },
+    ]),
+  );
+}
+
+const speakerMap = computed(() => buildSpeakerMap(props.allSpeakers));
+const allRecords = computed(() => Array.from(speakerMap.value.values()));
+const speakerOptions = computed(() =>
+  allRecords.value.map((record) => ({
+    label: `${record.name} (${record.talks.length})`,
+    value: record.name,
+  })),
+);
+
+const firstOptionValue: string | undefined = speakerOptions.value[0]?.value;
+void firstOptionValue;
+</script>
+"#,
+            ),
+        ],
+    );
+    std::fs::create_dir_all(project_root.join(".nuxt/types")).unwrap();
+    std::fs::write(
+        project_root.join(".nuxt/types/imports.d.ts"),
+        r#"declare global {
+  const computed: typeof import('vue')['computed']
+}
+export {}
+"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_vize"))
+        .current_dir(&project_root)
+        .env("CORSA_PATH", corsa_path)
+        .args(["check", ".", "--format", "json"])
+        .output()
+        .unwrap();
+
+    let stdout = std::string::String::from_utf8(output.stdout).unwrap();
+    let stderr = std::string::String::from_utf8(output.stderr).unwrap();
+    let json: serde_json::Value = serde_json::from_str(&stdout).unwrap_or_else(|error| {
+        panic!("failed to parse stdout as JSON: {error}\nstdout:\n{stdout}\nstderr:\n{stderr}")
+    });
+
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "stdout:\n{stdout}\nstderr:\n{stderr}"
+    );
+    assert_eq!(
+        json["errorCount"].as_u64(),
+        Some(0),
+        "stdout:\n{stdout}\nstderr:\n{stderr}"
+    );
+
+    let _ = std::fs::remove_dir_all(&project_root);
+}
+
+#[test]
+fn check_runtime_prop_type_array_preserves_computed_record_types() {
+    let Some(corsa_path) = resolve_test_corsa_path() else {
+        return;
+    };
+    let project_root = create_cli_project(
+        "runtime-prop-type-computed-record-types",
+        &[(
+            "src/App.vue",
+            r#"<script setup lang="ts">
+import { computed, type PropType } from 'vue';
+
+interface Talk {
+  title: string;
+}
+
+interface Speaker {
+  name: string;
+  talks: Talk[];
+}
+
+interface SpeakerRecord {
+  name: string;
+  talks: Talk[];
+}
+
+const props = defineProps({
+  allSpeakers: {
+    type: Array as PropType<Speaker[]>,
+    required: true,
+  },
+});
+
+function buildSpeakerMap(speakers: Speaker[]): Map<string, SpeakerRecord> {
+  return new Map(
+    speakers.map((speaker) => [
+      speaker.name,
+      { name: speaker.name, talks: speaker.talks },
+    ]),
+  );
+}
+
+const speakerMap = computed(() => buildSpeakerMap(props.allSpeakers));
+const allRecords = computed(() => Array.from(speakerMap.value.values()));
+const speakerOptions = computed(() =>
+  allRecords.value.map((record) => ({
+    label: `${record.name} (${record.talks.length})`,
+    value: record.name,
+  })),
+);
+
+const firstOptionValue: string | undefined = speakerOptions.value[0]?.value;
+void firstOptionValue;
+</script>
+"#,
+        )],
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_vize"))
+        .current_dir(&project_root)
+        .env("CORSA_PATH", corsa_path)
+        .args(["check", ".", "--format", "json"])
+        .output()
+        .unwrap();
+
+    let stdout = std::string::String::from_utf8(output.stdout).unwrap();
+    let stderr = std::string::String::from_utf8(output.stderr).unwrap();
+    let json: serde_json::Value = serde_json::from_str(&stdout).unwrap_or_else(|error| {
+        panic!("failed to parse stdout as JSON: {error}\nstdout:\n{stdout}\nstderr:\n{stderr}")
+    });
+
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "stdout:\n{stdout}\nstderr:\n{stderr}"
+    );
+    assert_eq!(
+        json["errorCount"].as_u64(),
+        Some(0),
+        "stdout:\n{stdout}\nstderr:\n{stderr}"
+    );
+
+    let _ = std::fs::remove_dir_all(&project_root);
+}
+
+#[test]
 fn check_directory_pattern_resolves_json_modules_imported_by_ts() {
     let Some(corsa_path) = resolve_test_corsa_path() else {
         return;

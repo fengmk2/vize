@@ -73,6 +73,23 @@ fn is_generated_component(previous: Option<&str>, name: &str) -> bool {
     name == TARGET_DIR || (previous == Some(NODE_MODULES_DIR) && name == VIZE_CACHE_DIR)
 }
 
+pub(super) fn is_nuxt_import_manifest_path(path: &Path) -> bool {
+    if path.file_name().and_then(|name| name.to_str()) != Some("imports.d.ts") {
+        return false;
+    }
+
+    let components = path
+        .components()
+        .filter_map(|component| component.as_os_str().to_str())
+        .collect::<Vec<_>>();
+    components
+        .windows(2)
+        .any(|window| window == [".nuxt", "imports.d.ts"])
+        || components
+            .windows(3)
+            .any(|window| window == [".nuxt", "types", "imports.d.ts"])
+}
+
 pub(super) fn is_supported_check_file_with_options(
     path: &Path,
     options: SupportedFileOptions,

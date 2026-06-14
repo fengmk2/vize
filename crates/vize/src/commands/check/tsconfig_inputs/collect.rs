@@ -8,7 +8,7 @@ use vize_carton::FxHashSet;
 use super::glob::{default_exclude_specs, normalize_input_path, normalize_walked_path};
 use super::loader::{TsconfigInputCache, collect_tsconfig_project_paths};
 use super::matching::{
-    SupportedFileOptions, is_generated_path, is_hidden_path_segment,
+    SupportedFileOptions, is_generated_path, is_hidden_path_segment, is_nuxt_import_manifest_path,
     is_supported_check_file_with_options, matches_tsconfig_patterns,
     should_skip_generated_for_root,
 };
@@ -45,6 +45,7 @@ pub(super) fn collect_supported_files_with_options(
                         },
                     )
                     && (!skip_generated || !is_generated_path(path))
+                    && !is_nuxt_import_manifest_path(path)
                     && matches_tsconfig_patterns(path, includes, excludes)
                     && let Ok(mut collected) = collected.lock()
                 {
@@ -235,6 +236,9 @@ impl TsconfigOwnershipMatcher {
     /// `normalize_input_path`.
     fn owns(&self, file: &Path) -> bool {
         if !self.loaded {
+            return false;
+        }
+        if is_nuxt_import_manifest_path(file) {
             return false;
         }
         if self.files.contains(file) {

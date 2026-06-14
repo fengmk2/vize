@@ -317,6 +317,42 @@ fn extended_config_resolution_uses_package_json_tsconfig_field() {
 }
 
 #[test]
+fn default_collection_skips_nuxt_import_manifest_files_entries() {
+    let case_dir = unique_case_dir("tsconfig-nuxt-import-manifest-files");
+    let _ = fs::remove_dir_all(&case_dir);
+    fs::create_dir_all(case_dir.join(".nuxt/types")).unwrap();
+    fs::create_dir_all(case_dir.join("src")).unwrap();
+    fs::write(case_dir.join("src/App.vue"), "<template />").unwrap();
+    fs::write(
+        case_dir.join(".nuxt/imports.d.ts"),
+        "export { useVfjsI18n } from '../composables/useVfjsI18n'\n",
+    )
+    .unwrap();
+    fs::write(
+        case_dir.join(".nuxt/types/imports.d.ts"),
+        "declare global { const useVfjsI18n: typeof import('../composables/useVfjsI18n')['useVfjsI18n'] }\nexport {}\n",
+    )
+    .unwrap();
+    fs::write(
+        case_dir.join("tsconfig.json"),
+        r#"{
+  "files": [
+    "src/App.vue",
+    ".nuxt/imports.d.ts",
+    ".nuxt/types/imports.d.ts"
+  ]
+}"#,
+    )
+    .unwrap();
+
+    let files = collect_default_check_files(&case_dir, Some(&case_dir.join("tsconfig.json")));
+
+    assert_eq!(relative_paths(&case_dir, &files), vec!["src/App.vue"]);
+
+    let _ = fs::remove_dir_all(&case_dir);
+}
+
+#[test]
 fn ambient_declaration_collection_keeps_only_dts_within_include() {
     let case_dir = unique_case_dir("tsconfig-ambient-dts");
     let _ = fs::remove_dir_all(&case_dir);

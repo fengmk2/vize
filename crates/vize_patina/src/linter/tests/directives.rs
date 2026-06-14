@@ -108,6 +108,47 @@ fn test_vize_expected_suppresses_run_on_template_diagnostic() {
 }
 
 #[test]
+fn test_vize_level_off_suppresses_next_line_template_diagnostic() {
+    let linter = Linter::new();
+    let result = linter.lint_template(
+        r#"<!-- @vize:level(off) -->
+<a :href="url">Vue Fes</a>"#,
+        "test.vue",
+    );
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .all(|d| d.rule_name != "vue/no-unsafe-url"),
+        "next-line vue/no-unsafe-url diagnostic should be suppressed by @vize:level(off)"
+    );
+}
+
+#[test]
+fn test_vize_level_off_suppresses_next_line_sfc_template_diagnostic() {
+    let linter = Linter::new();
+    let result = linter.lint_sfc(
+        r#"<script setup lang="ts">
+const url = "https://vuefes.jp/";
+</script>
+
+<template>
+  <!-- @vize:docs trusted URL from bundled conference data -->
+  <!-- @vize:level(off) -->
+  <a :href="url">Vue Fes</a>
+</template>"#,
+        "test.vue",
+    );
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .all(|d| d.rule_name != "vue/no-unsafe-url"),
+        "next-line vue/no-unsafe-url diagnostic should be suppressed by @vize:level(off)"
+    );
+}
+
+#[test]
 fn test_vize_ignore_start_end_region() {
     let linter = Linter::new();
     let result = linter.lint_template(

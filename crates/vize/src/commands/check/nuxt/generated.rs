@@ -53,7 +53,14 @@ pub(super) fn collect_generated_stubs(
 
             if let Ok(values) = parse_declared_global_values(path) {
                 for (name, type_annotation) in values {
-                    push_declared_const(stubs, seen_names, &name, &type_annotation);
+                    push_generated_declared_const(
+                        cwd,
+                        path,
+                        stubs,
+                        seen_names,
+                        &name,
+                        &type_annotation,
+                    );
                 }
             }
 
@@ -108,11 +115,14 @@ pub(super) fn collect_generated_stubs(
                 }
 
                 let (local_name, exported_name) = parse_export_names(export_part);
-                push_declared_const(
+                let type_annotation = cstr!("typeof import('{module_specifier}')['{local_name}']");
+                push_generated_declared_const(
+                    cwd,
+                    &imports_path,
                     stubs,
                     seen_names,
                     exported_name,
-                    &cstr!("typeof import('{module_specifier}')['{local_name}']"),
+                    type_annotation.as_str(),
                 );
             }
         }
@@ -129,10 +139,137 @@ fn collect_root_generated_global_stubs(
     for path in root_generated_dts_files(cwd) {
         if let Ok(values) = parse_declared_global_values(path.as_path()) {
             for (name, type_annotation) in values {
-                push_declared_const(stubs, seen_names, &name, &type_annotation);
+                push_generated_declared_const(
+                    cwd,
+                    path.as_path(),
+                    stubs,
+                    seen_names,
+                    &name,
+                    &type_annotation,
+                );
             }
         }
     }
+}
+
+fn push_generated_declared_const(
+    cwd: &Path,
+    type_origin: &Path,
+    stubs: &mut Vec<String>,
+    seen_names: &mut FxHashSet<String>,
+    name: &str,
+    type_annotation: &str,
+) {
+    let type_annotation = generated_type_annotation_or_any(type_annotation, type_origin, cwd);
+    push_declared_const(stubs, seen_names, name, type_annotation.as_str());
+}
+
+fn generated_type_annotation_or_any(
+    type_annotation: &str,
+    type_origin: &Path,
+    project_root: &Path,
+) -> String {
+    if has_missing_project_import_type(type_annotation, type_origin, project_root) {
+        return "any".into();
+    }
+
+    type_annotation.to_compact_string()
+}
+
+fn has_missing_project_import_type(
+    type_annotation: &str,
+    type_origin: &Path,
+    project_root: &Path,
+) -> bool {
+    let bytes = type_annotation.as_bytes();
+    let mut i = 0usize;
+
+    while i < bytes.len() {
+        let quote = if type_annotation[i..].starts_with("import('") {
+            Some('\'')
+        } else if type_annotation[i..].starts_with("import(\"") {
+            Some('"')
+        } else {
+            None
+        };
+
+        let Some(quote) = quote else {
+            i += 1;
+            continue;
+        };
+
+        i += 8;
+        let start = i;
+        while i < bytes.len() && bytes[i] != quote as u8 {
+            i += 1;
+        }
+
+        if generated_import_specifier_is_missing(
+            &type_annotation[start..i],
+            type_origin,
+            project_root,
+        ) {
+            return true;
+        }
+
+        if i < bytes.len() {
+            i += 1;
+        }
+    }
+
+    false
+}
+
+fn generated_import_specifier_is_missing(
+    specifier: &str,
+    type_origin: &Path,
+    project_root: &Path,
+) -> bool {
+    if specifier.starts_with("./") || specifier.starts_with("../") {
+        let base_dir = type_origin.parent().unwrap_or(project_root);
+        return !module_path_exists(&base_dir.join(specifier));
+    }
+
+    let specifier_path = Path::new(specifier);
+    if !specifier_path.is_absolute() || !specifier_path.starts_with(project_root) {
+        return false;
+    }
+    if specifier_path.components().any(|component| {
+        component
+            .as_os_str()
+            .to_str()
+            .is_some_and(|name| name == "node_modules")
+    }) {
+        return false;
+    }
+
+    !module_path_exists(specifier_path)
+}
+
+fn module_path_exists(path: &Path) -> bool {
+    if path.is_file() {
+        return true;
+    }
+
+    for extension in [
+        "ts", "tsx", "js", "jsx", "mts", "cts", "mjs", "cjs", "vue", "d.ts",
+    ] {
+        if path.with_extension(extension).is_file() {
+            return true;
+        }
+    }
+
+    if path.is_dir() {
+        for extension in [
+            "ts", "tsx", "js", "jsx", "mts", "cts", "mjs", "cjs", "vue", "d.ts",
+        ] {
+            if path.join("index").with_extension(extension).is_file() {
+                return true;
+            }
+        }
+    }
+
+    false
 }
 
 fn collect_root_generated_component_stubs(

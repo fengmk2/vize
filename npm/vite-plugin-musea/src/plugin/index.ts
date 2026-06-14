@@ -38,6 +38,7 @@ import {
   createHandleHotUpdate,
   type VirtualModuleState,
 } from "./virtual.js";
+import { shouldApplyMuseaPlugin } from "./apply.js";
 
 function extractArtTagAttributes(source: string): Record<string, string | true> {
   const artTagMatch = source.match(/<art\b([\s\S]*?)>/i);
@@ -149,6 +150,9 @@ export function musea(options: MuseaOptions = {}): Plugin[] {
   const mainPlugin: Plugin = {
     name: "vite-plugin-musea",
     enforce: "pre",
+    apply(_config, env) {
+      return shouldApplyMuseaPlugin(env);
+    },
 
     config() {
       // Add Vue alias for runtime template compilation

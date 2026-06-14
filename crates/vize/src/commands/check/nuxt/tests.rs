@@ -215,6 +215,45 @@ export {}
 }
 
 #[test]
+fn generated_imports_fall_back_to_any_for_missing_project_modules() {
+    let project_root = unique_case_dir("nuxt-missing-generated-import");
+    let _ = std::fs::remove_dir_all(&project_root);
+    std::fs::create_dir_all(project_root.join(".nuxt/types")).unwrap();
+    std::fs::create_dir_all(project_root.join(".nuxt/composables")).unwrap();
+    std::fs::write(project_root.join("nuxt.config.ts"), "export default {}").unwrap();
+    std::fs::write(
+        project_root.join(".nuxt/composables/useExisting.ts"),
+        "export function useExisting() { return 'ok' }\n",
+    )
+    .unwrap();
+    std::fs::write(
+        project_root.join(".nuxt/types/imports.d.ts"),
+        r#"declare global {
+  const useVfjsI18n: typeof import('../composables/useVfjsI18n')['useVfjsI18n']
+  const useExisting: typeof import('../composables/useExisting')['useExisting']
+}
+export {}
+"#,
+    )
+    .unwrap();
+
+    let mut options = VirtualTsOptions::default();
+    let _ = detect_nuxt_auto_imports(&mut options, &project_root);
+    let stubs = options.auto_import_stubs.join("\n");
+
+    assert!(
+        stubs.contains("declare const useVfjsI18n: any;"),
+        "missing generated import should fall back to any, got:\n{stubs}"
+    );
+    assert!(
+        stubs.contains("declare const useExisting: typeof import("),
+        "existing generated import should keep its precise type, got:\n{stubs}"
+    );
+
+    let _ = std::fs::remove_dir_all(&project_root);
+}
+
+#[test]
 fn detects_fallback_modules_and_aliases_without_generated_nuxt_dir() {
     let project_root = unique_case_dir("nuxt-fallback-modules");
     let _ = std::fs::remove_dir_all(&project_root);

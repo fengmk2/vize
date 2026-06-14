@@ -11,7 +11,7 @@ use super::NODE_MODULES_DIR;
 use super::collect_default_check_files_inner;
 use super::glob::normalize_input_path;
 use super::loader::TsconfigInputCache;
-use super::matching::path_has_component;
+use super::matching::{is_nuxt_import_manifest_path, path_has_component};
 
 /// Collect ambient declaration (`.d.ts`) files that belong to the tsconfig
 /// "program" so their global types stay in scope when only a subset of files is
@@ -59,7 +59,8 @@ pub(crate) fn collect_ambient_declaration_files(
         .filter(|path| is_declaration_file(path))
         .filter(|path| match fs::read_to_string(path) {
             Ok(content) => {
-                !is_reference_manifest_declaration(&content)
+                !is_nuxt_import_manifest_path(path)
+                    && !is_reference_manifest_declaration(&content)
                     && !declares_shadowing_ambient_module(&content)
             }
             Err(_) => false,

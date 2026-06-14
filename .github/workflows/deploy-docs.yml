@@ -115,6 +115,9 @@ jobs:
       - name: Build playground
         run: vp run --filter './playground' build
 
+      - name: Clean musea example Rust target
+        run: cargo clean --target-dir target/docs-example
+
       - name: Build musea-examples
         run: vp run --filter './examples/vite-musea' build
 

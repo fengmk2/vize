@@ -7,6 +7,7 @@ import { usePalette } from "../composables/usePalette";
 import { useArts } from "../composables/useArts";
 import { getPreviewUrl } from "../api";
 import { sendMessage } from "../composables/usePostMessage";
+import { indentUsage, usageScript } from "../utils/usageCode";
 import TextControl from "./controls/TextControl.vue";
 import NumberControl from "./controls/NumberControl.vue";
 import BooleanControl from "./controls/BooleanControl.vue";
@@ -31,6 +32,8 @@ const {
   loading,
   error,
   values,
+  customProps,
+  deletedPaletteProps,
   allControls,
   mergedValues,
   customPropNames,
@@ -40,6 +43,8 @@ const {
   addProp,
   removeProp,
   resetValues,
+  saveValues,
+  clearSavedValues,
 } = usePalette();
 const { getArt } = useArts();
 
@@ -51,6 +56,7 @@ const art = computed(() => getArt(props.artPath));
 
 // Mode toggle
 const controlsMode = ref<"controls" | "code">("controls");
+const saveStatus = ref<"idle" | "saved">("idle");
 
 // Code mode state
 const codeEditorContent = ref("");
@@ -85,6 +91,14 @@ watch(
     const iframe = iframeRef.value;
     if (!iframe || !iframeReady.value) return;
     sendMessage(iframe, "musea:set-props", { props: newValues });
+  },
+  { deep: true },
+);
+
+watch(
+  [values, customProps, deletedPaletteProps],
+  () => {
+    saveStatus.value = "idle";
   },
   { deep: true },
 );
@@ -164,12 +178,19 @@ onUnmounted(() => {
 
 function onResetValues() {
   resetValues();
+  clearSavedValues(props.artPath);
   slotContent.value = {};
   controlsMode.value = "controls";
+  saveStatus.value = "idle";
   const iframe = iframeRef.value;
   if (!iframe || !iframeReady.value) return;
   sendMessage(iframe, "musea:set-props", { props: mergedValues.value });
   sendMessage(iframe, "musea:set-slots", { slots: {} });
+}
+
+function onSaveValues() {
+  saveValues(props.artPath);
+  saveStatus.value = "saved";
 }
 
 function onSlotsUpdate(slots: Record<string, string>) {
@@ -259,73 +280,6 @@ async function copyUsage() {
   } catch {
     // fallback
   }
-}
-
-function usageScript(content?: string, isolated = true): string {
-  if (!content) return "";
-  const lines = content.split("\n");
-  const componentName = extractDefineArtComponentName(content);
-  const kept: string[] = [];
-  let defineArtBalance = 0;
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (defineArtBalance > 0) {
-      defineArtBalance += parenBalance(line);
-      continue;
-    }
-    if (/\bdefineArt\s*\(/.test(trimmed)) {
-      defineArtBalance = Math.max(0, parenBalance(line));
-      continue;
-    }
-    if (isolated && componentName && importDeclaresName(line, componentName)) {
-      continue;
-    }
-    kept.push(line);
-  }
-
-  return kept.join("\n").trim();
-}
-
-function extractDefineArtComponentName(content: string): string | undefined {
-  const sourceMatch = content.match(/\bdefineArt\s*\(\s*(['"])([^'"]+)\1/);
-  if (sourceMatch) {
-    return componentNameFromSource(sourceMatch[2]);
-  }
-  return content.match(/\bdefineArt\s*\(\s*([A-Za-z_$][\w$]*)/)?.[1];
-}
-
-function componentNameFromSource(source: string): string {
-  const withoutQuery = source.split(/[?#]/, 1)[0] || source;
-  const filename = withoutQuery.split(/[\\/]/).pop() || "Component";
-  const stem = filename.replace(/\.[^.]+$/, "");
-  const name = stem
-    .split(/[^A-Za-z0-9]+/)
-    .filter(Boolean)
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join("");
-  return name || "Component";
-}
-
-function importDeclaresName(line: string, name: string): boolean {
-  const trimmed = line.trim();
-  if (!trimmed.startsWith("import ") || trimmed.startsWith("import type ")) return false;
-  return new RegExp(`^import\\s+${name}(?:\\s|,|$)`).test(trimmed);
-}
-
-function parenBalance(line: string): number {
-  return [...line].reduce((balance, char) => {
-    if (char === "(") return balance + 1;
-    if (char === ")") return balance - 1;
-    return balance;
-  }, 0);
-}
-
-function indentUsage(code: string): string {
-  return code
-    .split("\n")
-    .map((line) => (line.trim() ? `  ${line}` : line))
-    .join("\n");
 }
 
 function getControlComponent(kind: string) {
@@ -449,6 +403,14 @@ const controlKindOptions = [
                 </button>
               </div>
               <button type="button" class="props-reset" @click="onResetValues">Reset</button>
+              <button
+                type="button"
+                class="props-save"
+                :class="{ saved: saveStatus === 'saved' }"
+                @click="onSaveValues"
+              >
+                {{ saveStatus === "saved" ? "Saved" : "Save" }}
+              </button>
             </div>
           </div>
 
@@ -745,7 +707,8 @@ const controlKindOptions = [
   color: var(--musea-text);
 }
 
-.props-reset {
+.props-reset,
+.props-save {
   background: var(--musea-bg-tertiary);
   border: 1px solid var(--musea-border);
   border-radius: var(--musea-radius-sm);
@@ -756,9 +719,15 @@ const controlKindOptions = [
   transition: all var(--musea-transition);
 }
 
-.props-reset:hover {
+.props-reset:hover,
+.props-save:hover {
   border-color: var(--musea-text-muted);
   color: var(--musea-text);
+}
+
+.props-save.saved {
+  border-color: var(--musea-accent);
+  color: var(--musea-accent);
 }
 
 .props-grid {

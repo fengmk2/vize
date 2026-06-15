@@ -26,6 +26,7 @@ mod no_deprecated_v_on_native_modifier;
 mod no_deprecated_v_on_number_modifiers;
 mod no_dupe_v_else_if;
 mod no_duplicate_attributes;
+mod no_invalid_html_attribute;
 mod no_reserved_component_names;
 mod no_template_key;
 mod no_textarea_mustache;
@@ -107,6 +108,7 @@ pub use no_deprecated_v_on_native_modifier::NoDeprecatedVOnNativeModifier;
 pub use no_deprecated_v_on_number_modifiers::NoDeprecatedVOnNumberModifiers;
 pub use no_dupe_v_else_if::NoDupeVElseIf;
 pub use no_duplicate_attributes::NoDuplicateAttributes;
+pub use no_invalid_html_attribute::NoInvalidHtmlAttribute;
 pub use no_reserved_component_names::NoReservedComponentNames;
 pub use no_template_key::NoTemplateKey;
 pub use no_textarea_mustache::NoTextareaMustache;
@@ -207,6 +209,20 @@ pub(crate) fn register_valid_directives(registry: &mut crate::rule::RuleRegistry
     registry.register(Box::new(NoVForTemplateKeyOnChild));
     registry.register(Box::new(RequireToggleInsideTransition));
     registry.register(Box::new(ValidTemplateRoot));
+}
+
+/// Register the default-preset security rules in one call.
+///
+/// These flag template-shaped attack surface (raw `v-html`, unsafe URL
+/// schemes, untrusted `target="_blank"`, unsandboxed iframes, and statically
+/// invalid HTML attributes). Bundling them here keeps the per-preset
+/// registration list short.
+pub(crate) fn register_security(registry: &mut crate::rule::RuleRegistry) {
+    registry.register(Box::new(NoVHtml));
+    registry.register(Box::new(NoUnsafeUrl));
+    registry.register(Box::new(NoTemplateTargetBlank));
+    registry.register(Box::new(NoUnsandboxedIframe));
+    registry.register(Box::new(NoInvalidHtmlAttribute));
 }
 
 /// Register Vue migration rules as explicit opt-in rules.

@@ -115,8 +115,6 @@ impl DiagnosticService {
 
         let descriptor = parse_sfc(content, options).ok()?;
 
-        descriptor.template.as_ref()?;
-
         let (script_content, script_offset) =
             script_content_for_descriptor(&descriptor, SfcCroquisOptions::full());
         let sfc_script_start_line = if script_content.as_ref().is_some_and(|s| s.is_empty()) {

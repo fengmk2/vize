@@ -138,15 +138,6 @@ impl CorsaProjectClient {
         !self.trusts_capabilities() || self.capabilities.overlay.update_snapshot_overlay_changes
     }
 
-    /// True only when the runtime has positively advertised in-memory overlay
-    /// support. `supports_overlay_api` is optimistic for runtimes without a
-    /// capability endpoint; routing a document through the overlay path on
-    /// such a runtime fails at request time, so path-keeping decisions must
-    /// use this confirmed variant.
-    fn overlay_api_confirmed(&self) -> bool {
-        self.trusts_capabilities() && self.capabilities.overlay.update_snapshot_overlay_changes
-    }
-
     pub(super) fn supports_project_diagnostics_api(&self) -> bool {
         !self.trusts_capabilities() || self.capabilities.diagnostics.project
     }
@@ -278,7 +269,7 @@ impl CorsaProjectClient {
         }
 
         let mapped =
-            build_session_document_uri(uri, &self.project_root, self.overlay_api_confirmed());
+            build_session_document_uri(uri, &self.project_root, self.supports_overlay_api());
         self.remember_session_document_uri(uri, mapped)
     }
 

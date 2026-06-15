@@ -39,11 +39,15 @@ impl DiagnosticService {
         options_api: bool,
         legacy_vue2: bool,
     ) -> Option<VirtualTsResult> {
-        use vize_atelier_sfc::{SfcParseOptions, croquis::SfcCroquisOptions, parse_sfc};
-        use vize_canon::virtual_ts::{
-            VirtualTsOptions, generate_virtual_ts_with_offsets,
-            generate_virtual_ts_with_offsets_legacy_vue2,
-            generate_virtual_ts_with_offsets_options_api,
+        use std::path::Path;
+        use vize_atelier_sfc::{
+            SfcParseOptions,
+            croquis::{SfcCroquisOptions, script_content_for_descriptor},
+            parse_sfc,
+        };
+        use vize_canon::{
+            batch::{VueDocumentVirtualTsOptions, generate_vue_document_virtual_ts_with_options},
+            virtual_ts::VirtualTsOptions,
         };
 
         let options = SfcParseOptions {
@@ -53,53 +57,36 @@ impl DiagnosticService {
 
         let descriptor = parse_sfc(content, options).ok()?;
 
-        let template_block = descriptor.template.as_ref()?;
-        let template_offset = template_block.loc.start as u32;
+        descriptor.template.as_ref()?;
 
-        let allocator = vize_carton::Bump::new();
-        let (template_ast, _) = vize_armature::parse(&allocator, &template_block.content);
-
-        let croquis_options = SfcCroquisOptions::full();
-        // Croquis cannot resolve props inherited through imported/heritage
-        // types; the resolved analysis merges the script compile context's
-        // props before the template pass so the virtual TS fed to Corsa sees
-        // the full prop set.
-        let analysis = vize_atelier_sfc::croquis::analyze_sfc_descriptor_resolved(
-            &descriptor,
-            Some(&template_ast),
-            croquis_options,
-            options_api,
-            legacy_vue2,
-            uri.path(),
-        );
-
-        let script_content = analysis.script_content?;
-        let script_offset = analysis.script_offset;
-        let sfc_script_start_line =
-            crate::ide::offset_to_position(content, script_offset as usize).0 + 1;
+        let (script_content, script_offset) =
+            script_content_for_descriptor(&descriptor, SfcCroquisOptions::full());
+        let sfc_script_start_line = if script_content.as_ref().is_some_and(|s| s.is_empty()) {
+            1
+        } else {
+            crate::ide::offset_to_position(content, script_offset as usize).0 + 1
+        };
 
         let virtual_ts_options = VirtualTsOptions::default();
-        let generate_virtual_ts = if legacy_vue2 {
-            generate_virtual_ts_with_offsets_legacy_vue2
-        } else if options_api {
-            generate_virtual_ts_with_offsets_options_api
-        } else {
-            generate_virtual_ts_with_offsets
-        };
-        let output = generate_virtual_ts(
-            &analysis.croquis,
-            Some(script_content.as_str()),
-            Some(&template_ast),
-            script_offset,
-            template_offset,
+        let rewriter = ImportRewriter::new();
+        let generated = generate_vue_document_virtual_ts_with_options(
+            Path::new(uri.path()),
+            content,
             &virtual_ts_options,
-        );
-        let code = output.code;
-        let source_mappings = output.mappings;
+            &rewriter,
+            false,
+            VueDocumentVirtualTsOptions {
+                options_api,
+                legacy_vue2,
+            },
+        )
+        .ok()?;
+        let code = generated.pre_rewrite_code;
 
         // Count import lines in script content (these are moved to module scope)
         // Import lines are skipped from user setup code section
-        let skipped_import_lines = Self::count_import_lines(script_content.as_str());
+        let skipped_import_lines =
+            Self::count_import_lines(script_content.as_deref().unwrap_or_default());
 
         // Find where user code starts in generated virtual TS
         // Look for "// User setup code" comment
@@ -131,13 +118,16 @@ impl DiagnosticService {
         // editor's Corsa session resolves sibling SFCs via the same virtual
         // mirrors used by the batch path. Collect the relative specifiers
         // from the pre-rewrite code so the caller can overlay siblings.
-        let relative_vue_imports = collect_relative_vue_specifiers(&code);
-        let (rewritten_code, import_source_map) = rewrite_vue_imports(&code);
+        let relative_vue_imports = rewriter
+            .collect_relative_vue_specifiers(code.as_str(), generated.source_type)
+            .into_iter()
+            .map(|s| s.to_string())
+            .collect();
 
         Some(VirtualTsResult {
-            code: rewritten_code,
-            source_mappings,
-            import_source_map,
+            code: generated.code.to_string(),
+            source_mappings: generated.mappings,
+            import_source_map: generated.import_source_map,
             relative_vue_imports,
             user_code_start_line,
             sfc_script_start_line,

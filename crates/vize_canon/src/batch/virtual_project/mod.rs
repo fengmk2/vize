@@ -25,7 +25,11 @@ use super::{Diagnostic, SfcBlockType};
 use crate::virtual_ts::{VirtualTsCheckOptions, VirtualTsOptions};
 
 mod build;
-pub use build::{VueDocumentVirtualTs, generate_vue_document_virtual_ts};
+mod document;
+pub use document::{
+    VueDocumentVirtualTs, VueDocumentVirtualTsOptions, generate_vue_document_virtual_ts,
+    generate_vue_document_virtual_ts_with_options,
+};
 mod diagnostics;
 mod jsx_codegen;
 mod mapping;

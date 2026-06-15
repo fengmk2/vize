@@ -25,7 +25,8 @@ pub use type_checker::{
 };
 pub use virtual_project::{
     OriginalPosition, VirtualFile, VirtualProject, VueDocumentVirtualTs,
-    generate_vue_document_virtual_ts,
+    VueDocumentVirtualTsOptions, generate_vue_document_virtual_ts,
+    generate_vue_document_virtual_ts_with_options,
 };
 pub use virtual_ts::VirtualTsGenerator;
 

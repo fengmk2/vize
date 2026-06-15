@@ -262,85 +262,6 @@ fn virtual_jsx_path(project_root: &Path, virtual_root: &Path, path: &Path) -> Co
     Ok(virtual_path)
 }
 
-/// Rewritten virtual TypeScript for a single in-memory `.vue` document,
-/// produced by the same canon batch pipeline (`generate_vue_virtual_ts` +
-/// import rewriting) used by `vize check`. Shared by the Corsa socket server so
-/// the single-document LSP path and the batch path generate identical virtual
-/// TS for the same input (issue #1389).
-pub struct VueDocumentVirtualTs {
-    /// `.vue.ts` source after `.vue -> .vue.ts` import rewriting, i.e. exactly
-    /// what is shipped to Corsa.
-    pub code: CompactString,
-    /// Generated source *before* import rewriting. Used to collect the relative
-    /// `.vue` import specifiers for sibling overlay without re-running codegen.
-    pub pre_rewrite_code: CompactString,
-    /// Source type used for parsing the generated virtual document.
-    pub source_type: SourceType,
-    /// Suffix appended to the original `.vue` URI/path for socket-mode Corsa.
-    pub virtual_suffix: &'static str,
-}
-
-/// Generate the rewritten virtual TypeScript for one in-memory `.vue` document.
-///
-/// This reuses the canon batch generator end-to-end (SFC parse, script/template
-/// parse diagnostics, hard-error fallback stub, Croquis analysis, type-based
-/// prop augmentation, SFC compile diagnostics, and `.vue -> .vue.ts` import
-/// rewriting), so the socket single-document path and `vize check` emit
-/// identical virtual TS for the same input. The document path uses the default
-/// (Composition API) variant and default check options. The only deliberate
-/// single-document difference is `hoist_shared_preamble`: the Corsa socket
-/// session has no program-wide ambient helpers file, so the shared preamble is
-/// kept inline (`hoist_shared_preamble = false`) instead of being hoisted as in
-/// the materialized batch project.
-pub fn generate_vue_document_virtual_ts(
-    path: &Path,
-    content: &str,
-    options: &VirtualTsOptions,
-    rewriter: &ImportRewriter,
-    hoist_shared_preamble: bool,
-) -> CorsaResult<VueDocumentVirtualTs> {
-    let descriptor = parse_sfc(
-        content,
-        SfcParseOptions {
-            filename: path.to_string_lossy().to_compact_string(),
-            ..Default::default()
-        },
-    )
-    .map_err(|error| CorsaError::SfcParse(error.message.to_compact_string()))?;
-
-    let effective_options = virtual_ts_options_for_descriptor(options, &descriptor);
-    let use_tsx_virtual = descriptor_uses_jsx_script(&descriptor);
-    let source_type = if use_tsx_virtual {
-        SourceType::tsx()
-    } else {
-        SourceType::ts()
-    };
-    let GeneratedVueFile { code, .. } = generate_vue_virtual_ts(
-        path,
-        content,
-        &descriptor,
-        &effective_options,
-        VueCodegenOptions {
-            check_options: VirtualTsCheckOptions::default(),
-            preserve_unused_diagnostics: false,
-            options_api: false,
-            legacy_vue2: false,
-            // Single-document socket path is always the default Vue 3 dialect.
-            dialect: vize_carton::config::VueVersion::default(),
-            template_syntax: TemplateSyntaxMode::default(),
-            hoist_shared_preamble,
-        },
-    )?;
-
-    let rewritten = rewriter.rewrite(&code, source_type);
-    Ok(VueDocumentVirtualTs {
-        code: rewritten.code,
-        pre_rewrite_code: code,
-        source_type,
-        virtual_suffix: if use_tsx_virtual { ".tsx" } else { ".ts" },
-    })
-}
-
 pub(super) fn build_script_registered_file(
     path: &Path,
     content: &str,
@@ -373,7 +294,7 @@ pub(super) fn build_script_registered_file(
     })
 }
 
-fn virtual_ts_options_for_descriptor(
+pub(super) fn virtual_ts_options_for_descriptor(
     base: &VirtualTsOptions,
     descriptor: &SfcDescriptor,
 ) -> VirtualTsOptions {
@@ -441,7 +362,7 @@ fn virtual_vue_path(
     Ok(virtual_path)
 }
 
-fn descriptor_uses_jsx_script(descriptor: &SfcDescriptor) -> bool {
+pub(super) fn descriptor_uses_jsx_script(descriptor: &SfcDescriptor) -> bool {
     descriptor
         .script
         .as_ref()

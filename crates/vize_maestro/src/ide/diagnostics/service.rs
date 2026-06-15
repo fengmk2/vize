@@ -34,6 +34,7 @@ pub(in crate::ide) struct VirtualTsResult {
     /// editor session overlays each sibling's virtual TS so relative
     /// imports resolve under the temp-dir Corsa session (issue #752).
     pub(in crate::ide) relative_vue_imports: Vec<std::string::String>,
+    pub(in crate::ide) relative_ts_imports: Vec<std::string::String>,
     /// Line number where user code starts in virtual TS (0-indexed)
     pub(in crate::ide) user_code_start_line: u32,
     /// Line number where script starts in original SFC (1-indexed)
@@ -193,12 +194,11 @@ impl DiagnosticService {
             diagnostics.extend(ecosystem_diags);
         }
 
-        if state.is_lsp_typecheck_enabled() {
-            // Collect type checker diagnostics (vize_canon)
+        if state.is_lsp_typecheck_enabled() && !cfg!(feature = "native") {
             let type_diags = crate::ide::TypeService::collect_diagnostics(state, uri);
             tracing::info!("collect: type checker diagnostics: {}", type_diags.len());
             diagnostics.extend(type_diags);
-        } else {
+        } else if !state.is_lsp_typecheck_enabled() {
             tracing::info!("collect: type checker diagnostics skipped (disabled by config)");
         }
 

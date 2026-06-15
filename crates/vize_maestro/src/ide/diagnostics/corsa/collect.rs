@@ -6,6 +6,7 @@ use crate::server::ServerState;
 
 use super::super::DiagnosticService;
 use super::collect_virtual::collect_virtual_result_diagnostics;
+use super::virtual_ts::collect_relative_ts_specifiers;
 use vize_carton::cstr;
 
 /// Overlay the virtual TS for every relative `.vue` import of `host_uri`
@@ -48,32 +49,29 @@ pub(super) async fn overlay_sibling_vue_mirrors(
 
     while let Some((dir, specifiers)) = queue.pop() {
         for specifier in specifiers {
-            let resolved = dir.join(specifier.as_str());
-            // Canonicalize is best-effort: if the file doesn't exist we still
-            // try the lexical join so genuinely missing imports surface
-            // TS2307 just as before.
-            let canonical = std::fs::canonicalize(&resolved).unwrap_or(resolved);
-            if !visited.insert(canonical.clone()) {
+            let resolved = normalize_path_lexically(&dir.join(specifier.as_str()));
+            let visited_key = std::fs::canonicalize(&resolved).unwrap_or_else(|_| resolved.clone());
+            if !visited.insert(visited_key) {
                 continue;
             }
 
-            let sibling_content = match std::fs::read_to_string(&canonical) {
+            let sibling_content = match std::fs::read_to_string(&resolved) {
                 Ok(text) => text,
                 Err(err) => {
                     tracing::debug!(
                         "overlay sibling skipped — read failed for {}: {err}",
-                        canonical.display(),
+                        resolved.display(),
                     );
                     continue;
                 }
             };
 
-            let sibling_uri = match Url::from_file_path(&canonical) {
+            let sibling_uri = match Url::from_file_path(&resolved) {
                 Ok(uri) => uri,
                 Err(_) => continue,
             };
 
-            let sibling_virtual = if canonical.to_string_lossy().ends_with(".art.vue") {
+            let sibling_virtual = if resolved.to_string_lossy().ends_with(".art.vue") {
                 DiagnosticService::generate_virtual_ts_for_art(&sibling_uri, &sibling_content)
             } else {
                 DiagnosticService::generate_virtual_ts(
@@ -87,24 +85,157 @@ pub(super) async fn overlay_sibling_vue_mirrors(
                 continue;
             };
 
-            let sibling_name = cstr!("{}.ts", canonical.to_string_lossy());
+            let sibling_name = cstr!("{}.ts", resolved.to_string_lossy());
             if let Err(err) = bridge
                 .open_or_update_virtual_document(&sibling_name, &sibling_virtual.code)
                 .await
             {
-                tracing::debug!("overlay sibling failed for {}: {err}", canonical.display(),);
+                tracing::debug!("overlay sibling failed for {}: {err}", resolved.display(),);
                 continue;
             }
+            overlay_relative_ts_imports(bridge, &sibling_uri, &sibling_virtual.relative_ts_imports)
+                .await;
 
-            let next_dir = canonical
+            let next_dir = resolved
                 .parent()
                 .map(|p| p.to_path_buf())
-                .unwrap_or_else(|| canonical.clone());
+                .unwrap_or_else(|| resolved.clone());
             if !sibling_virtual.relative_vue_imports.is_empty() {
                 queue.push((next_dir, sibling_virtual.relative_vue_imports));
             }
         }
     }
+}
+
+pub(super) async fn overlay_relative_ts_imports(
+    bridge: &std::sync::Arc<vize_canon::CorsaBridge>,
+    host_uri: &Url,
+    initial_specifiers: &[std::string::String],
+) {
+    use std::collections::HashSet;
+    use std::path::PathBuf;
+
+    if initial_specifiers.is_empty() {
+        return;
+    }
+
+    let Ok(host_path) = host_uri.to_file_path() else {
+        tracing::debug!("overlay_relative_ts_imports: host URI is not a file path: {host_uri}",);
+        return;
+    };
+    let Some(host_dir) = host_path.parent().map(|dir| dir.to_path_buf()) else {
+        return;
+    };
+    let mut visited = HashSet::<PathBuf>::new();
+    let mut queue = vec![(host_dir, initial_specifiers.to_vec())];
+
+    while let Some((dir, specifiers)) = queue.pop() {
+        for specifier in specifiers {
+            let Some(resolved) = resolve_relative_script_import(&dir, specifier.as_str()) else {
+                continue;
+            };
+            let visited_key = std::fs::canonicalize(&resolved).unwrap_or_else(|_| resolved.clone());
+            if !visited.insert(visited_key) {
+                continue;
+            }
+
+            let content = match std::fs::read_to_string(&resolved) {
+                Ok(content) => content,
+                Err(err) => {
+                    tracing::debug!(
+                        "overlay ts import skipped — read failed for {}: {err}",
+                        resolved.display(),
+                    );
+                    continue;
+                }
+            };
+
+            if let Err(err) = bridge
+                .open_or_update_virtual_document(&resolved.to_string_lossy(), &content)
+                .await
+            {
+                tracing::debug!("overlay ts import failed for {}: {err}", resolved.display(),);
+                continue;
+            }
+
+            let source_type = source_type_for_path(&resolved);
+            let next_specifiers = collect_relative_ts_specifiers(&content, source_type);
+            if !next_specifiers.is_empty()
+                && let Some(next_dir) = resolved.parent().map(|p| p.to_path_buf())
+            {
+                queue.push((next_dir, next_specifiers));
+            }
+        }
+    }
+}
+
+fn resolve_relative_script_import(
+    dir: &std::path::Path,
+    specifier: &str,
+) -> Option<std::path::PathBuf> {
+    let base = dir.join(specifier);
+    if base.extension().is_some() {
+        return known_script_path(&base).then(|| normalize_path_lexically(&base));
+    }
+
+    for ext in ["ts", "tsx", "mts", "cts", "js", "jsx", "mjs", "cjs"] {
+        let candidate = base.with_extension(ext);
+        if candidate.exists() {
+            return Some(normalize_path_lexically(&candidate));
+        }
+    }
+    for name in [
+        "index.ts",
+        "index.tsx",
+        "index.mts",
+        "index.cts",
+        "index.js",
+        "index.jsx",
+        "index.mjs",
+        "index.cjs",
+        "index.d.ts",
+    ] {
+        let candidate = base.join(name);
+        if candidate.exists() {
+            return Some(normalize_path_lexically(&candidate));
+        }
+    }
+    None
+}
+
+fn normalize_path_lexically(path: &std::path::Path) -> std::path::PathBuf {
+    let mut normalized = std::path::PathBuf::new();
+    for component in path.components() {
+        match component {
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                if !normalized.pop() {
+                    normalized.push("..");
+                }
+            }
+            other => normalized.push(other.as_os_str()),
+        }
+    }
+    normalized
+}
+
+fn known_script_path(path: &std::path::Path) -> bool {
+    let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+        return false;
+    };
+    path.exists()
+        && (name.ends_with(".ts")
+            || name.ends_with(".tsx")
+            || name.ends_with(".mts")
+            || name.ends_with(".cts")
+            || name.ends_with(".js")
+            || name.ends_with(".jsx")
+            || name.ends_with(".mjs")
+            || name.ends_with(".cjs"))
+}
+
+fn source_type_for_path(path: &std::path::Path) -> oxc_span::SourceType {
+    oxc_span::SourceType::from_path(path).unwrap_or_else(|_| oxc_span::SourceType::ts())
 }
 
 impl DiagnosticService {

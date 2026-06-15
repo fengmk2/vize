@@ -5,7 +5,9 @@ use vize_canon::virtual_ts::{VirtualTsOptions, generate_virtual_ts_with_offsets}
 use vize_croquis::{Drawer, DrawerOptions};
 
 use super::super::{DiagnosticService, VirtualTsResult};
-use super::virtual_ts::{collect_relative_vue_specifiers, rewrite_vue_imports};
+use super::virtual_ts::{
+    collect_relative_ts_specifiers, collect_relative_vue_specifiers, rewrite_vue_imports,
+};
 
 fn quote_ts_string(value: &str) -> String {
     let mut quoted = String::from("\"");
@@ -298,6 +300,7 @@ impl DiagnosticService {
         let code = output.code;
         let line_mappings = Self::parse_vize_map_comments(&code);
         let relative_vue_imports = collect_relative_vue_specifiers(&code);
+        let relative_ts_imports = collect_relative_ts_specifiers(&code, oxc_span::SourceType::ts());
         let (rewritten_code, import_source_map) = rewrite_vue_imports(&code);
 
         Some(VirtualTsResult {
@@ -305,6 +308,7 @@ impl DiagnosticService {
             source_mappings: output.mappings,
             import_source_map,
             relative_vue_imports,
+            relative_ts_imports,
             user_code_start_line: code
                 .lines()
                 .enumerate()

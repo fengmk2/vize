@@ -3,7 +3,7 @@
 use tower_lsp::lsp_types::{Diagnostic, DiagnosticSeverity, Position, Range, Url};
 
 use super::super::{VirtualTsResult, sources};
-use super::collect::overlay_sibling_vue_mirrors;
+use super::collect::{overlay_relative_ts_imports, overlay_sibling_vue_mirrors};
 use super::mapping::{map_diagnostic_with_source_mappings, source_offset_to_position};
 use super::message::rewrite_corsa_message;
 
@@ -39,6 +39,7 @@ pub(super) async fn collect_virtual_result_diagnostics(
         legacy_vue2,
     )
     .await;
+    overlay_relative_ts_imports(bridge, host_uri, &virtual_result.relative_ts_imports).await;
 
     tracing::info!("opening/updating virtual document: {}", virtual_name);
     let virtual_uri = match bridge

@@ -31,6 +31,64 @@ pub(super) fn collect_relative_vue_specifiers(code: &str) -> Vec<std::string::St
         .collect()
 }
 
+pub(super) fn collect_relative_ts_specifiers(
+    code: &str,
+    source_type: oxc_span::SourceType,
+) -> Vec<std::string::String> {
+    use oxc_allocator::Allocator;
+    use oxc_ast::ast::{Expression, Statement};
+    use oxc_ast_visit::Visit;
+    use oxc_parser::Parser;
+
+    let allocator = Allocator::default();
+    let result = Parser::new(&allocator, code, source_type).parse();
+    let mut specifiers = Vec::new();
+    let mut push = |path: &str| {
+        if (path.starts_with("./") || path.starts_with("../"))
+            && !path.ends_with(".vue")
+            && !path.ends_with(".vue.ts")
+            && !specifiers.iter().any(|s: &std::string::String| s == path)
+        {
+            specifiers.push(path.to_string());
+        }
+    };
+
+    for stmt in &result.program.body {
+        match stmt {
+            Statement::ImportDeclaration(decl) => push(&decl.source.value),
+            Statement::ExportNamedDeclaration(decl) => {
+                if let Some(source) = &decl.source {
+                    push(&source.value);
+                }
+            }
+            Statement::ExportAllDeclaration(decl) => push(&decl.source.value),
+            _ => {}
+        }
+    }
+
+    struct DynamicImportCollector {
+        imports: Vec<std::string::String>,
+    }
+    impl<'a> Visit<'a> for DynamicImportCollector {
+        fn visit_import_expression(&mut self, expr: &oxc_ast::ast::ImportExpression<'a>) {
+            if let Expression::StringLiteral(lit) = &expr.source {
+                self.imports.push(lit.value.as_str().to_string());
+            }
+            oxc_ast_visit::walk::walk_import_expression(self, expr);
+        }
+    }
+
+    let mut collector = DynamicImportCollector {
+        imports: Vec::new(),
+    };
+    collector.visit_program(&result.program);
+    for path in collector.imports {
+        push(&path);
+    }
+
+    specifiers
+}
+
 impl DiagnosticService {
     /// Generate virtual TypeScript for a Vue SFC.
     pub(in crate::ide::diagnostics) fn generate_virtual_ts(
@@ -123,12 +181,15 @@ impl DiagnosticService {
             .into_iter()
             .map(|s| s.to_string())
             .collect();
+        let relative_ts_imports =
+            collect_relative_ts_specifiers(code.as_str(), generated.source_type);
 
         Some(VirtualTsResult {
             code: generated.code.to_string(),
             source_mappings: generated.mappings,
             import_source_map: generated.import_source_map,
             relative_vue_imports,
+            relative_ts_imports,
             user_code_start_line,
             sfc_script_start_line,
             template_scope_start_line,

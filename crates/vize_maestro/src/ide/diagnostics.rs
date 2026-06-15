@@ -11,6 +11,8 @@ mod builder;
 mod collectors;
 #[cfg(feature = "native")]
 mod corsa;
+#[cfg(all(test, feature = "native"))]
+mod editor_typecheck_tests;
 mod line_index;
 mod service;
 mod severity;

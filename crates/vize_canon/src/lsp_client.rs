@@ -30,6 +30,7 @@ pub struct CorsaProjectClient {
     cwd: PathBuf,
     session: ProjectSession,
     capabilities: Arc<CapabilitiesResponse>,
+    overlay_api_disabled: bool,
     project_root: PathBuf,
     /// Cached diagnostics keyed by document URI.
     pub(crate) diagnostics: FxHashMap<String, Vec<Diagnostic>>,

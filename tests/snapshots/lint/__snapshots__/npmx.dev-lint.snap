@@ -974,9 +974,31 @@
         "endLine": 148,
         "endColumn": 44,
         "help": "Ensure URLs are sanitized before binding to prevent XSS via javascript: protocol"
+      },
+      {
+        "ruleId": "vue/no-v-for-template-key-on-child",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/no-v-for-template-key-on-child] the `key` for a `<template v-for>` must be on the `<template>`, not on its child",
+        "line": 185,
+        "column": 19,
+        "endLine": 185,
+        "endColumn": 46,
+        "help": "Move the :key up onto the <template v-for> element. In Vue 3 the key lives on the template, not the child (the reverse of Vue 2)."
+      },
+      {
+        "ruleId": "vue/no-v-for-template-key-on-child",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/no-v-for-template-key-on-child] the `key` for a `<template v-for>` must be on the `<template>`, not on its child",
+        "line": 189,
+        "column": 52,
+        "endLine": 189,
+        "endColumn": 69,
+        "help": "Move the :key up onto the <template v-for> element. In Vue 3 the key lives on the template, not the child (the reverse of Vue 2)."
       }
     ],
-    "errorCount": 0,
+    "errorCount": 2,
     "warningCount": 2
   },
   {
@@ -1063,6 +1085,17 @@
     "file": "app/components/Header/SearchBox.vue",
     "messages": [
       {
+        "ruleId": "type/require-typed-emits",
+        "ruleDocsPath": "docs/content/rules/type-and-script.md",
+        "severity": 1,
+        "message": "[vize:type/require-typed-emits] Emit should have a type definition",
+        "line": 34,
+        "column": 47,
+        "endLine": 34,
+        "endColumn": 77,
+        "help": "Use TypeScript type parameter: defineEmits<{ click: [value: MouseEvent] }>()"
+      },
+      {
         "ruleId": "vue/attribute-order",
         "ruleDocsPath": "docs/content/rules/vue.md",
         "severity": 1,
@@ -1072,17 +1105,6 @@
         "endLine": 58,
         "endColumn": 25,
         "help": "Reorder attributes to follow the recommended order"
-      },
-      {
-        "ruleId": "type/require-typed-emits",
-        "ruleDocsPath": "docs/content/rules/type-and-script.md",
-        "severity": 1,
-        "message": "[vize:type/require-typed-emits] Emit should have a type definition",
-        "line": 11,
-        "column": 14,
-        "endLine": 11,
-        "endColumn": 44,
-        "help": "Use defineEmits<...>() or a validator object with typed payload parameters."
       }
     ],
     "errorCount": 0,
@@ -2623,6 +2645,28 @@
         "help": "Why: Interactive roles imply the element can be activated by keyboard users.\nFix:\n  <div role=\"button\" tabindex=\"0\" @click=\"handle\">\n  Click me\n  </div>\nBetter: Use native interactive elements:\n  <button @click=\"handle\">Click me</button>"
       },
       {
+        "ruleId": "vue/no-v-for-template-key-on-child",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/no-v-for-template-key-on-child] the `key` for a `<template v-for>` must be on the `<template>`, not on its child",
+        "line": 207,
+        "column": 52,
+        "endLine": 207,
+        "endColumn": 67,
+        "help": "Move the :key up onto the <template v-for> element. In Vue 3 the key lives on the template, not the child (the reverse of Vue 2)."
+      },
+      {
+        "ruleId": "vue/no-v-for-template-key-on-child",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/no-v-for-template-key-on-child] the `key` for a `<template v-for>` must be on the `<template>`, not on its child",
+        "line": 229,
+        "column": 15,
+        "endLine": 229,
+        "endColumn": 35,
+        "help": "Move the :key up onto the <template v-for> element. In Vue 3 the key lives on the template, not the child (the reverse of Vue 2)."
+      },
+      {
         "ruleId": "vue/attribute-order",
         "ruleDocsPath": "docs/content/rules/vue.md",
         "severity": 1,
@@ -2634,7 +2678,7 @@
         "help": "Reorder attributes to follow the recommended order"
       }
     ],
-    "errorCount": 0,
+    "errorCount": 2,
     "warningCount": 4
   },
   {
@@ -3924,9 +3968,20 @@
         "endLine": 81,
         "endColumn": 29,
         "help": "Reorder attributes to follow the recommended order"
+      },
+      {
+        "ruleId": "vue/no-v-for-template-key-on-child",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/no-v-for-template-key-on-child] the `key` for a `<template v-for>` must be on the `<template>`, not on its child",
+        "line": 176,
+        "column": 17,
+        "endLine": 176,
+        "endColumn": 35,
+        "help": "Move the :key up onto the <template v-for> element. In Vue 3 the key lives on the template, not the child (the reverse of Vue 2)."
       }
     ],
-    "errorCount": 0,
+    "errorCount": 1,
     "warningCount": 1
   },
   {

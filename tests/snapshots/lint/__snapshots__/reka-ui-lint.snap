@@ -1770,8 +1770,20 @@
   },
   {
     "file": "packages/core/src/ConfigProvider/ConfigProvider.vue",
-    "messages": [],
-    "errorCount": 0,
+    "messages": [
+      {
+        "ruleId": "vue/valid-template-root",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/valid-template-root] `<slot>` cannot be used as a root node of the template",
+        "line": 72,
+        "column": 3,
+        "endLine": 72,
+        "endColumn": 11,
+        "help": "Wrap the content in a real root element (e.g. <div>) instead of using <template> or <slot> as the root node."
+      }
+    ],
+    "errorCount": 1,
     "warningCount": 0
   },
   {
@@ -3248,8 +3260,20 @@
   },
   {
     "file": "packages/core/src/Dialog/DialogRoot.vue",
-    "messages": [],
-    "errorCount": 0,
+    "messages": [
+      {
+        "ruleId": "vue/valid-template-root",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/valid-template-root] `<slot>` cannot be used as a root node of the template",
+        "line": 93,
+        "column": 3,
+        "endLine": 96,
+        "endColumn": 5,
+        "help": "Wrap the content in a real root element (e.g. <div>) instead of using <template> or <slot> as the root node."
+      }
+    ],
+    "errorCount": 1,
     "warningCount": 0
   },
   {
@@ -3540,6 +3564,17 @@
         "help": "Rename the file to PascalCase:\n  my-component.vue -> MyComponent.vue\n  myComponent.vue  -> MyComponent.vue"
       },
       {
+        "ruleId": "vue/valid-template-root",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/valid-template-root] `<template>` cannot be used as a root node of the template",
+        "line": 24,
+        "column": 3,
+        "endLine": 24,
+        "endColumn": 25,
+        "help": "Wrap the content in a real root element (e.g. <div>) instead of using <template> or <slot> as the root node."
+      },
+      {
         "ruleId": "a11y/form-control-has-label",
         "ruleDocsPath": "docs/content/rules/accessibility.md",
         "severity": 1,
@@ -3551,7 +3586,7 @@
         "help": "Option 1: Use <label> with for:\n  <label for=\"email\">Email</label>\n  <input id=\"email\" type=\"email\">\nOption 2: Wrap input in label:\n  <label>\n  Email\n  <input type=\"email\">\n  </label>\nOption 3: Use aria-label:\n  <input type=\"search\" aria-label=\"Search\">\nNote: Placeholder is NOT a substitute for a label."
       }
     ],
-    "errorCount": 0,
+    "errorCount": 1,
     "warningCount": 2
   },
   {
@@ -3872,8 +3907,20 @@
   },
   {
     "file": "packages/core/src/FocusGuards/FocusGuards.vue",
-    "messages": [],
-    "errorCount": 0,
+    "messages": [
+      {
+        "ruleId": "vue/valid-template-root",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/valid-template-root] `<slot>` cannot be used as a root node of the template",
+        "line": 8,
+        "column": 3,
+        "endLine": 8,
+        "endColumn": 11,
+        "help": "Wrap the content in a real root element (e.g. <div>) instead of using <template> or <slot> as the root node."
+      }
+    ],
+    "errorCount": 1,
     "warningCount": 0
   },
   {
@@ -5032,8 +5079,20 @@
   },
   {
     "file": "packages/core/src/NavigationMenu/NavigationMenuTrigger.vue",
-    "messages": [],
-    "errorCount": 0,
+    "messages": [
+      {
+        "ruleId": "vue/valid-template-root",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/valid-template-root] `<template>` cannot be used as a root node of the template",
+        "line": 164,
+        "column": 3,
+        "endLine": 164,
+        "endColumn": 25,
+        "help": "Wrap the content in a real root element (e.g. <div>) instead of using <template> or <slot> as the root node."
+      }
+    ],
+    "errorCount": 1,
     "warningCount": 0
   },
   {
@@ -5674,9 +5733,31 @@
         "endLine": 17,
         "endColumn": 29,
         "help": "Shorthand: <template #header> (default)\nLongform: <template v-slot:header>\nChoose one style and be consistent."
+      },
+      {
+        "ruleId": "vue/no-v-for-template-key-on-child",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/no-v-for-template-key-on-child] the `key` for a `<template v-for>` must be on the `<template>`, not on its child",
+        "line": 25,
+        "column": 15,
+        "endLine": 25,
+        "endColumn": 27,
+        "help": "Move the :key up onto the <template v-for> element. In Vue 3 the key lives on the template, not the child (the reverse of Vue 2)."
+      },
+      {
+        "ruleId": "vue/no-v-for-template-key-on-child",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/no-v-for-template-key-on-child] the `key` for a `<template v-for>` must be on the `<template>`, not on its child",
+        "line": 33,
+        "column": 15,
+        "endLine": 33,
+        "endColumn": 31,
+        "help": "Move the :key up onto the <template v-for> element. In Vue 3 the key lives on the template, not the child (the reverse of Vue 2)."
       }
     ],
-    "errorCount": 0,
+    "errorCount": 2,
     "warningCount": 1
   },
   {
@@ -5703,9 +5784,31 @@
         "endLine": 29,
         "endColumn": 25,
         "help": "Shorthand: <template #header> (default)\nLongform: <template v-slot:header>\nChoose one style and be consistent."
+      },
+      {
+        "ruleId": "vue/no-v-for-template-key-on-child",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/no-v-for-template-key-on-child] the `key` for a `<template v-for>` must be on the `<template>`, not on its child",
+        "line": 38,
+        "column": 11,
+        "endLine": 38,
+        "endColumn": 23,
+        "help": "Move the :key up onto the <template v-for> element. In Vue 3 the key lives on the template, not the child (the reverse of Vue 2)."
+      },
+      {
+        "ruleId": "vue/no-v-for-template-key-on-child",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/no-v-for-template-key-on-child] the `key` for a `<template v-for>` must be on the `<template>`, not on its child",
+        "line": 47,
+        "column": 11,
+        "endLine": 47,
+        "endColumn": 27,
+        "help": "Move the :key up onto the <template v-for> element. In Vue 3 the key lives on the template, not the child (the reverse of Vue 2)."
       }
     ],
-    "errorCount": 0,
+    "errorCount": 2,
     "warningCount": 2
   },
   {
@@ -6012,8 +6115,20 @@
   },
   {
     "file": "packages/core/src/Popper/PopperRoot.vue",
-    "messages": [],
-    "errorCount": 0,
+    "messages": [
+      {
+        "ruleId": "vue/valid-template-root",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/valid-template-root] `<slot>` cannot be used as a root node of the template",
+        "line": 35,
+        "column": 3,
+        "endLine": 35,
+        "endColumn": 11,
+        "help": "Wrap the content in a real root element (e.g. <div>) instead of using <template> or <slot> as the root node."
+      }
+    ],
+    "errorCount": 1,
     "warningCount": 0
   },
   {
@@ -6120,19 +6235,30 @@
         "help": "Rename the file to PascalCase:\n  my-component.vue -> MyComponent.vue\n  myComponent.vue  -> MyComponent.vue"
       },
       {
+        "ruleId": "type/require-typed-props",
+        "ruleDocsPath": "docs/content/rules/type-and-script.md",
+        "severity": 1,
+        "message": "[vize:type/require-typed-props] Prop should have a type definition",
+        "line": 20,
+        "column": 15,
+        "endLine": 22,
+        "endColumn": 15,
+        "help": "Use TypeScript type parameter: defineProps<{ msg: string }>()"
+      },
+      {
         "ruleId": "type/require-typed-emits",
         "ruleDocsPath": "docs/content/rules/type-and-script.md",
         "severity": 1,
         "message": "[vize:type/require-typed-emits] Emit should have a type definition",
-        "line": 7,
-        "column": 15,
-        "endLine": 7,
-        "endColumn": 43,
-        "help": "Use defineEmits<...>() or a validator object with typed payload parameters."
+        "line": 23,
+        "column": 2,
+        "endLine": 24,
+        "endColumn": 16,
+        "help": "Use TypeScript type parameter: defineEmits<{ click: [value: MouseEvent] }>()"
       }
     ],
     "errorCount": 0,
-    "warningCount": 2
+    "warningCount": 3
   },
   {
     "file": "packages/core/src/Progress/ProgressIndicator.vue",
@@ -7057,8 +7183,20 @@
   },
   {
     "file": "packages/core/src/Select/SelectProvider.vue",
-    "messages": [],
-    "errorCount": 0,
+    "messages": [
+      {
+        "ruleId": "vue/valid-template-root",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/valid-template-root] `<slot>` cannot be used as a root node of the template",
+        "line": 20,
+        "column": 3,
+        "endLine": 20,
+        "endColumn": 11,
+        "help": "Wrap the content in a real root element (e.g. <div>) instead of using <template> or <slot> as the root node."
+      }
+    ],
+    "errorCount": 1,
     "warningCount": 0
   },
   {
@@ -8394,8 +8532,20 @@
   },
   {
     "file": "packages/core/src/Toast/ToastProvider.vue",
-    "messages": [],
-    "errorCount": 0,
+    "messages": [
+      {
+        "ruleId": "vue/valid-template-root",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/valid-template-root] `<slot>` cannot be used as a root node of the template",
+        "line": 105,
+        "column": 3,
+        "endLine": 105,
+        "endColumn": 11,
+        "help": "Wrap the content in a real root element (e.g. <div>) instead of using <template> or <slot> as the root node."
+      }
+    ],
+    "errorCount": 1,
     "warningCount": 0
   },
   {
@@ -8855,8 +9005,20 @@
   },
   {
     "file": "packages/core/src/Tooltip/TooltipProvider.vue",
-    "messages": [],
-    "errorCount": 0,
+    "messages": [
+      {
+        "ruleId": "vue/valid-template-root",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/valid-template-root] `<slot>` cannot be used as a root node of the template",
+        "line": 108,
+        "column": 3,
+        "endLine": 108,
+        "endColumn": 11,
+        "help": "Wrap the content in a real root element (e.g. <div>) instead of using <template> or <slot> as the root node."
+      }
+    ],
+    "errorCount": 1,
     "warningCount": 0
   },
   {

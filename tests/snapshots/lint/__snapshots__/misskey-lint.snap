@@ -1928,6 +1928,17 @@
         "help": "Use kebab-case for prop names in templates:\n  <!-- Bad -->\n  <MyComponent myProp=\"value\" />\n  \n  <!-- Good -->\n  <MyComponent my-prop=\"value\" />"
       },
       {
+        "ruleId": "vue/require-toggle-inside-transition",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/require-toggle-inside-transition] the element inside `<transition>` is expected to have a toggle such as `v-if`, `v-show`, or a bound `:key`",
+        "line": 14,
+        "column": 2,
+        "endLine": 14,
+        "endColumn": 98,
+        "help": "Add v-if, v-show, v-else, v-else-if, or a bound :key, or use a dynamic <component :is>; otherwise the element never enters or leaves and the <transition> does nothing."
+      },
+      {
         "ruleId": "vue/sfc-element-order",
         "ruleDocsPath": "docs/content/rules/vue.md",
         "severity": 1,
@@ -1939,7 +1950,7 @@
         "help": "Recommended order: <script> -> <template> -> <style>"
       }
     ],
-    "errorCount": 0,
+    "errorCount": 1,
     "warningCount": 9
   },
   {
@@ -6803,6 +6814,28 @@
     "file": "src/components/MkMediaList.vue",
     "messages": [
       {
+        "ruleId": "vue/no-v-for-template-key-on-child",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/no-v-for-template-key-on-child] the `key` for a `<template v-for>` must be on the `<template>`, not on its child",
+        "line": 23,
+        "column": 51,
+        "endLine": 23,
+        "endColumn": 77,
+        "help": "Move the :key up onto the <template v-for> element. In Vue 3 the key lives on the template, not the child (the reverse of Vue 2)."
+      },
+      {
+        "ruleId": "vue/no-v-for-template-key-on-child",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/no-v-for-template-key-on-child] the `key` for a `<template v-for>` must be on the `<template>`, not on its child",
+        "line": 24,
+        "column": 56,
+        "endLine": 24,
+        "endColumn": 82,
+        "help": "Move the :key up onto the <template v-for> element. In Vue 3 the key lives on the template, not the child (the reverse of Vue 2)."
+      },
+      {
         "ruleId": "vue/sfc-element-order",
         "ruleDocsPath": "docs/content/rules/vue.md",
         "severity": 1,
@@ -6836,7 +6869,7 @@
         "help": "Multiple style blocks of the same type can be merged for better organization"
       }
     ],
-    "errorCount": 0,
+    "errorCount": 2,
     "warningCount": 3
   },
   {
@@ -8731,6 +8764,17 @@
     "file": "src/components/MkNoteMediaGrid.vue",
     "messages": [
       {
+        "ruleId": "vue/valid-template-root",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/valid-template-root] `<template>` cannot be used as a root node of the template",
+        "line": 7,
+        "column": 1,
+        "endLine": 7,
+        "endColumn": 38,
+        "help": "Wrap the content in a real root element (e.g. <div>) instead of using <template> or <slot> as the root node."
+      },
+      {
         "ruleId": "a11y/click-events-have-key-events",
         "ruleDocsPath": "docs/content/rules/accessibility.md",
         "severity": 1,
@@ -8830,7 +8874,7 @@
         "help": "Recommended order: <script> -> <template> -> <style>"
       }
     ],
-    "errorCount": 0,
+    "errorCount": 1,
     "warningCount": 9
   },
   {
@@ -14573,6 +14617,17 @@
     "file": "src/components/MkUrlPreview.vue",
     "messages": [
       {
+        "ruleId": "vue/valid-template-root",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/valid-template-root] `<template>` cannot be used as a root node of the template",
+        "line": 7,
+        "column": 1,
+        "endLine": 7,
+        "endColumn": 46,
+        "help": "Wrap the content in a real root element (e.g. <div>) instead of using <template> or <slot> as the root node."
+      },
+      {
         "ruleId": "a11y/iframe-has-title",
         "ruleDocsPath": "docs/content/rules/accessibility.md",
         "severity": 1,
@@ -14595,6 +14650,17 @@
         "help": "Ensure URLs are sanitized before binding to prevent XSS via javascript: protocol"
       },
       {
+        "ruleId": "vue/valid-template-root",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/valid-template-root] `<template>` cannot be used as a root node of the template",
+        "line": 29,
+        "column": 1,
+        "endLine": 29,
+        "endColumn": 48,
+        "help": "Wrap the content in a real root element (e.g. <div>) instead of using <template> or <slot> as the root node."
+      },
+      {
         "ruleId": "a11y/iframe-has-title",
         "ruleDocsPath": "docs/content/rules/accessibility.md",
         "severity": 1,
@@ -14615,6 +14681,17 @@
         "endLine": 37,
         "endColumn": 196,
         "help": "Ensure URLs are sanitized before binding to prevent XSS via javascript: protocol"
+      },
+      {
+        "ruleId": "vue/no-invalid-html-attribute",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 1,
+        "message": "[vize:vue/no-invalid-html-attribute] The `rel` attribute is not valid on `<component>`",
+        "line": 47,
+        "column": 119,
+        "endLine": 47,
+        "endColumn": 142,
+        "help": "Use only standard rel tokens that are allowed for this element, such as noopener noreferrer on links or stylesheet on link elements."
       },
       {
         "ruleId": "a11y/heading-has-content",
@@ -14672,8 +14749,8 @@
         "help": "Recommended order: <script> -> <template> -> <style>"
       }
     ],
-    "errorCount": 0,
-    "warningCount": 9
+    "errorCount": 2,
+    "warningCount": 10
   },
   {
     "file": "src/components/MkUrlPreviewPopup.vue",
@@ -17998,6 +18075,17 @@
     "file": "src/components/global/MkResult.vue",
     "messages": [
       {
+        "ruleId": "vue/require-toggle-inside-transition",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/require-toggle-inside-transition] the element inside `<transition>` is expected to have a toggle such as `v-if`, `v-show`, or a bound `:key`",
+        "line": 8,
+        "column": 2,
+        "endLine": 8,
+        "endColumn": 42,
+        "help": "Add v-if, v-show, v-else, v-else-if, or a bound :key, or use a dynamic <component :is>; otherwise the element never enters or leaves and the <transition> does nothing."
+      },
+      {
         "ruleId": "a11y/alt-text",
         "ruleDocsPath": "docs/content/rules/accessibility.md",
         "severity": 1,
@@ -18108,7 +18196,7 @@
         "help": "Recommended order: <script> -> <template> -> <style>"
       }
     ],
-    "errorCount": 0,
+    "errorCount": 1,
     "warningCount": 10
   },
   {
@@ -18368,23 +18456,16 @@
     "file": "src/components/global/SearchIcon.vue",
     "messages": [
       {
-        "ruleId": "vue/sfc-element-order",
+        "ruleId": "vue/valid-template-root",
         "ruleDocsPath": "docs/content/rules/vue.md",
-        "severity": 1,
-        "message": "[vize:vue/sfc-element-order] <script> should come before <template>",
-        "line": 10,
+        "severity": 2,
+        "message": "[vize:vue/valid-template-root] `<slot>` cannot be used as a root node of the template",
+        "line": 7,
         "column": 1,
-        "endLine": 11,
-        "endColumn": 10,
-        "help": "Recommended order: <script> -> <template> -> <style>"
-      }
-    ],
-    "errorCount": 0,
-    "warningCount": 1
-  },
-  {
-    "file": "src/components/global/SearchLabel.vue",
-    "messages": [
+        "endLine": 7,
+        "endColumn": 7,
+        "help": "Wrap the content in a real root element (e.g. <div>) instead of using <template> or <slot> as the root node."
+      },
       {
         "ruleId": "vue/sfc-element-order",
         "ruleDocsPath": "docs/content/rules/vue.md",
@@ -18397,7 +18478,36 @@
         "help": "Recommended order: <script> -> <template> -> <style>"
       }
     ],
-    "errorCount": 0,
+    "errorCount": 1,
+    "warningCount": 1
+  },
+  {
+    "file": "src/components/global/SearchLabel.vue",
+    "messages": [
+      {
+        "ruleId": "vue/valid-template-root",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/valid-template-root] `<slot>` cannot be used as a root node of the template",
+        "line": 7,
+        "column": 1,
+        "endLine": 7,
+        "endColumn": 7,
+        "help": "Wrap the content in a real root element (e.g. <div>) instead of using <template> or <slot> as the root node."
+      },
+      {
+        "ruleId": "vue/sfc-element-order",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 1,
+        "message": "[vize:vue/sfc-element-order] <script> should come before <template>",
+        "line": 10,
+        "column": 1,
+        "endLine": 11,
+        "endColumn": 10,
+        "help": "Recommended order: <script> -> <template> -> <style>"
+      }
+    ],
+    "errorCount": 1,
     "warningCount": 1
   },
   {
@@ -18422,6 +18532,17 @@
     "file": "src/components/global/SearchText.vue",
     "messages": [
       {
+        "ruleId": "vue/valid-template-root",
+        "ruleDocsPath": "docs/content/rules/vue.md",
+        "severity": 2,
+        "message": "[vize:vue/valid-template-root] `<slot>` cannot be used as a root node of the template",
+        "line": 7,
+        "column": 1,
+        "endLine": 7,
+        "endColumn": 7,
+        "help": "Wrap the content in a real root element (e.g. <div>) instead of using <template> or <slot> as the root node."
+      },
+      {
         "ruleId": "vue/sfc-element-order",
         "ruleDocsPath": "docs/content/rules/vue.md",
         "severity": 1,
@@ -18433,7 +18554,7 @@
         "help": "Recommended order: <script> -> <template> -> <style>"
       }
     ],
-    "errorCount": 0,
+    "errorCount": 1,
     "warningCount": 1
   },
   {

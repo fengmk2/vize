@@ -1,14 +1,12 @@
-//! Tests for virtual TypeScript generation.
-//!
-//! Extracted from the `virtual_ts` module root; kept as the `tests`
-//! submodule so insta snapshot names remain `virtual_ts::tests::*`.
-
 use super::helpers::{VUE_SETUP_HELPERS, generate_template_context, get_dom_event_type};
 use super::{
     TemplateGlobal, VirtualTsCheckOptions, VirtualTsGenerationOptions, VirtualTsOptions,
     generate_virtual_ts, generate_virtual_ts_with_offsets,
     generate_virtual_ts_with_offsets_and_checks, generate_virtual_ts_with_offsets_options_api,
 };
+
+mod define_props_scope;
+mod vif_chain;
 
 fn assert_virtual_ts_snapshot(name: &str, value: &str) {
     insta::with_settings!({

@@ -1,7 +1,4 @@
-//! Props type generation for virtual TypeScript.
-//!
-//! Generates `Props` type definitions and template-level prop variable
-//! declarations from Vue SFC macro analysis.
+mod setup_scoped;
 
 use oxc_allocator::Allocator;
 use oxc_ast::ast::{Argument, Expression, ObjectPropertyKind, PropertyKey};
@@ -16,6 +13,8 @@ use vize_croquis::Croquis;
 use vize_croquis::macros::{MacroKind, ModelDefinition};
 
 use super::helpers::{is_reserved_identifier, to_safe_identifier};
+use setup_scoped::props_type_ref;
+pub(crate) use setup_scoped::{PropsTypeEmission, generate_setup_scoped_props_artifact};
 
 #[inline]
 fn should_skip_template_prop_binding(summary: &Croquis, prop_name: &str) -> bool {
@@ -306,6 +305,7 @@ pub(crate) fn generate_props_type(
     summary: &Croquis,
     generic_param: Option<&str>,
     options_api_props: Option<&OptionsApiPropsSource>,
+    emission: PropsTypeEmission,
 ) {
     let props = summary.macros.props();
     let has_props = !props.is_empty();
@@ -331,7 +331,8 @@ pub(crate) fn generate_props_type(
 
     ts.push_str("// ========== Exported Types ==========\n");
 
-    if props_already_defined {
+    if emission == PropsTypeEmission::DeferredToSetup && define_props_type_args.is_some() {
+    } else if props_already_defined {
         // User defined Props, no need to re-export
     } else if let Some(type_args) = define_props_type_args {
         let inner_type = type_args
@@ -404,6 +405,7 @@ pub(crate) fn generate_props_variables(
     ts: &mut String,
     summary: &Croquis,
     generic_param: Option<&str>,
+    props_type_ref_override: Option<&str>,
 ) {
     let props = summary.macros.props();
     let has_props = !props.is_empty();
@@ -414,13 +416,7 @@ pub(crate) fn generate_props_variables(
         .define_props()
         .and_then(|m| m.type_args.as_ref());
 
-    // Build Props type reference with generic names (strip constraints)
-    let props_type_ref = generic_param
-        .map(|g| {
-            let names = extract_generic_names(g);
-            cstr!("Props<{names}>")
-        })
-        .unwrap_or_else(|| "Props".into());
+    let props_type_ref = props_type_ref(generic_param, props_type_ref_override);
     let mut defaulted_prop_names = collect_with_defaults_default_names(summary);
     for model in models {
         if model.default_value.is_some() {

@@ -17,9 +17,7 @@ use super::stubs::declared_name;
 
 #[test]
 fn warns_only_when_generated_nuxt_types_are_missing() {
-    // Generated `.nuxt` types present -> accurate checking, no warning.
     assert!(missing_generated_types_warning(true).is_none());
-    // Missing -> degraded `any`-stub fallback, warn with remediation.
     let message =
         missing_generated_types_warning(false).expect("missing generated types must warn");
     assert!(message.contains("nuxi prepare"));
@@ -495,7 +493,6 @@ export {}
         options.auto_import_stubs
     );
 
-    // Without generated artifacts the any-ladder remains the last resort.
     let fallback_root = unique_case_dir("nuxt-fallback-without-generated");
     let _ = std::fs::remove_dir_all(&fallback_root);
     std::fs::create_dir_all(&fallback_root).unwrap();
@@ -527,7 +524,7 @@ fn detects_module_fallbacks_from_nuxt_config() {
         project_root.join("nuxt.config.ts"),
         r#"
 export default defineNuxtConfig({
-  modules: ['@nuxtjs/i18n', '@vueuse/nuxt', '@nuxtjs/color-mode', 'nuxt-og-image'],
+  modules: ['@nuxtjs/i18n', '@nuxt/content', '@vueuse/nuxt', '@nuxtjs/color-mode', 'nuxt-og-image', 'motion-v/nuxt'],
 })
 "#,
     )
@@ -539,10 +536,13 @@ export default defineNuxtConfig({
     for expected in [
         "declare function useI18n():",
         "declare function useLocalePath<T = any",
+        "declare function useLocaleHead<T = any",
+        "declare function queryCollection<T = any",
         "declare function useClipboard<T = any",
         "declare function useScrollLock<T = any",
         "declare function useColorMode():",
         "declare function defineOgImageComponent<T = any",
+        "declare module \"motion-v\"",
     ] {
         assert!(
             options

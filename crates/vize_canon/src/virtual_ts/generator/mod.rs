@@ -1,11 +1,7 @@
-//! Main virtual TypeScript generation entry points.
-//!
-//! Contains the public `generate_virtual_ts` and `generate_virtual_ts_with_offsets`
-//! functions that orchestrate the full virtual TypeScript generation pipeline.
-
 mod generics;
 mod imports;
 mod options_api;
+mod setup_props;
 mod spans;
 
 use vize_croquis::{BindingType, Croquis, ScopeData, ScopeKind};
@@ -19,6 +15,7 @@ use self::options_api::{
     find_default_export_targets, find_options_api_props, generate_options_api_bridge,
     generate_options_api_variables,
 };
+use self::setup_props::SetupPropsPlan;
 use self::spans::{
     DEFINE_COMPONENT_HELPER, DEFINE_COMPONENT_REF, collect_template_referenced_names,
     is_local_setup_binding, merge_overlapping_spans, rewrite_export_default_for_module_scope,
@@ -31,8 +28,7 @@ use super::{
     },
     props::{
         OptionsApiPropsSource, add_generic_defaults, collect_template_prop_names,
-        extract_generic_names, generate_props_type, generate_props_variables,
-        strip_const_modifiers,
+        extract_generic_names, strip_const_modifiers,
     },
     scope::{ScopeGenerationOptions, generate_scope_closures},
     types::{VirtualTsGenerationOptions, VirtualTsOptions, VirtualTsOutput, VizeMapping},
@@ -454,7 +450,6 @@ pub(crate) fn generate_virtual_ts_with_offsets_and_checks(
     );
     ts.push('\n');
 
-    // Props type (defined at module level so it's available inside __setup).
     // For an Options API component with no `defineProps` macro, derive a real
     // `export type Props` from its runtime `props:` option so cross-file prop
     // checking is no longer a `{}` no-op. Macro-driven props (script setup) take
@@ -465,10 +460,15 @@ pub(crate) fn generate_virtual_ts_with_offsets_and_checks(
         } else {
             None
         };
-    profile!(
-        "canon.virtual_ts.generate_props_type",
-        generate_props_type(&mut ts, summary, generic_param, options_api_props.as_ref())
-    );
+    let setup_props_plan = SetupPropsPlan::new(summary);
+    profile!("canon.virtual_ts.generate_props_type", {
+        setup_props_plan.generate_props_type(
+            &mut ts,
+            summary,
+            generic_param,
+            options_api_props.as_ref(),
+        )
+    });
 
     // Setup scope: function that contains setup helpers and script content
     ts.push_str("// ========== Setup Scope ==========\n");
@@ -730,6 +730,8 @@ pub(crate) fn generate_virtual_ts_with_offsets_and_checks(
         });
     }
 
+    setup_props_plan.emit_artifact(&mut ts, summary);
+
     // Template scope (nested inside setup)
     if template_ast.is_some() {
         profile!("canon.virtual_ts.emit_template_scope", {
@@ -799,10 +801,9 @@ pub(crate) fn generate_virtual_ts_with_offsets_and_checks(
             ts.push('\n');
 
             // Props are available in template as variables
-            profile!(
-                "canon.virtual_ts.generate_props_variables",
-                generate_props_variables(&mut ts, summary, generic_param)
-            );
+            profile!("canon.virtual_ts.generate_props_variables", {
+                setup_props_plan.generate_props_variables(&mut ts, summary, generic_param)
+            });
             if options_api {
                 profile!(
                     "canon.virtual_ts.generate_options_api_variables",
@@ -995,6 +996,7 @@ pub(crate) fn generate_virtual_ts_with_offsets_and_checks(
     // extracted at module level while keeping each runtime expression in setup
     // scope, where script-setup bindings are defined.
     let mut setup_return_fields = Vec::new();
+    setup_props_plan.push_return_field(&mut setup_return_fields);
     if let Some(expose) = summary.macros.define_expose()
         && expose.type_args.is_none()
         && let Some(runtime_args) = expose.runtime_args.as_ref()
@@ -1020,6 +1022,8 @@ pub(crate) fn generate_virtual_ts_with_offsets_and_checks(
     // Invoke setup to keep diagnostics inside the generated setup body.
     ts.push_str("// Invoke setup to verify types\n");
     ts.push_str("__setup();\n\n");
+
+    setup_props_plan.emit_module_export(&mut ts);
 
     // Emits type
     let emits_already_defined = summary
@@ -1147,11 +1151,7 @@ pub(crate) fn generate_virtual_ts_with_offsets_and_checks(
     // Default export
     ts.push_str("// ========== Default Export ==========\n");
     ts.push_str("type __VizeComponentInstance = {\n");
-    if has_emits_for_props {
-        ts.push_str("  $props: Props & __EmitProps<Emits>;\n");
-    } else {
-        ts.push_str("  $props: Props;\n");
-    }
+    setup_props_plan.emit_component_props_field(&mut ts, has_emits_for_props);
     ts.push_str("  $emit: __EmitFn<Emits>;\n");
     ts.push_str("  $slots: Slots;\n");
     if has_exposed_type {
@@ -1198,7 +1198,7 @@ pub(crate) fn generate_virtual_ts_with_offsets_and_checks(
     } else {
         ""
     };
-    if let Some(generic) = generic_param {
+    if let Some(generic) = setup_props_plan.generic_param(generic_param) {
         let generic_decl = add_generic_defaults(generic);
         let generic_names = extract_generic_names(generic);
         append!(

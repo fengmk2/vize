@@ -1,6 +1,4 @@
-//! Generating the virtual project's `tsconfig.json`: inheriting the user's
-//! compiler options through `extends`, stripping path-sensitive options, and
-//! re-anchoring path aliases into the virtual mirror.
+mod native_options;
 
 use std::path::{Path, PathBuf};
 
@@ -15,6 +13,7 @@ use super::tsconfig_paths::{
     resolve_extended_tsconfig_path,
 };
 use super::{AUTO_IMPORT_STUBS_FILE, SHARED_HELPERS_FILE, VUE_MODULE_STUBS_FILE, VirtualProject};
+use native_options::normalize_native_removed_options;
 
 const PATH_SENSITIVE_COMPILER_OPTIONS: &[&str] = &[
     "baseUrl",
@@ -153,6 +152,7 @@ impl VirtualProject {
         for option in PATH_SENSITIVE_COMPILER_OPTIONS {
             compiler_options.remove(*option);
         }
+        normalize_native_removed_options(&mut compiler_options);
         compiler_options.insert("allowImportingTsExtensions".into(), Value::Bool(true));
         if self.needs_vue_jsx_compiler_options() {
             compiler_options

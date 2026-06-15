@@ -7,7 +7,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use vize_atelier_core::TemplateSyntaxMode;
 use vize_carton::cstr;
-
+mod tsconfig_native_options;
 fn unique_case_dir(name: &str) -> PathBuf {
     static NEXT_CASE_ID: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
     let case_id = NEXT_CASE_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);

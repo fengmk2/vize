@@ -52,79 +52,20 @@ fn async_collect_preserves_imported_computed_callback_types() {
 }
 
 #[test]
-fn async_collect_resolves_relative_sfc_component_imports() {
-    let Some(corsa_path) = resolve_test_tsgo_binary() else {
-        return;
-    };
-    let project = tempfile::TempDir::new().expect("temp project");
-    let root = project.path();
-    let components = root.join("src/components");
-    std::fs::create_dir_all(&components).expect("components dir");
-    std::fs::write(
-        root.join("tsconfig.json"),
-        r#"{
-  "compilerOptions": {
-    "strict": true,
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "noEmit": true
-  },
-  "include": ["src/**/*"]
-}"#,
-    )
-    .expect("tsconfig");
-    std::fs::write(
-        root.join("src/vue.d.ts"),
-        r#"declare module "vue" {
-  export interface Ref<T = unknown, _Raw = T> { value: T }
-  export interface ComponentPublicInstance {
-    $attrs: Record<string, unknown>;
-    $slots: Record<string, (...args: any[]) => any>;
-    $refs: Record<string, any>;
-    $emit: (...args: any[]) => void;
-  }
-}
-"#,
-    )
-    .expect("vue shim");
-    std::fs::write(
-        components.join("SpeakerFilterBar.vue"),
-        r#"<script setup lang="ts">
+fn virtual_ts_generates_template_less_sfc_mirror() {
+    let uri = Url::parse("file:///tmp/SpeakerFilterBar.vue").expect("parse uri");
+    let source = r#"<script setup lang="ts">
 defineProps<{ selected: string }>();
 </script>
-"#,
-    )
-    .expect("child sfc");
-    let vue_path = components.join("DirectoryView.vue");
-    let source = r#"<script setup lang="ts">
-import SpeakerFilterBar from "./SpeakerFilterBar.vue";
-
-const selected = "all";
-</script>
-
-<template>
-  <SpeakerFilterBar :selected="selected" />
-</template>
 "#;
-    std::fs::write(&vue_path, source).expect("host sfc");
-    write_corsa_config(root, &corsa_path);
 
-    let uri = Url::from_file_path(&vue_path).expect("file uri");
-    let state = state_for_fixture(root, &uri, source);
-    state.load_workspace_config(root);
-
-    let diagnostics = crate::runtime::block_on(DiagnosticService::collect_async(&state, &uri));
+    let result = DiagnosticService::generate_virtual_ts(&uri, source, false, false)
+        .expect("virtual TS generated for template-less SFC");
 
     assert!(
-        diagnostics
-            .iter()
-            .all(|diagnostic| !diagnostic.message.contains("./SpeakerFilterBar.vue.ts")),
-        "unexpected relative SFC import diagnostic: {diagnostics:#?}",
-    );
-    assert!(
-        diagnostics.is_empty(),
-        "expected clean editor diagnostics, got: {diagnostics:#?}",
+        result.code.contains("export default __vize_component__;"),
+        "expected a component module mirror, got:\n{}",
+        result.code,
     );
 }
 

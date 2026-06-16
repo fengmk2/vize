@@ -1,6 +1,6 @@
 {
   "name": "@vizejs/wasm",
-  "version": "0.226.0",
+  "version": "0.227.0",
   "description": "Vize WASM bindings for browser environments",
   "homepage": "https://github.com/ubugeeei-prod/vize",
   "bugs": {

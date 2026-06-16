@@ -1,4 +1,4 @@
-use super::{BatchTypeChecker, DeclarationEmitOptions, Diagnostic, TypeCheckResult};
+use super::{BatchTypeChecker, DeclarationEmitOptions};
 use crate::batch::TypeChecker;
 use crate::sfc_typecheck::{SfcTypeCheckOptions, type_check_sfc};
 use corsa::{
@@ -9,25 +9,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use vize_carton::{String, cstr};
 
-#[test]
-fn test_type_check_result() {
-    let mut result = TypeCheckResult::default();
-    assert!(!result.has_errors());
-    assert_eq!(result.error_count(), 0);
-
-    result.diagnostics.push(Diagnostic {
-        file: PathBuf::from("test.vue"),
-        line: 0,
-        column: 0,
-        message: "error".into(),
-        code: Some(2304),
-        severity: 1,
-        block_type: None,
-    });
-
-    assert!(result.has_errors());
-    assert_eq!(result.error_count(), 1);
-}
+mod emit_object_recursion;
 
 #[test]
 fn test_batch_type_checker_scan() {

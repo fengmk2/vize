@@ -68,8 +68,8 @@ const SEMANTIC_TEMPLATE_RULES: &[&str] = &[
     "vue/no-mutating-props",
     "a11y/no-refer-to-non-existent-id",
 ];
-
 const SHARED_SFC_DESCRIPTOR_RULES: &[&str] = &[
+    "vue/no-reserved-component-names",
     "vue/no-unused-refs",
     "vue/sfc-element-order",
     "vue/require-scoped-style",

@@ -34,9 +34,9 @@ catalogs:
 
   # Vite / Vite Plus stack and adjacent build-time plugins.
   vite-stack:
-    vite: "npm:@voidzero-dev/vite-plus-core@0.1.21"
-    vitest: "npm:@voidzero-dev/vite-plus-test@0.1.21"
-    vite-plus: "0.1.21"
+    vite: "https://pkg.pr.new/voidzero-dev/vite-plus/@voidzero-dev/vite-plus-core@1856"
+    vitest: "4.1.9"
+    vite-plus: "https://pkg.pr.new/voidzero-dev/vite-plus@1856"
     tsdown: "0.22.0"
     "@vitejs/plugin-vue": "6.0.7"
     vite-node: "6.0.0"
@@ -117,3 +117,45 @@ peerDependencyRules:
   allowedVersions:
     vite: "*"
     vitest: "*"
+
+minimumReleaseAge: 60
+minimumReleaseAgeExclude:
+  - "@voidzero-dev/*"
+  - vite-plus
+  - "@vitest/*"
+  - vite
+  - vitest
+  - "@oxc-project/*"
+  - "@oxlint/*"
+  - oxlint
+  - oxfmt
+  - oxlint-tsgolint
+blockExoticSubdeps: false
+
+onlyBuiltDependencies:
+  - esbuild
+
+overrides:
+  "@azure/msal-node>uuid": "11.1.1"
+  "@unhead/vue": "2.1.15"
+  defu: "6.1.7"
+  devalue: "5.8.1"
+  dompurify: "3.4.10"
+  esbuild: "0.28.1"
+  h3: "1.15.11"
+  hono: "4.12.25"
+  launch-editor: "2.14.1"
+  nanotar: "0.3.0"
+  nitropack: "2.13.4"
+  node-forge: "1.4.0"
+  nuxt: "4.4.8"
+  qs: "6.15.2"
+  shell-quote: "1.8.4"
+  simple-git: "3.36.0"
+  srvx: "0.11.15"
+  svgo: "4.0.1"
+  tar: "7.5.16"
+  "vite@>=7.0.0 <7.3.5": "7.3.5"
+  yaml: "2.9.0"
+  vite: "https://pkg.pr.new/voidzero-dev/vite-plus/@voidzero-dev/vite-plus-core@1856"
+  vitest: "4.1.9"

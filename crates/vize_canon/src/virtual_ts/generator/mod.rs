@@ -1,6 +1,7 @@
 mod emits;
 mod generics;
 mod imports;
+mod legacy_vue2;
 mod options_api;
 mod options_api_support;
 mod setup_props;
@@ -8,6 +9,8 @@ mod spans;
 mod template_refs;
 
 use vize_croquis::{Croquis, ScopeData, ScopeKind};
+
+pub use self::legacy_vue2::generate_virtual_ts_with_offsets_legacy_vue2;
 
 use self::emits::{emit_emit_props_helper, emit_emits_type};
 use self::generics::{generic_injection_point, references_any_identifier};
@@ -21,14 +24,13 @@ use self::options_api::{
 };
 use self::setup_props::SetupPropsPlan;
 use self::spans::{
-    DEFINE_COMPONENT_HELPER, DEFINE_COMPONENT_REF, merge_overlapping_spans,
-    preserved_template_usage, rewrite_export_default_for_module_scope,
+    DEFINE_COMPONENT_REF, merge_overlapping_spans, preserved_template_usage,
+    rewrite_export_default_for_module_scope,
 };
-use self::template_refs::TemplateRefUnwraps;
 use super::{
     helpers::{
         IMPORT_META_AUGMENTATION, SETUP_SCOPE_HELPER_NAMES, VUE_SETUP_HELPERS,
-        VUE_SETUP_HELPERS_HOISTED, VUE_TYPE_HELPERS, generate_template_context, to_safe_identifier,
+        VUE_SETUP_HELPERS_HOISTED, generate_template_context, to_safe_identifier,
     },
     props::{
         OptionsApiPropsSource, add_generic_defaults, collect_template_prop_names,
@@ -112,29 +114,6 @@ pub fn generate_virtual_ts_with_offsets_options_api(
     )
 }
 
-/// Generate virtual TypeScript with Vue 2.7 / Nuxt 2 compatibility enabled.
-pub fn generate_virtual_ts_with_offsets_legacy_vue2(
-    summary: &Croquis,
-    script_content: Option<&str>,
-    template_ast: Option<&vize_relief::RootNode<'_>>,
-    script_offset: u32,
-    template_offset: u32,
-    options: &VirtualTsOptions,
-) -> VirtualTsOutput {
-    generate_virtual_ts_with_offsets_and_checks(
-        summary,
-        script_content,
-        template_ast,
-        script_offset,
-        template_offset,
-        options,
-        VirtualTsGenerationOptions {
-            legacy_vue2: true,
-            ..Default::default()
-        },
-    )
-}
-
 pub(crate) fn generate_virtual_ts_with_offsets_and_checks(
     summary: &Croquis,
     script_content: Option<&str>,
@@ -204,7 +183,7 @@ pub(crate) fn generate_virtual_ts_with_offsets_and_checks(
     // are accessible from `export type Props = ...` outside __setup().
     ts.push_str("// ========== Module Scope (imports) ==========\n");
     if !hoist_shared_preamble {
-        ts.push_str(VUE_TYPE_HELPERS);
+        ts.push_str(legacy_vue2::vue_type_helpers(legacy_vue2, dialect));
         ts.push('\n');
     }
 
@@ -240,7 +219,7 @@ pub(crate) fn generate_virtual_ts_with_offsets_and_checks(
     let default_export_class = default_export_targets.class;
     let default_export_expr = default_export_targets.expr;
     if default_export_object.is_some() {
-        ts.push_str(DEFINE_COMPONENT_HELPER);
+        ts.push_str(legacy_vue2::define_component_helper(legacy_vue2, dialect));
     }
 
     // Collect all module-level statement spans from croquis analysis once and
@@ -737,7 +716,7 @@ pub(crate) fn generate_virtual_ts_with_offsets_and_checks(
         profile!("canon.virtual_ts.emit_template_scope", {
             ts.push_str("  // ========== Template Scope (inherits from setup) ==========\n");
 
-            let template_ref_unwraps = TemplateRefUnwraps::collect(
+            let template_ref_unwraps = template_refs::TemplateRefUnwraps::collect(
                 summary,
                 options_api,
                 template_referenced_names.as_ref(),
@@ -750,12 +729,12 @@ pub(crate) fn generate_virtual_ts_with_offsets_and_checks(
 
             // Shadow ref bindings with unwrapped types.
             // `var` allows reassignment (Vue templates can assign to refs).
-            template_ref_unwraps.emit_template_variables(&mut ts);
+            template_ref_unwraps.emit_template_variables(&mut ts, legacy_vue2, dialect);
 
             // Vue template context (available in template expressions)
             let template_context = profile!(
                 "canon.virtual_ts.generate_template_context",
-                generate_template_context(options, dialect)
+                generate_template_context(options, dialect, legacy_vue2)
             );
             ts.push_str(&template_context);
             ts.push('\n');

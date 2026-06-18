@@ -70,10 +70,9 @@ macro_rules! vue_type_helpers_text {
 /// Emit-overload helper text shared between the per-file embedded emission and
 /// the hoisted ambient helpers file. Each line ends with `\n`.
 ///
-/// Deliberately excludes `__EmitProps`: that alias dereferences
-/// `import('vue').EmitsToProps`, which only exists on Vue >= 3.3, so it stays
-/// per-file and is only emitted for components that actually declare emits —
-/// exactly as before hoisting.
+/// Deliberately excludes `__EmitProps`: that alias is emitted per-file and only
+/// for components that actually declare emits, so it stays out of the shared
+/// hoisted helper text, exactly as before hoisting.
 macro_rules! emit_overload_helpers_text {
     () => {
         concat!(
@@ -95,11 +94,8 @@ pub(crate) const VUE_TYPE_HELPERS: &str = vue_type_helpers_text!();
 /// hoisted. In hoisted mode the same text lives in the ambient helpers file.
 pub(crate) const EMIT_OVERLOAD_HELPERS: &str = emit_overload_helpers_text!();
 
-/// Per-file `__EmitProps` alias. Stays per-file in both modes because
-/// `EmitsToProps` is only exported by Vue >= 3.3; emitting it only for
-/// components with emits keeps older-Vue programs error-free, as before.
-pub(crate) const EMIT_PROPS_HELPER: &str =
-    "type __EmitProps<T> = import('vue').EmitsToProps<__EmitOptions<T>>;\n";
+/// Per-file `__EmitProps` alias used only by components that declare emits.
+pub(crate) const EMIT_PROPS_HELPER: &str = "type __EmitProps<T> = { [K in keyof __EmitOptions<T> & string as `on${Capitalize<K>}`]?: __EmitOptions<T>[K] };\n";
 
 /// Vue setup-scope helpers - these are defined inside setup scope, NOT globally.
 /// Compiler macros stay setup-only, while runtime helper shims model Vue APIs.

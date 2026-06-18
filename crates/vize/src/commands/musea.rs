@@ -1,6 +1,9 @@
 //! Musea command - Component gallery server
 
+mod setup;
+
 use clap::{Args, Subcommand};
+use setup::validate_direct_vite_musea_setup;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -161,6 +164,7 @@ fn create_serve_plan(args: &ServeArgs, cwd: &Path) -> Result<ServePlan, String> 
             "vize musea: static gallery build is not supported yet.\n  The Vite-backed Musea gallery is served by dev middleware, so `vite build` can exit successfully without emitting `.art.vue` gallery content.\n  Use `vize musea serve` for the dev gallery or keep a Storybook/static fallback until Musea static export is available."
         ));
     }
+    validate_direct_vite_musea_setup(cwd)?;
     let mut vite_args = vec![
         cstr!("dev"),
         cstr!("--host"),
@@ -204,34 +208,11 @@ fn is_nuxt_project_root(root: &Path) -> bool {
     ["nuxt.config.ts", "nuxt.config.mts", "nuxt.config.js"]
         .into_iter()
         .any(|file_name| root.join(file_name).exists())
-        || package_json_has_dependency(root, "nuxt")
-}
-
-fn package_json_has_dependency(root: &Path, dependency: &str) -> bool {
-    let Ok(content) = fs::read_to_string(root.join("package.json")) else {
-        return false;
-    };
-    let Ok(value) = serde_json::from_str::<serde_json::Value>(&content) else {
-        return false;
-    };
-
-    [
-        "dependencies",
-        "devDependencies",
-        "peerDependencies",
-        "optionalDependencies",
-    ]
-    .into_iter()
-    .any(|section| {
-        value
-            .get(section)
-            .and_then(serde_json::Value::as_object)
-            .is_some_and(|dependencies| dependencies.contains_key(dependency))
-    })
+        || setup::package_json_has_dependency(root, "nuxt")
 }
 
 fn has_vize_nuxt_integration(root: &Path) -> bool {
-    package_json_has_dependency(root, "@vizejs/nuxt")
+    setup::package_json_has_dependency(root, "@vizejs/nuxt")
         || root
             .join("node_modules")
             .join("@vizejs")

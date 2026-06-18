@@ -126,6 +126,7 @@ pub(crate) struct RawVizeConfig {
     language_server: RawLanguageServerConfig,
     #[serde(rename = "globalTypes")]
     pub global_types: RawGlobalTypesConfig,
+    pub ignores: Option<Vec<String>>,
     pub entries: Option<Vec<RawConfigEntry>>,
     #[serde(rename = "check")]
     legacy_check: Option<LegacyCheckConfig>,
@@ -139,7 +140,7 @@ pub(crate) struct RawVizeConfig {
 #[serde(default, rename_all = "camelCase")]
 pub(crate) struct RawConfigEntry {
     pub base_path: Option<String>,
-    pub ignores: Vec<String>,
+    pub ignores: Option<Vec<String>>,
     pub linter: RawLinterConfig,
 }
 
@@ -194,6 +195,7 @@ impl RawVizeConfig {
             type_checker: raw_type_checker,
             language_server: raw_language_server,
             global_types,
+            ignores: _,
             entries: _,
             legacy_check,
             legacy_formatter,

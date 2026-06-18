@@ -3,6 +3,7 @@
 mod args;
 mod collect;
 mod cross_file;
+mod stdout;
 
 #[cfg(test)]
 mod tests;
@@ -18,15 +19,12 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::Duration;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use vize_carton::{String, ToCompactString, cstr, profile, profiler::global_profiler};
 use vize_curator::profile::{
     ProfileFileRow, ProfilePhase, ProfilePhaseKind, ProfileReport, print_profile_report,
 };
-use vize_patina::{
-    HelpLevel, JsxLang, LintPreset, Linter, OutputFormat, format_results, format_summary,
-};
+use vize_patina::{HelpLevel, JsxLang, LintPreset, Linter, OutputFormat, format_results};
 
 pub fn run(args: LintArgs) {
     let start = Instant::now();
@@ -249,7 +247,7 @@ pub fn run(args: LintArgs) {
             format_results(&lint_results, &sources, format)
         );
         if !output.trim().is_empty() {
-            print!("{}", output);
+            stdout::write(output.as_bytes());
         }
     }
     let output_time = output_start.elapsed();
@@ -267,16 +265,15 @@ pub fn run(args: LintArgs) {
     // Print summary
     let elapsed = start.elapsed();
     if format == OutputFormat::Text {
-        println!(
-            "\n{}",
-            format_summary(total_errors, total_warnings, files.len())
+        stdout::write_text_summary(
+            total_errors,
+            total_warnings,
+            files.len(),
+            elapsed,
+            args.cross_file_tree
+                .then_some(cross_file_tree.as_deref())
+                .flatten(),
         );
-        println!("Linted {} files in {:.4?}", files.len(), elapsed);
-        if args.cross_file_tree
-            && let Some(tree) = cross_file_tree.as_deref()
-        {
-            println!("\n{tree}");
-        }
     }
 
     if args.profile {

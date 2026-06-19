@@ -1310,6 +1310,7 @@ ScriptParseResult {
         ),
     },
     import_sources: {},
+    module_value_bindings: {},
     type_export_typeof_refs: [],
     type_export_type_refs: [],
     runtime_object_literals: {},

@@ -3,6 +3,7 @@
 //! SSR code generation produces JavaScript that uses template literals and `_push()` calls
 //! to build HTML strings on the server side.
 
+mod component_binding;
 mod element;
 pub(crate) mod helpers;
 mod scope_prefix;
@@ -224,39 +225,6 @@ impl<'a> SsrCodegenContext<'a> {
     /// Use a core helper (from vue)
     pub(crate) fn use_core_helper(&mut self, helper: RuntimeHelper) {
         self.core_helpers.insert(helper);
-    }
-
-    pub(crate) fn resolve_component_binding_name(&self, component: &str) -> Option<String> {
-        let metadata = self.options.binding_metadata.as_ref()?;
-
-        let resolve_base = |name: &str| {
-            if metadata.bindings.contains_key(name) {
-                return Some(name.to_compact_string());
-            }
-
-            let camel = camelize(name);
-            if metadata.bindings.contains_key(camel.as_str()) {
-                return Some(camel);
-            }
-
-            let pascal = capitalize(camel.as_str());
-            if metadata.bindings.contains_key(pascal.as_str()) {
-                return Some(pascal);
-            }
-
-            None
-        };
-
-        if let Some((base, suffix)) = component.split_once('.') {
-            let resolved_base = resolve_base(base)?;
-            let mut resolved = String::with_capacity(resolved_base.len() + suffix.len() + 1);
-            resolved.push_str(resolved_base.as_str());
-            resolved.push('.');
-            resolved.push_str(suffix);
-            return Some(resolved);
-        }
-
-        resolve_base(component)
     }
 
     pub(crate) fn is_self_component_reference(&self, component: &str) -> bool {

@@ -3,6 +3,7 @@
 mod args;
 mod collect;
 mod cross_file;
+mod fix;
 mod stdout;
 
 #[cfg(test)]
@@ -11,10 +12,9 @@ mod tests;
 pub use args::LintArgs;
 
 use crate::profile_support;
-use collect::{
-    collect_lint_files, is_plain_script_path, is_standalone_html_path, resolve_lint_config_path,
-};
+use collect::{collect_lint_files, resolve_lint_config_path};
 use cross_file::apply_sfc_cross_file_lint;
+use fix::lint_source_with_optional_fix;
 use rayon::prelude::*;
 use std::fs;
 use std::io::Write;
@@ -26,15 +26,10 @@ use vize_carton::{String, ToCompactString, cstr, profile, profiler::global_profi
 use vize_curator::profile::{
     ProfileFileRow, ProfilePhase, ProfilePhaseKind, ProfileReport, print_profile_report,
 };
-use vize_patina::{HelpLevel, JsxLang, LintPreset, Linter, OutputFormat, format_results};
+use vize_patina::{HelpLevel, LintPreset, Linter, OutputFormat, format_results};
 
 pub fn run(args: LintArgs) {
     let start = Instant::now();
-    if args.fix {
-        eprintln!("\x1b[31mError:\x1b[0m `vize lint --fix` is not supported yet.");
-        eprintln!("Remove `--fix` or run Vize lint without automatic fixes.");
-        std::process::exit(2);
-    }
     if let Some(path) = args.config.as_deref()
         && !args.no_config
         && let Err(error) = crate::config::validate_explicit_config_path(path)
@@ -155,16 +150,9 @@ pub fn run(args: LintArgs) {
             let filename = path.to_string_lossy().to_compact_string();
             let lint_file_start = args.profile.then(Instant::now);
             let result = profile!("cli.lint.file.lint", {
-                if is_standalone_html_path(path) {
-                    linter.lint_standalone_html(&source, &filename)
-                } else if is_plain_script_path(path) {
-                    linter.lint_script(&source, &filename)
-                } else if let Some(lang) = jsx_lang_for_path(path) {
-                    linter.lint_jsx(&source, &filename, lang)
-                } else {
-                    linter.lint_sfc(&source, &filename)
-                }
+                lint_source_with_optional_fix(&linter, path, source, &filename, args.fix)
             });
+            let (source, result, fixed) = result;
             let lint_time = lint_file_start
                 .map(|start| start.elapsed())
                 .unwrap_or(Duration::ZERO);
@@ -173,11 +161,19 @@ pub fn run(args: LintArgs) {
             warning_count.fetch_add(result.warning_count, Ordering::Relaxed);
 
             if let (Some(file_start), Some(profile_rows)) = (file_start, profile_rows.as_ref()) {
-                let note = cstr!(
-                    "{} error(s), {} warning(s)",
-                    result.error_count,
-                    result.warning_count
-                );
+                let note = if fixed {
+                    cstr!(
+                        "{} error(s), {} warning(s), fixed",
+                        result.error_count,
+                        result.warning_count
+                    )
+                } else {
+                    cstr!(
+                        "{} error(s), {} warning(s)",
+                        result.error_count,
+                        result.warning_count
+                    )
+                };
                 if let Ok(mut rows) = profile_rows.lock() {
                     rows.push(ProfileFileRow {
                         path: path.clone(),
@@ -385,14 +381,6 @@ pub fn run(args: LintArgs) {
     {
         eprintln!("\nToo many warnings ({} > max {})", total_warnings, max);
         std::process::exit(1);
-    }
-}
-
-fn jsx_lang_for_path(path: &Path) -> Option<JsxLang> {
-    match path.extension().and_then(|extension| extension.to_str()) {
-        Some("jsx") => Some(JsxLang::Jsx),
-        Some("tsx") => Some(JsxLang::Tsx),
-        _ => None,
     }
 }
 

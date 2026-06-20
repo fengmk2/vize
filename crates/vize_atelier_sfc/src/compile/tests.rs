@@ -1,3 +1,5 @@
+mod define_props_regressions;
+
 use super::{compile_sfc, helpers, normal_script};
 use crate::types::{
     BindingType, ScriptCompileOptions, SfcCompileOptions, SfcCompileResult, TemplateCompileOptions,
@@ -168,29 +170,6 @@ const msg = ref('')
     let result = compile_sfc(&descriptor, opts).expect("Failed to compile SFC");
 
     insta::assert_snapshot!(result.code.as_str());
-}
-
-#[test]
-fn test_define_emits_quoted_update_event_in_sfc() {
-    let source = r#"<script setup lang="ts">
-const emit = defineEmits<{
-  "update:open": [value: boolean]
-}>()
-</script>
-
-<template>
-  <button @click="emit('update:open', false)">close</button>
-</template>"#;
-
-    let descriptor = parse_sfc(source, SfcParseOptions::default()).expect("Failed to parse SFC");
-    let opts = SfcCompileOptions::default();
-    let result = compile_sfc(&descriptor, opts).expect("Failed to compile SFC");
-
-    assert!(
-        result.code.contains(r#"emits: ["update:open"]"#),
-        "quoted emits keys containing ':' must be preserved:\n{}",
-        result.code
-    );
 }
 
 #[test]

@@ -1,8 +1,11 @@
 //! Tests for the lint command.
 
-use super::{cross_file::build_cross_file_lint_output, should_render_lint_details};
+mod fix_regressions;
+mod format_output;
+
+use super::cross_file::build_cross_file_lint_output;
 use std::{fs, path::Path};
-use vize_patina::{LintPreset, LintResult, Linter, OutputFormat};
+use vize_patina::{LintPreset, LintResult, Linter};
 
 fn result_for_file<'a>(results: &'a [LintResult], file_name: &str) -> &'a LintResult {
     results
@@ -31,25 +34,6 @@ fn diagnostic_summary(result: &LintResult) -> Vec<String> {
 
 fn all_diagnostic_summary(results: &[LintResult]) -> Vec<String> {
     results.iter().flat_map(diagnostic_summary).collect()
-}
-
-#[test]
-fn quiet_text_output_skips_detailed_diagnostics() {
-    assert!(!should_render_lint_details(OutputFormat::Text, true));
-}
-
-#[test]
-fn json_output_remains_machine_readable_in_quiet_mode() {
-    assert!(should_render_lint_details(OutputFormat::Json, true));
-}
-
-#[test]
-fn report_formats_render_in_quiet_mode() {
-    assert!(should_render_lint_details(OutputFormat::Ansi, true));
-    assert!(should_render_lint_details(OutputFormat::Plain, true));
-    assert!(should_render_lint_details(OutputFormat::Markdown, true));
-    assert!(should_render_lint_details(OutputFormat::Html, true));
-    assert!(should_render_lint_details(OutputFormat::Agent, true));
 }
 
 #[cfg(not(target_arch = "wasm32"))]

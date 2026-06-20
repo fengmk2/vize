@@ -1,6 +1,6 @@
 {
   "name": "vize",
-  "version": "0.242.0",
+  "version": "0.243.0",
   "description": "Vize - High-performance Vue.js toolchain in Rust",
   "keywords": [
     "cli",

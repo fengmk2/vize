@@ -32,7 +32,9 @@ import {
   emitStaticGallery,
   isMuseaStaticBuild,
   loadStaticRuntimeModule,
+  museaStaticBuildConfig,
   resolveStaticRuntimeId,
+  type StaticBuildInput,
 } from "../static-export.js";
 
 const require = createRequire(import.meta.url);
@@ -153,14 +155,11 @@ export function musea(options: MuseaOptions = {}): Plugin[] {
       return shouldApplyMuseaPlugin(env);
     },
 
-    config() {
-      return {
-        resolve: {
-          alias: {
-            vue: resolveVueRuntimeCompiler(),
-          },
-        },
-      };
+    config(userConfig) {
+      const staticBuildConfig = isMuseaStaticBuild()
+        ? museaStaticBuildConfig(userConfig.build?.rollupOptions?.input as StaticBuildInput)
+        : {};
+      return { resolve: { alias: { vue: resolveVueRuntimeCompiler() } }, ...staticBuildConfig };
     },
 
     options: applyMuseaStaticBuildInput,

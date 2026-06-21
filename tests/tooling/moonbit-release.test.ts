@@ -162,3 +162,13 @@ test("release script rewrites only the native-binaries catalog block in pnpm-loc
   );
   assert.ok(out.includes("resolution: {integrity: sha512-AAA==}"), "integrity hash preserved");
 });
+
+test("release script includes the VS Code extension package in extra synced manifests", () => {
+  const result = runMoonScript("release", ["--print-extra-package-json-paths"]);
+
+  assert.equal(result.status, 0, `${result.stderr}\n${result.stdout}`);
+  assert.ok(
+    result.stdout.split("\n").includes("npm/editor/vscode/package.json"),
+    "VS Code extension version must be bumped with release commits",
+  );
+});

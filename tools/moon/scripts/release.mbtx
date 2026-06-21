@@ -349,6 +349,14 @@ fn replace_package_json_version(
 }
 
 ///|
+/// Package manifests that are intentionally outside the npm workspace package
+/// globs but still ship release artifacts and must stay aligned with the
+/// workspace version.
+fn extra_release_package_json_paths() -> Array[String] {
+  ["npm/editor/vscode/package.json"]
+}
+
+///|
 /// Replaces the first TOML `version = "..."` line in a file.
 ///
 /// This is used for the Zed extension manifests where a full TOML parser would
@@ -556,6 +564,12 @@ async fn run_app() -> Int {
     )
     return 0
   }
+  if args.length() == 1 && args[0] == "--print-extra-package-json-paths" {
+    for path in extra_release_package_json_paths() {
+      println(path)
+    }
+    return 0
+  }
   if args.is_empty() {
     @stdio.stderr.write(
       "Usage: moon run --target native - -- <patch|minor|major|alpha|beta|rc|release> [-y] [--force-tag] < tools/moon/scripts/release.mbtx\n",
@@ -689,6 +703,27 @@ async fn run_app() -> Int {
       println("  Updated \{package_json_path}")
       files_to_stage.push(package_json_path)
     }
+  }
+  for package_json_path in extra_release_package_json_paths() {
+    if !safe_path_exists(package_json_path) {
+      continue
+    }
+    let package_json = match read_file_to_string(package_json_path) {
+      Some(content) => content
+      None => {
+        @stdio.stderr.write("Failed to read \{package_json_path}\n")
+        return 1
+      }
+    }
+    if !write_string_to_file(
+      package_json_path,
+      replace_package_json_version(package_json, current_version, new_version),
+    ) {
+      @stdio.stderr.write("Failed to update \{package_json_path}\n")
+      return 1
+    }
+    println("  Updated \{package_json_path}")
+    files_to_stage.push(package_json_path)
   }
 
   let workspace_yaml_path = "pnpm-workspace.yaml"

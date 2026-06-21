@@ -2,6 +2,7 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
 };
+
 use vize_carton::cstr;
 
 fn workspace_root() -> PathBuf {
@@ -17,7 +18,7 @@ fn unique_case_dir(name: &str) -> PathBuf {
         .join("target")
         .join("vize-tests")
         .join("tests")
-        .join(cstr!("check-canon-graphql-{name}-{}", std::process::id()).as_str())
+        .join(cstr!("check-reference-types-{name}-{}", std::process::id()).as_str())
 }
 
 fn resolve_test_corsa_path() -> Option<PathBuf> {
@@ -65,111 +66,108 @@ fn symlink_path(source: &Path, target: &Path) -> std::io::Result<()> {
     }
 }
 
+fn write(root: &Path, rel: &str, content: &str) {
+    let path = root.join(rel);
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::write(path, content).unwrap();
+}
+
 #[test]
-fn check_explicit_vue_keeps_generated_graphql_schema_out_of_canon() {
+fn check_loads_reference_types_from_tsconfig_ambient_declarations() {
     let Some(corsa_path) = resolve_test_corsa_path() else {
         return;
     };
-    let project_root = unique_case_dir("dedupe");
+    let project_root = unique_case_dir("subpath");
     let _ = std::fs::remove_dir_all(&project_root);
-    std::fs::create_dir_all(&project_root).unwrap();
+    std::fs::create_dir_all(project_root.join("src")).unwrap();
     link_workspace_vue(&project_root).unwrap();
-    std::fs::write(
-        project_root.join("tsconfig.json"),
+    write(
+        &project_root,
+        "node_modules/vitest/importMeta.d.ts",
+        "/// <reference path=\"./globals.d.ts\" />\nexport {};\n",
+    );
+    write(
+        &project_root,
+        "node_modules/vitest/globals.d.ts",
+        "export {};\ndeclare global { interface ImportMeta { vitest: boolean; } }\n",
+    );
+    write(
+        &project_root,
+        "node_modules/@vizejs/vite-plugin-musea/package.json",
+        r#"{ "exports": { "./client": { "types": "./client.d.ts" } } }"#,
+    );
+    write(
+        &project_root,
+        "node_modules/@vizejs/vite-plugin-musea/client.d.ts",
+        r#"export {};
+declare global {
+  function defineArt(source: string, options?: { title?: string }): void;
+}
+declare module "*.art.vue" {
+  const component: import("vue").DefineComponent<{}, {}, any>;
+  export default component;
+}
+"#,
+    );
+    write(
+        &project_root,
+        "vite-env.d.ts",
+        r#"/// <reference types="vitest/importMeta" />
+/// <reference types="@vizejs/vite-plugin-musea/client" />
+"#,
+    );
+    write(
+        &project_root,
+        "tsconfig.json",
         r#"{
   "compilerOptions": {
     "strict": true,
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "baseUrl": ".",
-    "paths": {
-      "~/*": ["*"]
-    },
     "noEmit": true
   },
-  "include": ["src/**/*", "types/**/*.d.ts"]
+  "include": ["vite-env.d.ts", "src/**/*"]
 }"#,
-    )
-    .unwrap();
-
-    let schema_path = project_root.join("types/codegen/schema.d.ts");
-    let schema_path_text = schema_path.to_string_lossy().replace('\\', "/");
-    let schema_specifier = schema_path_text
-        .strip_suffix(".d.ts")
-        .expect("schema path should end with .d.ts");
-    std::fs::create_dir_all(schema_path.parent().unwrap()).unwrap();
-    std::fs::write(
-        &schema_path,
-        r#"// Generated GraphQL schema types.
-export enum AimQuestionDisplayKind {
-  Text = 'TEXT',
+    );
+    write(
+        &project_root,
+        "src/App.vue",
+        r#"<script setup lang="ts">
+if (import.meta.vitest) {
+  defineArt("./App.vue", { title: "App" })
 }
-
-export type AimQuestion = {
-  kind: AimQuestionDisplayKind
-}
-"#,
-    )
-    .unwrap();
-
-    let src_dir = project_root.join("src");
-    std::fs::create_dir_all(&src_dir).unwrap();
-    std::fs::write(
-        src_dir.join("question.ts"),
-        r#"import type { AimQuestion } from '~/types/codegen/schema'
-
-export function expectQuestion(question: AimQuestion): AimQuestion {
-  return question
-}
-"#,
-    )
-    .unwrap();
-    std::fs::write(
-        src_dir.join("App.vue"),
-        cstr!(
-            r#"<script setup lang="ts">
-import {{ expectQuestion }} from './question'
-import {{ AimQuestionDisplayKind, type AimQuestion }} from '{schema_specifier}'
-
-const question = {{
-  kind: AimQuestionDisplayKind.Text,
-}} satisfies AimQuestion
-
-expectQuestion(question)
 </script>
 
 <template><div /></template>
-"#
-        ),
-    )
-    .unwrap();
+"#,
+    );
 
     let output = Command::new(env!("CARGO_BIN_EXE_vize"))
         .current_dir(&project_root)
         .env("CORSA_PATH", &corsa_path)
-        .args(["check", "src/App.vue", "--format", "json"])
+        .args([
+            "check",
+            "--tsconfig",
+            "tsconfig.json",
+            "src/App.vue",
+            "--format",
+            "json",
+        ])
         .output()
         .unwrap();
 
-    let stdout = std::str::from_utf8(&output.stdout).unwrap();
+    let stdout = std::string::String::from_utf8(output.stdout).unwrap();
+    let stderr = std::string::String::from_utf8(output.stderr).unwrap();
     assert!(
         output.status.success(),
-        "check failed\nstdout:\n{}\nstderr:\n{}",
-        stdout,
-        std::str::from_utf8(&output.stderr).unwrap_or("<non-utf8 stderr>")
+        "check failed:\nstdout:\n{stdout}\nstderr:\n{stderr}"
     );
-    let json: serde_json::Value = serde_json::from_str(stdout).unwrap();
+    let json: serde_json::Value = serde_json::from_str(&stdout).unwrap();
     assert_eq!(json["errorCount"], serde_json::json!(0), "{stdout}");
     assert!(
-        project_root
-            .join("node_modules/.vize/canon/src/question.ts")
-            .exists()
-    );
-    assert!(
-        !project_root
-            .join("node_modules/.vize/canon/types/codegen/schema.d.ts")
-            .exists()
+        !stdout.contains("TS2304") && !stdout.contains("TS2339"),
+        "reference types should provide defineArt and import.meta.vitest:\n{stdout}"
     );
 
     let _ = std::fs::remove_dir_all(&project_root);

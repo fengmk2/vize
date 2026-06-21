@@ -2,6 +2,7 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
 };
+
 use vize_carton::cstr;
 
 fn workspace_root() -> PathBuf {
@@ -17,7 +18,7 @@ fn unique_case_dir(name: &str) -> PathBuf {
         .join("target")
         .join("vize-tests")
         .join("tests")
-        .join(cstr!("check-canon-graphql-{name}-{}", std::process::id()).as_str())
+        .join(cstr!("check-tsx-sfc-attrs-{name}-{}", std::process::id()).as_str())
 }
 
 fn resolve_test_corsa_path() -> Option<PathBuf> {
@@ -66,13 +67,13 @@ fn symlink_path(source: &Path, target: &Path) -> std::io::Result<()> {
 }
 
 #[test]
-fn check_explicit_vue_keeps_generated_graphql_schema_out_of_canon() {
+fn check_tsx_story_allows_sfc_class_and_style_attrs() {
     let Some(corsa_path) = resolve_test_corsa_path() else {
         return;
     };
-    let project_root = unique_case_dir("dedupe");
+    let project_root = unique_case_dir("fallthrough");
     let _ = std::fs::remove_dir_all(&project_root);
-    std::fs::create_dir_all(&project_root).unwrap();
+    std::fs::create_dir_all(project_root.join("src")).unwrap();
     link_workspace_vue(&project_root).unwrap();
     std::fs::write(
         project_root.join("tsconfig.json"),
@@ -82,73 +83,52 @@ fn check_explicit_vue_keeps_generated_graphql_schema_out_of_canon() {
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "baseUrl": ".",
-    "paths": {
-      "~/*": ["*"]
-    },
+    "jsx": "preserve",
+    "jsxImportSource": "vue",
+    "types": ["vue/jsx"],
     "noEmit": true
   },
-  "include": ["src/**/*", "types/**/*.d.ts"]
+  "include": ["src/**/*"]
 }"#,
     )
     .unwrap();
-
-    let schema_path = project_root.join("types/codegen/schema.d.ts");
-    let schema_path_text = schema_path.to_string_lossy().replace('\\', "/");
-    let schema_specifier = schema_path_text
-        .strip_suffix(".d.ts")
-        .expect("schema path should end with .d.ts");
-    std::fs::create_dir_all(schema_path.parent().unwrap()).unwrap();
     std::fs::write(
-        &schema_path,
-        r#"// Generated GraphQL schema types.
-export enum AimQuestionDisplayKind {
-  Text = 'TEXT',
-}
-
-export type AimQuestion = {
-  kind: AimQuestionDisplayKind
-}
-"#,
-    )
-    .unwrap();
-
-    let src_dir = project_root.join("src");
-    std::fs::create_dir_all(&src_dir).unwrap();
-    std::fs::write(
-        src_dir.join("question.ts"),
-        r#"import type { AimQuestion } from '~/types/codegen/schema'
-
-export function expectQuestion(question: AimQuestion): AimQuestion {
-  return question
-}
-"#,
-    )
-    .unwrap();
-    std::fs::write(
-        src_dir.join("App.vue"),
-        cstr!(
-            r#"<script setup lang="ts">
-import {{ expectQuestion }} from './question'
-import {{ AimQuestionDisplayKind, type AimQuestion }} from '{schema_specifier}'
-
-const question = {{
-  kind: AimQuestionDisplayKind.Text,
-}} satisfies AimQuestion
-
-expectQuestion(question)
+        project_root.join("src/AfButton.vue"),
+        r#"<script setup lang="ts">
+defineProps<{ color: 'primary' | 'secondary' }>()
+defineEmits<{ click: [event: MouseEvent] }>()
 </script>
+<template><button /></template>
+"#,
+    )
+    .unwrap();
+    std::fs::write(
+        project_root.join("src/AfButton.stories.tsx"),
+        r#"import AfButton from './AfButton.vue';
 
-<template><div /></template>
-"#
-        ),
+export const Example = () => (
+  <AfButton
+    class="af-mb-2"
+    style="width: 200px"
+    color="primary"
+    onClick={(event: MouseEvent) => event.preventDefault()}
+  />
+);
+"#,
     )
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_vize"))
         .current_dir(&project_root)
         .env("CORSA_PATH", &corsa_path)
-        .args(["check", "src/App.vue", "--format", "json"])
+        .args([
+            "check",
+            "--tsconfig",
+            "tsconfig.json",
+            "src/AfButton.stories.tsx",
+            "--format",
+            "json",
+        ])
         .output()
         .unwrap();
 
@@ -161,16 +141,11 @@ expectQuestion(question)
     );
     let json: serde_json::Value = serde_json::from_str(stdout).unwrap();
     assert_eq!(json["errorCount"], serde_json::json!(0), "{stdout}");
-    assert!(
-        project_root
-            .join("node_modules/.vize/canon/src/question.ts")
-            .exists()
-    );
-    assert!(
-        !project_root
-            .join("node_modules/.vize/canon/types/codegen/schema.d.ts")
-            .exists()
-    );
+    let helpers =
+        std::fs::read_to_string(project_root.join("node_modules/.vize/canon/__vize_helpers.d.ts"))
+            .unwrap();
+    assert!(helpers.contains("interface IntrinsicAttributes"));
+    assert!(helpers.contains("class?: unknown; style?: unknown"));
 
     let _ = std::fs::remove_dir_all(&project_root);
 }

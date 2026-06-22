@@ -370,7 +370,7 @@ function shouldLogSfcWarnings(state: VizePluginState, realPath: string): boolean
 }
 
 function isJsxComponentPath(path: string): boolean {
-  return path.endsWith(".jsx") || path.endsWith(".tsx");
+  return /\.[jt]sx$/.test(path) && !/\.(?:stories|story)\.[jt]sx$/.test(path);
 }
 
 function shouldTransformJsxRequest(

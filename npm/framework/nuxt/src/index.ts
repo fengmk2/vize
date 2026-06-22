@@ -1,6 +1,7 @@
 import { createNuxtComponentResolver, injectNuxtComponentImports } from "./components";
 import { injectNuxtI18nHelpers } from "./i18n";
 import { appendMuseaArtComponentIgnore } from "./musea-components";
+import "./schema";
 import type { VizeNuxtCompilerOptions, VizeNuxtOptions } from "./options";
 import {
   resolveNuxtBridgeOptions,
@@ -21,7 +22,6 @@ import {
   stabilizeNuxtInjectedKeysForVizeVirtualModule,
 } from "./utils";
 import { appendOriginalVueSourceForUnoCss } from "./unocss";
-
 type ViteTransformResult = string | { code?: string; map?: unknown } | null | undefined;
 const VIZE_NUXT_AUTO_IMPORT_PATCHED = "__vizeNuxtAutoImportPatched";
 const VUE_RUNTIME_DEDUPE = [

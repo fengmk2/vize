@@ -1,4 +1,5 @@
-use super::{ServeArgs, VITE_BIN_NAMES, create_serve_plan, resolve_vite_binary};
+use super::ServeArgs;
+use super::serve_plan::{VITE_BIN_NAMES, create_serve_plan, resolve_vite_binary};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -110,6 +111,53 @@ fn serve_plan_runs_static_build_with_musea_environment() {
     assert_eq!(plan.program, vite_bin);
     assert_eq!(plan.args, ["build"]);
     assert_eq!(plan.env, [("VIZE_MUSEA_STATIC_BUILD".into(), "1".into())]);
+}
+
+#[test]
+fn serve_plan_forwards_shared_vize_config_path() {
+    let temp = tempfile::tempdir().unwrap();
+    let vite_bin = write_vite_bin(temp.path());
+    write_musea_vite_setup(temp.path());
+
+    let plan = create_serve_plan(
+        &ServeArgs {
+            config: Some(PathBuf::from("../vize.config.ts")),
+            ..ServeArgs::default()
+        },
+        temp.path(),
+    )
+    .unwrap();
+
+    assert_eq!(plan.program, vite_bin);
+    assert_eq!(
+        plan.env,
+        [("VIZE_CONFIG_FILE".into(), "../vize.config.ts".into())]
+    );
+}
+
+#[test]
+fn serve_plan_combines_shared_config_with_static_build_environment() {
+    let temp = tempfile::tempdir().unwrap();
+    write_vite_bin(temp.path());
+    write_musea_vite_setup(temp.path());
+
+    let plan = create_serve_plan(
+        &ServeArgs {
+            build: true,
+            config: Some(PathBuf::from("../vize.config.ts")),
+            ..ServeArgs::default()
+        },
+        temp.path(),
+    )
+    .unwrap();
+
+    assert_eq!(
+        plan.env,
+        [
+            ("VIZE_CONFIG_FILE".into(), "../vize.config.ts".into()),
+            ("VIZE_MUSEA_STATIC_BUILD".into(), "1".into())
+        ]
+    );
 }
 
 #[test]

@@ -2,8 +2,6 @@ import type { Plugin, ViteDevServer, ResolvedConfig } from "vite";
 import { transformWithEsbuild } from "vite";
 import fs from "node:fs";
 import path from "node:path";
-import { vizeConfigStore } from "@vizejs/vite-plugin";
-
 import type { MuseaOptions, ArtFileInfo, ArtMetadata } from "../types/index.js";
 
 import { loadNative } from "../native-loader.js";
@@ -37,6 +35,7 @@ import {
   shouldEnableMuseaStaticBuild,
   type StaticBuildInput,
 } from "../static-export.js";
+import { resolveMuseaSharedConfig } from "./config.js";
 
 function extractArtTagAttributes(source: string): Record<string, string | true> {
   const artTagMatch = source.match(/<art\b([\s\S]*?)>/i);
@@ -156,10 +155,10 @@ export function musea(options: MuseaOptions = {}): Plugin[] {
     },
 
     options: applyMuseaStaticBuildInput,
-    configResolved(resolvedConfig) {
+    async configResolved(resolvedConfig) {
       config = resolvedConfig;
 
-      const vizeConfig = vizeConfigStore.get(resolvedConfig.root);
+      const vizeConfig = await resolveMuseaSharedConfig(resolvedConfig);
       if (vizeConfig?.musea) {
         const mc = vizeConfig.musea;
         if (!options.include && mc.include) include = mc.include;

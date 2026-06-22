@@ -11,6 +11,7 @@ import {
   syncCollectedCssForFile,
   type VizePluginState,
 } from "./state.ts";
+import { getLoadableVueSfcPath, shouldLoadCompiledVueSfcPath } from "./load-sfc.ts";
 import { compileFile, compileJsxModule } from "../compiler.ts";
 import { generateOutput, hasDelegatedStyles } from "../utils/index.ts";
 import {
@@ -96,42 +97,6 @@ function findMacroArtifactModule(
   return compiled?.macroArtifacts?.find((artifact) => artifact.kind === kind)?.moduleCode ?? null;
 }
 
-function shouldLoadVueSfcRequest(request: ReturnType<typeof classifyVitePluginRequest>): boolean {
-  if (
-    !request.isVueSfcPath ||
-    request.isVueStyleQuery ||
-    request.hasMacroQuery ||
-    request.hasDefinePageQuery
-  ) {
-    return false;
-  }
-
-  if (!request.querySuffix) {
-    return true;
-  }
-
-  const params = new URLSearchParams(request.querySuffix.slice(1));
-  if (
-    params.has("raw") ||
-    params.has("url") ||
-    params.has("worker") ||
-    params.has("sharedworker")
-  ) {
-    return false;
-  }
-
-  return params.has("nuxt_component");
-}
-
-function getLoadableVueSfcPath(
-  request: ReturnType<typeof classifyVitePluginRequest>,
-): string | null {
-  if (!shouldLoadVueSfcRequest(request)) {
-    return null;
-  }
-  return classifyVitePluginRequest(request.normalizedFsId ?? request.path).normalizedVuePath;
-}
-
 function normalizeStyleVirtualId(id: string): string {
   const withoutPrefix = id.startsWith("\0") ? id.slice(1) : id;
   if (!withoutPrefix.includes("?vue")) {
@@ -164,7 +129,9 @@ function loadCompiledSfcModule(
   // On-demand compile if not cached
   if (!compiled && fs.existsSync(realPath)) {
     state.logger.log(`load: on-demand compiling ${realPath}`);
-    compiled = compileFile(realPath, cache, getCompileOptionsForRequest(state, isSsr));
+    compiled = compileFile(realPath, cache, getCompileOptionsForRequest(state, isSsr), undefined, {
+      logWarnings: shouldLogSfcWarnings(state, realPath),
+    });
   }
   syncCollectedCssForFile({ ...state, extractCss }, realPath, compiled);
 
@@ -349,10 +316,19 @@ export function loadHook(
       state.logger.log(`load: skipping non-vue virtual module ${realPath}`);
       return null;
     }
+    if (!shouldLoadCompiledVueSfcPath(state, realPath)) {
+      return null;
+    }
     return loadCompiledSfcModule(state, realPath, isSsr, currentBase, loadOptions);
   }
 
   if (loadableVueSfcPath) {
+    const hasNuxtComponentQuery =
+      !!request.querySuffix &&
+      new URLSearchParams(request.querySuffix.slice(1)).has("nuxt_component");
+    if (!shouldLoadCompiledVueSfcPath(state, loadableVueSfcPath, hasNuxtComponentQuery)) {
+      return null;
+    }
     const isSsr = !!loadOptions?.ssr;
     return loadCompiledSfcModule(state, loadableVueSfcPath, isSsr, currentBase, loadOptions);
   }
@@ -381,6 +357,16 @@ export function loadHook(
   }
 
   return null;
+}
+
+function shouldLogSfcWarnings(state: VizePluginState, realPath: string): boolean {
+  if (
+    (state.mergedOptions.handleNodeModulesVue ?? true) === false &&
+    realPath.includes("node_modules")
+  ) {
+    return false;
+  }
+  return true;
 }
 
 function isJsxComponentPath(path: string): boolean {

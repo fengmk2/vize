@@ -20,6 +20,8 @@ mod spec;
 mod type_references;
 
 #[cfg(test)]
+mod codegen_tests;
+#[cfg(test)]
 mod tests;
 
 pub(crate) use ambient::{
@@ -39,7 +41,8 @@ use collect::{
 use glob::{default_exclude_specs, normalize_input_path};
 use loader::collect_tsconfig_project_paths;
 use matching::{
-    SupportedFileOptions, is_nuxt_import_manifest_path, is_supported_check_file_with_options,
+    SupportedFileOptions, is_generated_codegen_declaration_path, is_nuxt_import_manifest_path,
+    is_supported_check_file_with_options,
 };
 use spec::{FileCollectionOptions, GlobSpec, TsconfigInputSpec};
 
@@ -110,6 +113,7 @@ fn collect_default_check_files_for_tsconfig(
         if resolved.is_file()
             && is_supported_check_file_with_options(&resolved, SupportedFileOptions { include_jsx })
             && !is_nuxt_import_manifest_path(&resolved)
+            && !is_generated_codegen_declaration_path(&resolved)
             && seen.insert(resolved.clone())
         {
             files.push(resolved);
@@ -150,7 +154,7 @@ fn collect_default_check_files_for_tsconfig(
             },
         );
         for path in collected {
-            if seen.insert(path.clone()) {
+            if !is_generated_codegen_declaration_path(&path) && seen.insert(path.clone()) {
                 files.push(path);
             }
         }
@@ -165,7 +169,7 @@ fn collect_default_check_files_for_tsconfig(
                         include_jsx,
                     },
                 ) {
-                    if seen.insert(path.clone()) {
+                    if !is_generated_codegen_declaration_path(&path) && seen.insert(path.clone()) {
                         files.push(path);
                     }
                 }

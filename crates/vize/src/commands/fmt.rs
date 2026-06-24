@@ -33,7 +33,7 @@ use patterns::default_fmt_patterns;
 #[derive(Args)]
 #[allow(clippy::disallowed_types)]
 pub struct FmtArgs {
-    /// Glob pattern(s) to match .vue, .js, .ts, .jsx, .tsx, and .json files
+    /// Glob pattern(s) to match .vue, .js, .ts, .jsx, .tsx, .json, and .jsonc files
     #[arg(default_values_t = default_fmt_patterns())]
     pub patterns: Vec<String>,
 
@@ -478,11 +478,15 @@ fn format_file_source(
         });
     }
 
-    if path.extension().is_some_and(|e| e == "json") {
-        let code = profile!(
-            "cli.fmt.file.format_json",
-            vize_glyph::format_json(source, options)
-        )?;
+    if let Some(ext) = path.extension().and_then(|e| e.to_str())
+        && matches!(ext, "json" | "jsonc")
+    {
+        let format = if ext == "jsonc" {
+            vize_glyph::format_jsonc
+        } else {
+            vize_glyph::format_json
+        };
+        let code = profile!("cli.fmt.file.format_json", format(source, options))?;
         return Ok(FormatResult {
             changed: code.as_str() != source,
             code,

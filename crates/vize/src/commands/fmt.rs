@@ -33,7 +33,7 @@ use patterns::default_fmt_patterns;
 #[derive(Args)]
 #[allow(clippy::disallowed_types)]
 pub struct FmtArgs {
-    /// Glob pattern(s) to match .vue, .js, .ts, .jsx, and .tsx files
+    /// Glob pattern(s) to match .vue, .js, .ts, .jsx, .tsx, and .json files
     #[arg(default_values_t = default_fmt_patterns())]
     pub patterns: Vec<String>,
 
@@ -115,7 +115,7 @@ pub fn run(args: FmtArgs) {
     let collect_time = collect_start.elapsed();
 
     if files.is_empty() {
-        eprintln!("No .vue, .js, .ts, .jsx, or .tsx files found matching the patterns");
+        eprintln!("No .vue, .js, .ts, .jsx, .tsx, or .json files found matching the patterns");
         if patterns.explicit {
             std::process::exit(1);
         }
@@ -384,8 +384,6 @@ fn process_file(
     profile: bool,
 ) -> Result<FormatFileResult, String> {
     let file_start = profile.then(Instant::now);
-
-    // Read the file
     let read_start = profile.then(Instant::now);
     let source = match profile!("cli.fmt.file.read", fs::read_to_string(path)) {
         Ok(source) => {
@@ -401,7 +399,6 @@ fn process_file(
         .map(|start| start.elapsed())
         .unwrap_or(Duration::ZERO);
 
-    // Format the source using the provided allocator
     let format_start = profile.then(Instant::now);
     let result = format_file_source(path, &source, options, allocator)
         .map_err(|e| format!("Format error: {}", e))?;
@@ -437,11 +434,8 @@ fn process_file(
         .unwrap_or(Duration::ZERO);
 
     let profile = file_start.map(|start| {
-        let state = if result.changed {
-            "changed"
-        } else {
-            "unchanged"
-        };
+        #[rustfmt::skip]
+        let state = if result.changed { "changed" } else { "unchanged" };
         FormatFileProfile {
             row: ProfileFileRow {
                 path: path.clone(),
@@ -484,6 +478,16 @@ fn format_file_source(
         });
     }
 
+    if path.extension().is_some_and(|e| e == "json") {
+        let code = profile!(
+            "cli.fmt.file.format_json",
+            vize_glyph::format_json(source, options)
+        )?;
+        return Ok(FormatResult {
+            changed: code.as_str() != source,
+            code,
+        });
+    }
     profile!(
         "cli.fmt.file.format_sfc",
         format_sfc_with_allocator(source, options, allocator)
@@ -506,13 +510,9 @@ struct FormatFileResult {
     profile: Option<FormatFileProfile>,
 }
 
-/// Write `contents` to `path` via a sibling temp file + rename, so an
-/// interruption mid-write cannot truncate or corrupt the destination (#970).
-///
-/// The temp file lives in the same directory as the destination so the
-/// rename is a same-filesystem move (atomic on Unix; best-effort on
-/// Windows where rename fails if the target exists — we remove the
-/// destination first only as a fallback).
+/// Write `contents` to `path` atomically via a sibling temp file + rename (#970).
+/// The temp file lives in the same directory (same-fs rename, atomic on Unix).
+/// On Windows, remove-then-rename is used as a fallback.
 fn atomic_write(path: &Path, contents: &[u8]) -> std::io::Result<()> {
     use std::io::Write;
 

@@ -40,6 +40,7 @@
 
 mod error;
 mod formatter;
+mod json;
 mod options;
 mod script;
 mod style;
@@ -47,9 +48,8 @@ mod template;
 
 pub use error::*;
 pub use formatter::*;
+pub use json::format_json_source as format_json;
 pub use options::*;
-
-// Re-export allocator for external use
 pub use vize_carton::Allocator;
 use vize_carton::String;
 

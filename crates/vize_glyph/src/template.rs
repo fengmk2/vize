@@ -290,7 +290,6 @@ mod tests {
         options.single_attribute_per_line = true;
         let result = format_template_content(source, &options).unwrap();
 
-        // Each attribute should be on its own line
         let lines: Vec<&str> = result.lines().collect();
         assert!(lines.len() > 2, "Should have multiple lines for attributes");
     }
@@ -302,6 +301,9 @@ mod tests {
         assert!(is_void_element_str("input"));
         assert!(!is_void_element_str("div"));
         assert!(!is_void_element_str("span"));
+        assert!(!is_void_element_str("Link"));
+        assert!(!is_void_element_str("Input"));
+        assert!(!is_void_element_str("Img"));
     }
 
     #[test]
@@ -468,7 +470,6 @@ mod tests {
         options.max_attributes_per_line = Some(2);
         let result = format_template_content(source, &options).unwrap();
 
-        // Should wrap: multiple lines with at most 2 attrs per line
         let lines: Vec<&str> = result.lines().collect();
         assert!(
             lines.len() >= 3,
@@ -483,7 +484,6 @@ mod tests {
         options.max_attributes_per_line = Some(3);
         let result = format_template_content(source, &options).unwrap();
 
-        // 2 attrs <= 3 limit, no wrapping
         let lines: Vec<&str> = result.lines().collect();
         assert_eq!(lines.len(), 1, "Should keep the empty element inline");
     }

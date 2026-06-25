@@ -52,6 +52,7 @@ const vizeDocsNavigation = (() => {
     ["/guide/oxlint", "Oxlint Plugin"],
     ["/guide/comment-annotations", "Comment Annotations"],
     ["/rules", "Rules Overview"],
+    ["/rules/all", "All Rules"],
     ["/rules/vue", "Vue"],
     ["/rules/type-and-script", "Type & Script"],
     ["/rules/html", "HTML"],
@@ -109,6 +110,7 @@ const vizeDocsNavigation = (() => {
       title: "Rules",
       paths: [
         "/rules",
+        "/rules/all",
         "/rules/vue",
         "/rules/type-and-script",
         "/rules/html",

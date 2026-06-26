@@ -36,12 +36,12 @@ export const cliReleasePlatforms = [
     archive: "vize-aarch64-pc-windows-msvc.zip",
   },
   {
-    host: "blacksmith-32vcpu-ubuntu-2404",
+    host: "ubuntu-latest",
     target: "x86_64-unknown-linux-gnu",
     archive: "vize-x86_64-unknown-linux-gnu.tar.gz",
   },
   {
-    host: "blacksmith-32vcpu-ubuntu-2404",
+    host: "ubuntu-latest",
     target: "aarch64-unknown-linux-gnu",
     archive: "vize-aarch64-unknown-linux-gnu.tar.gz",
   },
@@ -69,22 +69,22 @@ export const nativeReleasePlatforms = [
     cross_compile: false,
   },
   {
-    host: "blacksmith-32vcpu-ubuntu-2404",
+    host: "ubuntu-latest",
     target: "x86_64-unknown-linux-gnu",
     cross_compile: false,
   },
   {
-    host: "blacksmith-32vcpu-ubuntu-2404",
+    host: "ubuntu-latest",
     target: "x86_64-unknown-linux-musl",
     cross_compile: true,
   },
   {
-    host: "blacksmith-32vcpu-ubuntu-2404-arm",
+    host: "ubuntu-latest-arm",
     target: "aarch64-unknown-linux-gnu",
     cross_compile: false,
   },
   {
-    host: "blacksmith-32vcpu-ubuntu-2404-arm",
+    host: "ubuntu-latest-arm",
     target: "aarch64-unknown-linux-musl",
     cross_compile: true,
   },

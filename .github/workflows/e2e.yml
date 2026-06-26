@@ -40,7 +40,7 @@ jobs:
   testbox:
     name: Testbox
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.testbox_id != '' }}
-    runs-on: blacksmith-32vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
       contents: read
@@ -93,7 +93,7 @@ jobs:
   app-e2e:
     name: app-e2e (${{ matrix.suite }})
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.testbox_id == '' }}
-    runs-on: blacksmith-32vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
       contents: read

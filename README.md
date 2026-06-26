@@ -56,7 +56,7 @@ reasonably large Vue projects to use as test beds.
 
 ## Benchmarks
 
-Measured on Blacksmith `blacksmith-32vcpu-ubuntu-2404`, 15,000 generated Vue SFCs, median of 5 runs
+Measured on Blacksmith `ubuntu-latest`, 15,000 generated Vue SFCs, median of 5 runs
 ([latest run](https://github.com/ubugeeei-prod/vize/actions/runs/27408931576)):
 
 | Surface     | Existing tool      | Existing |    Vize |    Speedup |

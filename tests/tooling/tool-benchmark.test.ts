@@ -47,7 +47,7 @@ const data = {
     runUrl: "https://github.com/ubugeeei-prod/vize/actions/runs/1",
   },
   runner: {
-    label: "blacksmith-32vcpu-ubuntu-2404",
+    label: "ubuntu-latest",
     blacksmithMaxSpec: "32 vCPU / 128 GB RAM / 1.5 TB storage",
     cpuCount: 32,
     cpuModel: "test cpu",
@@ -76,7 +76,7 @@ const data = {
       "gh workflow run tool-benchmark.yml --ref <branch> -f file_count=15000 -f check_file_count=500 -f vite_file_count=1000 -f nuxt_file_count=500 -f large_blocks=900 -f runs=3 -f warmups=1 -f commit_results=true",
     generate: "node bench/generate.mjs 15000",
     benchmark:
-      'node bench/compare-tools.mjs --input bench/__in__ --vize-bin target/release/vize --runs 3 --warmups 1 --check-file-count 500 --vite-file-count 1000 --nuxt-file-count 500 --large-blocks 900 --runner-label "blacksmith-32vcpu-ubuntu-2404" --out tool-benchmark-summary.md --json tool-benchmark-results.json --doc performance-blacksmith.md',
+      'node bench/compare-tools.mjs --input bench/__in__ --vize-bin target/release/vize --runs 3 --warmups 1 --check-file-count 500 --vite-file-count 1000 --nuxt-file-count 500 --large-blocks 900 --runner-label "ubuntu-latest" --out tool-benchmark-summary.md --json tool-benchmark-results.json --doc performance-blacksmith.md',
   },
   fairness: [
     "All tools run on the same generated Vue SFC corpus from the same checkout and lockfile.",
@@ -89,7 +89,7 @@ test("tool benchmark markdown is suitable for PR comments", () => {
   const markdown = renderMarkdown(data);
 
   assert.match(markdown, /## Tool Benchmark/);
-  assert.match(markdown, /blacksmith-32vcpu-ubuntu-2404/);
+  assert.match(markdown, /ubuntu-latest/);
   assert.match(markdown, /32 vCPU \/ 128 GB RAM \/ 1\.5 TB storage/);
   assert.match(markdown, /SFC compile/);
   assert.match(markdown, /30\.0x/);

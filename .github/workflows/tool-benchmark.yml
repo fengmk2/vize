@@ -64,7 +64,7 @@ env:
 jobs:
   tool-benchmark:
     name: tool-benchmark
-    runs-on: blacksmith-32vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     timeout-minutes: 75
     permissions:
       contents: read
@@ -122,7 +122,7 @@ jobs:
             --vite-file-count "$VIZE_TOOL_BENCH_VITE_FILE_COUNT" \
             --nuxt-file-count "$VIZE_TOOL_BENCH_NUXT_FILE_COUNT" \
             --large-blocks "$VIZE_TOOL_BENCH_LARGE_BLOCKS" \
-            --runner-label "blacksmith-32vcpu-ubuntu-2404" \
+            --runner-label "ubuntu-latest" \
             --commit "${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}" \
             --ref "${{ github.ref_name }}" \
             --repository "${{ github.repository }}" \
@@ -147,7 +147,7 @@ jobs:
 
   tool-benchmark-comment:
     name: tool-benchmark-comment
-    runs-on: blacksmith-32vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
     needs:
@@ -178,7 +178,7 @@ jobs:
 
   tool-benchmark-commit:
     name: tool-benchmark-commit
-    runs-on: blacksmith-32vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.commit_results && startsWith(github.ref, 'refs/heads/') && github.ref_name != 'main' }}
     needs:

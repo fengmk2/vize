@@ -36,7 +36,7 @@ const DEFAULT_VITE_FILE_COUNT = 1000;
 const DEFAULT_NUXT_FILE_COUNT = 500;
 const DEFAULT_LARGE_BLOCKS = 900;
 const DEFAULT_TASKS = ["compile", "large", "lint", "fmt", "check", "vite", "nuxt"];
-const BLACKSMITH_MAX_LABEL = "blacksmith-32vcpu-ubuntu-2404";
+const BLACKSMITH_MAX_LABEL = "ubuntu-latest";
 const BLACKSMITH_MAX_SPEC = "32 vCPU / 128 GB RAM / 1.5 TB storage";
 
 function parseArgs(argv) {

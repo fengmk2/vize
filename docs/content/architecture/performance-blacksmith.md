@@ -12,7 +12,7 @@ This page is generated from the Tool Benchmark workflow so published performance
 
 Measured: 2026-06-12T10:10:23.793Z
 Commit: `07a1b83f49e4` ([run](https://github.com/ubugeeei-prod/vize/actions/runs/27408931576))
-Runner: `blacksmith-32vcpu-ubuntu-2404` (32 logical CPU, AMD EPYC, 32 vCPU / 128 GB RAM / 1.5 TB storage)
+Runner: `ubuntu-latest` (32 logical CPU, AMD EPYC, 32 vCPU / 128 GB RAM / 1.5 TB storage)
 Input: 15,000 generated SFC files (58.7 MB). Median of 5 measured run(s) after 1 warmup run(s).
 Large SFC: 900 repeated template blocks (674.9 KB). Nuxt import set: 500 SFC files.
 
@@ -43,7 +43,7 @@ Commands:
 ```sh
 gh workflow run tool-benchmark.yml --ref <branch> -f file_count=15000 -f check_file_count=500 -f vite_file_count=1000 -f nuxt_file_count=500 -f large_blocks=900 -f runs=5 -f warmups=1 -f commit_results=true
 node bench/generate.mjs 15000
-node bench/compare-tools.mjs --input bench/__in__ --vize-bin target/release/vize --runs 5 --warmups 1 --check-file-count 500 --vite-file-count 1000 --nuxt-file-count 500 --large-blocks 900 --runner-label "blacksmith-32vcpu-ubuntu-2404" --out tool-benchmark-summary.md --json tool-benchmark-results.json --doc performance-blacksmith.md
+node bench/compare-tools.mjs --input bench/__in__ --vize-bin target/release/vize --runs 5 --warmups 1 --check-file-count 500 --vite-file-count 1000 --nuxt-file-count 500 --large-blocks 900 --runner-label "ubuntu-latest" --out tool-benchmark-summary.md --json tool-benchmark-results.json --doc performance-blacksmith.md
 ```
 
 <details>

@@ -1050,7 +1050,7 @@ async function measureCheck(inputDir, files, options) {
 }
 
 async function measureVite(inputDir, files, options) {
-  const { build } = await import("vite");
+  const { build } = await import("vite-plus");
   const officialVuePlugin = (await import("@vitejs/plugin-vue")).default;
   const vizePluginPath = join(rootDir, "npm", "builder/vite", "dist", "index.mjs");
   if (!existsSync(vizePluginPath)) {

@@ -18,7 +18,7 @@
     "eslint-plugin-vue": "10.9.2",
     "prettier": "catalog:repo-tooling",
     "vite": "catalog:vite-stack",
-    "vite-plus": "catalog:vite-stack",
+    "vite-plus": "catalog:",
     "vue": "catalog:vue-beta",
     "vue-eslint-parser": "10.4.1",
     "vue-tsc": "3.3.4"

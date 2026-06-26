@@ -14,7 +14,7 @@
     "playwright": "catalog:testing",
     "three": "catalog:content",
     "vite": "catalog:vite-stack",
-    "vite-plus": "catalog:vite-stack",
+    "vite-plus": "catalog:",
     "vue": "catalog:vue-stable"
   }
 }

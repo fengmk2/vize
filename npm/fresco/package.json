@@ -58,7 +58,8 @@
     "@types/node": "catalog:typescript",
     "@vue/runtime-core": "catalog:vue-stable",
     "typescript": "catalog:typescript",
-    "vite-plus": "catalog:vite-stack"
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
   },
   "peerDependencies": {
     "@vue/runtime-core": "^3.4.0"

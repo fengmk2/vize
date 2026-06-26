@@ -52,10 +52,9 @@
     "@tsdown/css": "catalog:content",
     "@types/node": "catalog:typescript",
     "@vizejs/native": "workspace:*",
-    "tsdown": "catalog:vite-stack",
     "typescript": "catalog:typescript",
     "vite": "catalog:vite-stack",
-    "vite-plus": "catalog:vite-stack"
+    "vite-plus": "catalog:"
   },
   "optionalDependencies": {
     "@vizejs/native-darwin-arm64": "catalog:native-binaries",

@@ -88,7 +88,7 @@
     "tsx": "catalog:typescript",
     "typescript": "catalog:typescript",
     "vite": "catalog:vite-stack",
-    "vite-plus": "catalog:vite-stack",
+    "vite-plus": "catalog:",
     "vue": "catalog:vue-stable",
     "vue-router": "catalog:vue-stable"
   },

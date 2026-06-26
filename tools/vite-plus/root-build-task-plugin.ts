@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import type { Plugin } from "vite";
+import type { Plugin } from "vite-plus";
 
 const pathDelimiterForPlatform = (platform: NodeJS.Platform) => (platform === "win32" ? ";" : ":");
 

@@ -56,11 +56,10 @@
   "devDependencies": {
     "@tsdown/css": "catalog:content",
     "@types/node": "catalog:typescript",
-    "tsdown": "catalog:vite-stack",
     "tsx": "catalog:typescript",
     "typescript": "catalog:typescript",
     "vite": "catalog:vite-stack",
-    "vite-plus": "catalog:vite-stack"
+    "vite-plus": "catalog:"
   },
   "engines": {
     "node": ">=22"

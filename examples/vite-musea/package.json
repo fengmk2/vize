@@ -24,7 +24,7 @@
     "@vizejs/vite-plugin-musea": "workspace:*",
     "typescript": "catalog:typescript",
     "vite": "catalog:vite-stack",
-    "vite-plus": "catalog:vite-stack",
+    "vite-plus": "catalog:",
     "vize": "workspace:*"
   }
 }

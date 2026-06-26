@@ -15,7 +15,7 @@
     "@vizejs/vite-plugin": "workspace:*",
     "vite": "catalog:vite-stack",
     "vite-node": "catalog:vite-stack",
-    "vite-plus": "catalog:vite-stack",
+    "vite-plus": "catalog:",
     "vue": "catalog:vue-stable"
   }
 }

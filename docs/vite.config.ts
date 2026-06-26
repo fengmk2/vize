@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { defineConfig } from "vite-plus";
+import { defineConfig, lazyPlugins } from "vite-plus";
 import { oxContent, defineTheme, defaultTheme } from "@ox-content/vite-plugin";
 import { resolvePuppeteerExecutablePath } from "./browser-path.js";
 import { buildDocsBackgroundScript, createDocsBackgroundHtml } from "./theme/background";
@@ -15,7 +15,7 @@ const themeCss = readFileSync(resolve(themeDir, "style.css"), "utf-8");
 const themeJs = buildDocsBackgroundScript(themeDir);
 
 export default defineConfig({
-  plugins: [
+  plugins: lazyPlugins(() => [
     oxContent({
       srcDir: "content",
       outDir: "dist",
@@ -104,7 +104,7 @@ export default defineConfig({
       // Keep source tree clean; this site does not use Ox Content's API docs generator.
       docs: false,
     }),
-  ],
+  ]),
 
   server: {
     port: 4200,

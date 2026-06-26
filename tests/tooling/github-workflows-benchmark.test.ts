@@ -75,7 +75,7 @@ test("tool benchmark workflow produces docs artifacts, PR comments, and conventi
   assert.match(workflow, /VIZE_TOOL_BENCH_FILE_COUNT:/);
   assert.match(workflow, /VIZE_TOOL_BENCH_NUXT_FILE_COUNT:/);
   assert.match(workflow, /VIZE_TOOL_BENCH_LARGE_BLOCKS:/);
-  assert.match(benchmarkJob, /runs-on:\s*blacksmith-32vcpu-ubuntu-2404/);
+  assert.match(benchmarkJob, /runs-on:\s*ubuntu-latest/);
   assert.match(benchmarkJob, /contents:\s*read/);
   assert.doesNotMatch(benchmarkJob, /contents:\s*write/);
   assert.doesNotMatch(benchmarkJob, /issues:\s*write/);
@@ -87,7 +87,7 @@ test("tool benchmark workflow produces docs artifacts, PR comments, and conventi
   assert.match(benchmarkJob, /node bench\/compare-tools\.mjs/);
   assert.match(benchmarkJob, /--nuxt-file-count "\$VIZE_TOOL_BENCH_NUXT_FILE_COUNT"/);
   assert.match(benchmarkJob, /--large-blocks "\$VIZE_TOOL_BENCH_LARGE_BLOCKS"/);
-  assert.match(benchmarkJob, /--runner-label "blacksmith-32vcpu-ubuntu-2404"/);
+  assert.match(benchmarkJob, /--runner-label "ubuntu-latest"/);
   assert.match(benchmarkJob, /--doc performance-blacksmith\.md/);
   assert.match(benchmarkJob, /name:\s*tool-benchmark/);
   assert.match(benchmarkJob, /tool-benchmark-results\.json/);
@@ -157,7 +157,7 @@ test("criterion bench workflow runs an A/B micro-benchmark and a dialect guard",
 
   // A/B: alternating base/head criterion baselines compared with critcmp into a
   // shared target dir; report-only by default (no threshold blocks the PR).
-  assert.match(abJob, /runs-on:\s*blacksmith-32vcpu-ubuntu-2404/);
+  assert.match(abJob, /runs-on:\s*ubuntu-latest/);
   assert.match(abJob, /contents:\s*read/);
   assert.doesNotMatch(abJob, /contents:\s*write/);
   assert.match(
@@ -175,7 +175,7 @@ test("criterion bench workflow runs an A/B micro-benchmark and a dialect guard",
 
   // Dialect guard: build vize with legacy OFF and ON, then assert byte-identical
   // Vue 3 codegen plus a small A/B timing budget.
-  assert.match(guardJob, /runs-on:\s*blacksmith-32vcpu-ubuntu-2404/);
+  assert.match(guardJob, /runs-on:\s*ubuntu-latest/);
   assert.match(guardJob, /cargo build --profile ci-opt -p vize --target-dir target\/off/);
   assert.match(
     guardJob,

@@ -56,7 +56,7 @@
     "@types/node": "catalog:typescript",
     "typescript": "catalog:typescript",
     "vite": "catalog:vite-stack",
-    "vite-plus": "catalog:vite-stack"
+    "vite-plus": "catalog:"
   },
   "peerDependencies": {
     "vite": "^7.3.0 || ^8.0.0"

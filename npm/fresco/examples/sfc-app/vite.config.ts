@@ -1,9 +1,9 @@
-import { defineConfig } from "vite-plus";
+import { defineConfig, lazyPlugins } from "vite-plus";
 import { vize } from "@vizejs/vite-plugin";
 import { resolve } from "path";
 
 export default defineConfig({
-  plugins: [vize()],
+  plugins: lazyPlugins(() => [vize()]),
   resolve: {
     alias: {
       // Map vue to full build (includes compiler)

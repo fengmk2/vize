@@ -84,7 +84,7 @@ function formatThroughput(fileCount: number, ms: number): string {
 
 // Build with @vitejs/plugin-vue
 async function buildWithOfficialPlugin(): Promise<number> {
-  const { build } = await import("vite");
+  const { build } = await import("vite-plus");
   const vuePlugin = (await import("@vitejs/plugin-vue")).default;
 
   const outDir = join(TEMP_DIR, "official");
@@ -110,7 +110,7 @@ async function buildWithOfficialPlugin(): Promise<number> {
 
 // Build with @vizejs/vite-plugin
 async function buildWithVizePlugin(): Promise<number> {
-  const { build } = await import("vite");
+  const { build } = await import("vite-plus");
 
   let vizePlugin: any;
   try {

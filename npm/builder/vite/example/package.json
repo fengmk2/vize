@@ -18,7 +18,7 @@
     "typescript": "catalog:typescript",
     "vite": "catalog:vite-stack",
     "vite-plugin-inspect": "catalog:vite-stack",
-    "vite-plus": "catalog:vite-stack",
+    "vite-plus": "catalog:",
     "vize": "workspace:*"
   }
 }
